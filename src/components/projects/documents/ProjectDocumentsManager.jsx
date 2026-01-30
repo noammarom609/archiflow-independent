@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
@@ -86,7 +86,7 @@ export default function ProjectDocumentsManager({ project, tasks = [] }) {
     queryKey: ['projectDocuments', project?.id],
     queryFn: async () => {
       if (!project?.id) return [];
-      return base44.entities.Document.filter({ project_id: String(project.id) }, '-created_date');
+      return archiflow.entities.Document.filter({ project_id: String(project.id) }, '-created_date');
     },
     enabled: !!project?.id,
   });
@@ -102,7 +102,7 @@ export default function ProjectDocumentsManager({ project, tasks = [] }) {
 
   // Delete document mutation
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Document.delete(id),
+    mutationFn: (id) => archiflow.entities.Document.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projectDocuments', project?.id] });
       showSuccess('המסמך נמחק בהצלחה');

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import { getCurrentUser } from '@/utils/authHelpers';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -136,7 +136,7 @@ function LayoutContent({ children, currentPageName }) {
   // Fetch notifications - wait for auth to be ready
   const { data: notifications = [] } = useQuery({
     queryKey: ['notifications'],
-    queryFn: () => base44.entities.Notification.list('-created_date', 50),
+    queryFn: () => archiflow.entities.Notification.list('-created_date', 50),
     refetchInterval: 30000,
     enabled: !isLandingPage && !isLoadingAuth && isAuthenticated,
   });
@@ -159,14 +159,14 @@ function LayoutContent({ children, currentPageName }) {
         
         // Fetch records
         const [allConsultants, allContractors, allSuppliers, allClients] = await Promise.all([
-          base44.entities.Consultant.list(null, 100),
-          base44.entities.Contractor.list(null, 100),
-          base44.entities.Supplier.list(null, 100),
-          base44.entities.Client.list(null, 100)
+          archiflow.entities.Consultant.list(null, 100),
+          archiflow.entities.Contractor.list(null, 100),
+          archiflow.entities.Supplier.list(null, 100),
+          archiflow.entities.Client.list(null, 100)
         ]);
         
         // Filter for non-admin users - check multiple ownership fields
-        // Note: Base44 entities return data with fields at root level, not nested under 'data'
+        // Note: Entity data returns fields at root level, not nested under 'data'
         const filterByOwnership = (items) => {
           // Admin level users see all
           if (isAdminLevel) return items;

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
@@ -62,7 +62,7 @@ export default function PortfolioDocumentsSection({ documents, project, isLoadin
 
   // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Document.delete(id),
+    mutationFn: (id) => archiflow.entities.Document.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['portfolioDocuments', project?.id] });
       showSuccess('המסמך נמחק');

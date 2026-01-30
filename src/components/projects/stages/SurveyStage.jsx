@@ -28,7 +28,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { showSuccess, showError } from '@/components/utils/notifications';
 
 export default function SurveyStage({ project, onUpdate, onSubStageChange }) {
@@ -47,7 +47,7 @@ export default function SurveyStage({ project, onUpdate, onSubStageChange }) {
 
     setIsUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await archiflow.integrations.Core.UploadFile({ file });
       
       const newFile = {
         url: file_url,
@@ -60,7 +60,7 @@ export default function SurveyStage({ project, onUpdate, onSubStageChange }) {
       const updatedFiles = [...currentFiles, newFile];
 
       // Also create a Document entity for better management in the new FileManager
-      await base44.entities.Document.create({
+      await archiflow.entities.Document.create({
         title: file.name,
         description: `הועלה בשלב מדידה - ${type}`,
         file_url: file_url,
@@ -126,7 +126,7 @@ export default function SurveyStage({ project, onUpdate, onSubStageChange }) {
 
     setIsUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await archiflow.integrations.Core.UploadFile({ file });
       
       const newFile = {
         url: file_url,
@@ -140,7 +140,7 @@ export default function SurveyStage({ project, onUpdate, onSubStageChange }) {
       const updatedFiles = [...currentFiles, newFile];
 
       // Also create a Document entity for better management in the new FileManager
-      await base44.entities.Document.create({
+      await archiflow.entities.Document.create({
         title: file.name,
         description: `הועלה בשלב מדידה - ${type}`,
         file_url: file_url,

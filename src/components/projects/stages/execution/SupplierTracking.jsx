@@ -6,7 +6,7 @@ import { Plus, Package, Truck, Phone, Box } from 'lucide-react';
 import ContractorCard from '@/components/contractors/ContractorCard';
 import TaskFormDialog from '@/components/projects/tasks/TaskFormDialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { showSuccess, showError } from '@/components/utils/notifications';
 
 export default function SupplierTracking({ project, suppliers = [], tasks = [], onAddSupplier }) {
@@ -20,7 +20,7 @@ export default function SupplierTracking({ project, suppliers = [], tasks = [], 
   const orderTasks = tasks.filter(t => supplierIds.includes(t.contractor_id));
 
   const createOrderMutation = useMutation({
-    mutationFn: (data) => base44.entities.Task.create(data),
+    mutationFn: (data) => archiflow.entities.Task.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projectTasks'] });
       showSuccess('הזמנה נוצרה בהצלחה');

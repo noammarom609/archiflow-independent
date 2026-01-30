@@ -26,7 +26,7 @@ import {
   Share2,
   Sparkles
 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCurrentUser } from '@/utils/authHelpers';
 import { format } from 'date-fns';
@@ -59,7 +59,7 @@ export default function RecordingsGrid() {
   // Fetch current user for multi-tenant filtering (with bypass support)
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => getCurrentUser(base44),
+    queryFn: () => getCurrentUser(archiflow),
   });
 
   // Multi-tenant: Get architect ID for filtering
@@ -68,7 +68,7 @@ export default function RecordingsGrid() {
   // Fetch recordings
   const { data: allRecordings = [], isLoading } = useQuery({
     queryKey: ['recordings'],
-    queryFn: () => base44.entities.Recording.list('-created_date', 100),
+    queryFn: () => archiflow.entities.Recording.list('-created_date', 100),
   });
 
   // Multi-tenant filtering: Show only recordings created by this user
@@ -79,7 +79,7 @@ export default function RecordingsGrid() {
   // Fetch folders
   const { data: allFolders = [] } = useQuery({
     queryKey: ['recording-folders'],
-    queryFn: () => base44.entities.RecordingFolder.list('name'),
+    queryFn: () => archiflow.entities.RecordingFolder.list('name'),
   });
 
   // Multi-tenant filtering for folders
@@ -90,7 +90,7 @@ export default function RecordingsGrid() {
   // Fetch projects for linking (already filtered elsewhere, but ensure consistency)
   const { data: allProjects = [] } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list('name'),
+    queryFn: () => archiflow.entities.Project.list('name'),
   });
 
   // Multi-tenant filtering for projects
@@ -104,7 +104,7 @@ export default function RecordingsGrid() {
 
   // Mutations
   const deleteRecordingMutation = useMutation({
-    mutationFn: (id) => base44.entities.Recording.delete(id),
+    mutationFn: (id) => archiflow.entities.Recording.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recordings'] });
       showSuccess('הקלטה נמחקה בהצלחה');
@@ -114,7 +114,7 @@ export default function RecordingsGrid() {
   });
 
   const updateRecordingMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Recording.update(id, data),
+    mutationFn: ({ id, data }) => archiflow.entities.Recording.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recordings'] });
       showSuccess('ההקלטה עודכנה בהצלחה');

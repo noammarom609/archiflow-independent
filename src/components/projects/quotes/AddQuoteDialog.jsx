@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Plus } from 'lucide-react';
 import { showSuccess, showError } from '../../utils/notifications';
@@ -23,7 +23,7 @@ export default function AddQuoteDialog({ isOpen, onClose, project, contractors }
   const [isUploading, setIsUploading] = useState(false);
 
   const createQuoteMutation = useMutation({
-    mutationFn: (data) => base44.entities.ContractorQuote.create(data),
+    mutationFn: (data) => archiflow.entities.ContractorQuote.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contractorQuotes', project?.id] });
       showSuccess('הצעת מחיר נוספה בהצלחה');
@@ -63,7 +63,7 @@ export default function AddQuoteDialog({ isOpen, onClose, project, contractors }
 
     setIsUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await archiflow.integrations.Core.UploadFile({ file });
       setFormData(prev => ({ ...prev, file_url }));
       showSuccess('קובץ ההצעה הועלה');
     } catch (error) {

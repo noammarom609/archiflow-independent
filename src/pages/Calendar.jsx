@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 // Toaster moved to App.jsx for global fixed positioning
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import { getCurrentUser } from '@/utils/authHelpers';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -100,7 +100,7 @@ export default function Calendar() {
   // Fetch current user for multi-tenant filtering (with bypass support)
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => getCurrentUser(base44),
+    queryFn: () => getCurrentUser(archiflow),
   });
 
   // Multi-tenant: Determine filtering
@@ -109,7 +109,7 @@ export default function Calendar() {
   // Fetch calendar events
   const { data: allCalendarEvents = [] } = useQuery({
     queryKey: ['calendarEvents'],
-    queryFn: () => base44.entities.CalendarEvent.list('-start_date', 200),
+    queryFn: () => archiflow.entities.CalendarEvent.list('-start_date', 200),
   });
 
   // Multi-tenant filtering for calendar events
@@ -120,7 +120,7 @@ export default function Calendar() {
   // Fetch tasks with due dates
   const { data: allTasks = [] } = useQuery({
     queryKey: ['tasks'],
-    queryFn: () => base44.entities.Task.list('-due_date', 100),
+    queryFn: () => archiflow.entities.Task.list('-due_date', 100),
   });
 
   // Multi-tenant filtering for tasks
@@ -131,7 +131,7 @@ export default function Calendar() {
   // Fetch journal entries
   const { data: allJournalEntries = [] } = useQuery({
     queryKey: ['journalEntries'],
-    queryFn: () => base44.entities.JournalEntry.list('-created_date', 100),
+    queryFn: () => archiflow.entities.JournalEntry.list('-created_date', 100),
   });
 
   // Multi-tenant filtering for journal entries
@@ -143,8 +143,8 @@ export default function Calendar() {
   const { data: allMeetingSlots = [] } = useQuery({
     queryKey: ['meetingSlotsForCalendar'],
     queryFn: async () => {
-      const pending = await base44.entities.MeetingSlot.filter({ status: 'pending_approval' });
-      const approved = await base44.entities.MeetingSlot.filter({ status: 'approved' });
+      const pending = await archiflow.entities.MeetingSlot.filter({ status: 'pending_approval' });
+      const approved = await archiflow.entities.MeetingSlot.filter({ status: 'approved' });
       return [...pending, ...approved];
     },
   });

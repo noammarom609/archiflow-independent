@@ -35,7 +35,7 @@ import {
           PopoverContent,
           PopoverTrigger,
         } from "@/components/ui/popover";
-        import { base44 } from '@/api/base44Client';
+        import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 
 export default function PropertiesPanel({ selectedItems, onUpdate, onUpdateBatch, onDelete, onDuplicate, onGroup, onUngroup, onBringToFront, onSendToBack }) {
@@ -56,14 +56,14 @@ export default function PropertiesPanel({ selectedItems, onUpdate, onUpdateBatch
   // Fetch Suppliers for linking
   const { data: suppliers = [] } = useQuery({
     queryKey: ['suppliers_list'],
-    queryFn: () => base44.entities.Contractor.filter({ type: 'supplier' }),
+    queryFn: () => archiflow.entities.Contractor.filter({ type: 'supplier' }),
     staleTime: 60000
   });
 
   // Fetch Materials for linking
   const { data: materials = [] } = useQuery({
     queryKey: ['materials_list'],
-    queryFn: () => base44.entities.DesignAsset.filter({ category: 'textures' }), // Assuming textures are materials
+    queryFn: () => archiflow.entities.DesignAsset.filter({ category: 'textures' }), // Assuming textures are materials
     staleTime: 60000
   });
 

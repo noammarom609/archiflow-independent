@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,7 +44,7 @@ export default function AddTeamMemberDialog({ isOpen, onClose }) {
   const [errors, setErrors] = useState({});
 
   const createMemberMutation = useMutation({
-    mutationFn: (data) => base44.entities.TeamMember.create(data),
+    mutationFn: (data) => archiflow.entities.TeamMember.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
       showSuccess('חבר צוות נוסף בהצלחה!');

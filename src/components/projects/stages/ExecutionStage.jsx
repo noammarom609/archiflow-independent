@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import { 
   Hammer, 
@@ -61,7 +61,7 @@ export default function ExecutionStage({ project, onUpdate, onSubStageChange, cu
   // Fetch selected quote
   const { data: selectedQuote } = useQuery({
     queryKey: ['selectedQuote', project?.selected_quote_id],
-    queryFn: () => base44.entities.ContractorQuote.filter({ id: project?.selected_quote_id }),
+    queryFn: () => archiflow.entities.ContractorQuote.filter({ id: project?.selected_quote_id }),
     enabled: !!project?.selected_quote_id,
     select: (data) => data[0]
   });
@@ -69,14 +69,14 @@ export default function ExecutionStage({ project, onUpdate, onSubStageChange, cu
   // Fetch tasks
   const { data: tasks = [] } = useQuery({
     queryKey: ['projectTasks', project?.id],
-    queryFn: () => base44.entities.Task.filter({ project_id: project?.id }),
+    queryFn: () => archiflow.entities.Task.filter({ project_id: project?.id }),
     enabled: !!project?.id
   });
 
   // Fetch contractor details
   const { data: contractorDetails } = useQuery({
     queryKey: ['contractor', selectedQuote?.contractor_id],
-    queryFn: () => base44.entities.Contractor.filter({ id: selectedQuote?.contractor_id }),
+    queryFn: () => archiflow.entities.Contractor.filter({ id: selectedQuote?.contractor_id }),
     enabled: !!selectedQuote?.contractor_id,
     select: (data) => data[0]
   });
@@ -84,7 +84,7 @@ export default function ExecutionStage({ project, onUpdate, onSubStageChange, cu
   // Fetch suppliers
   const { data: suppliers = [] } = useQuery({
     queryKey: ['suppliers'],
-    queryFn: () => base44.entities.Contractor.filter({ type: 'supplier' }, '-created_date'),
+    queryFn: () => archiflow.entities.Contractor.filter({ type: 'supplier' }, '-created_date'),
   });
 
   const completeProject = async () => {

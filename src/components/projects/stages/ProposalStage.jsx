@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   FileText, 
@@ -193,7 +193,7 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
     }
 
     // Update template usage count
-    base44.entities.ProposalTemplate.update(template.id, {
+    archiflow.entities.ProposalTemplate.update(template.id, {
       usage_count: (template.usage_count || 0) + 1,
       last_used: new Date().toISOString()
     });
@@ -205,7 +205,7 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
   const { data: existingProposals = [] } = useQuery({
     queryKey: ['proposals', project?.id],
     queryFn: () => project?.id 
-      ? base44.entities.Proposal.filter({ project_id: project.id }, '-created_date')
+      ? archiflow.entities.Proposal.filter({ project_id: project.id }, '-created_date')
       : Promise.resolve([]),
     enabled: !!project?.id,
   });
@@ -214,7 +214,7 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
   const { data: clientData } = useQuery({
     queryKey: ['client', project?.client_id],
     queryFn: () => project?.client_id 
-      ? base44.entities.Client.filter({ id: project.client_id })
+      ? archiflow.entities.Client.filter({ id: project.client_id })
       : Promise.resolve([]),
     enabled: !!project?.client_id,
     select: (data) => data?.[0] || null,
@@ -229,7 +229,7 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
     queryFn: async () => {
       if (!savedTemplateId) return null;
       console.log('📋 Fetching template by ID:', savedTemplateId);
-      const templates = await base44.entities.ProposalTemplate.filter({ id: savedTemplateId });
+      const templates = await archiflow.entities.ProposalTemplate.filter({ id: savedTemplateId });
       console.log('📋 Fetched template:', templates[0]?.name || 'not found');
       return templates[0] || null;
     },
@@ -259,7 +259,7 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
     queryFn: async () => {
       if (!savedSignatureId) return null;
       console.log('🔏 Fetching signature by ID:', savedSignatureId);
-      const signatures = await base44.entities.DocumentSignature.filter({ id: savedSignatureId });
+      const signatures = await archiflow.entities.DocumentSignature.filter({ id: savedSignatureId });
       console.log('🔏 Fetched signature:', signatures[0] ? 'found' : 'not found');
       return signatures[0] || null;
     },
@@ -298,7 +298,7 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
   // Fetch clause library
   const { data: clauseLibrary = [] } = useQuery({
     queryKey: ['proposalClauses'],
-    queryFn: () => base44.entities.ProposalClause.list(),
+    queryFn: () => archiflow.entities.ProposalClause.list(),
   });
 
   // Group clauses by category
@@ -354,7 +354,7 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
 
   // Create proposal mutation
   const createProposalMutation = useMutation({
-    mutationFn: (data) => base44.entities.Proposal.create(data),
+    mutationFn: (data) => archiflow.entities.Proposal.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['proposals'] });
     },
@@ -362,7 +362,7 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
 
   // Update proposal mutation
   const updateProposalMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Proposal.update(id, data),
+    mutationFn: ({ id, data }) => archiflow.entities.Proposal.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['proposals'] });
     },
@@ -515,10 +515,10 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
       ])];
 
       // Fetch clause library for AI context
-      const allClauses = await base44.entities.ProposalClause.list();
+      const allClauses = await archiflow.entities.ProposalClause.list();
       const clausesContext = allClauses.map(c => `- ${c.title}: ${c.description} (קטגוריה: ${c.category})`).join('\n');
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await archiflow.integrations.Core.InvokeLLM({
         prompt: `צור הצעת מחיר לפרויקט אדריכלות בהתבסס על המידע הבא:
         
 פרויקט: ${project.name}
@@ -622,9 +622,9 @@ ${clausesContext}
   const saveProposalPDF = async (status, filename) => {
     try {
       const pdfFile = await generatePDFFromElement('proposal-preview-container', filename);
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: pdfFile });
+      const { file_url } = await archiflow.integrations.Core.UploadFile({ file: pdfFile });
       
-      await base44.entities.Document.create({
+      await archiflow.entities.Document.create({
         title: filename.replace('.pdf', ''),
         file_url: file_url,
         file_type: 'pdf',
@@ -661,7 +661,7 @@ ${clausesContext}
       // Create approval link for client
       const approvalUrl = `${window.location.origin}/PublicApproval?id=${project.id}&type=proposal&token=${Math.random().toString(36).substring(7)}`;
 
-      await base44.integrations.Core.SendEmail({
+      await archiflow.integrations.Core.SendEmail({
         to: project.client_email,
         subject: `הצעת מחיר לאישור - ${project.name}`,
         body: `שלום ${project.client},
@@ -724,7 +724,7 @@ ArchiFlow`
       }
 
       // Create signature record
-      const signatureRecord = await base44.entities.DocumentSignature.create({
+      const signatureRecord = await archiflow.entities.DocumentSignature.create({
         document_id: existingProposals[0]?.id || 'proposal',
         document_title: `הצעת מחיר - ${project?.name}`,
         document_type: 'proposal',
@@ -1379,7 +1379,7 @@ ArchiFlow`
                             onClick={async () => {
                               try {
                                 // First, try to find a saved signed PDF in Documents
-                                const signedDocs = await base44.entities.Document.filter({
+                                const signedDocs = await archiflow.entities.Document.filter({
                                   project_id: String(project.id),
                                   category: 'proposal'
                                 });

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   FileText, 
@@ -121,7 +121,7 @@ export default function TechnicalPlansStage({ project, onUpdate, onSubStageChang
   // Fetch documents for this project
   const { data: documents = [] } = useQuery({
     queryKey: ['projectDocuments', project?.name, 'technical'],
-    queryFn: () => base44.entities.Document.filter({ 
+    queryFn: () => archiflow.entities.Document.filter({ 
       project_name: project?.name,
       category: 'specification'
     }),
@@ -131,19 +131,19 @@ export default function TechnicalPlansStage({ project, onUpdate, onSubStageChang
   // Fetch contractors
   const { data: contractors = [] } = useQuery({
     queryKey: ['contractors'],
-    queryFn: () => base44.entities.Contractor.filter({ status: 'active' }),
+    queryFn: () => archiflow.entities.Contractor.filter({ status: 'active' }),
   });
 
   // Fetch quotes for this project
   const { data: quotes = [] } = useQuery({
     queryKey: ['contractorQuotes', project?.id],
-    queryFn: () => base44.entities.ContractorQuote.filter({ project_id: project?.id }),
+    queryFn: () => archiflow.entities.ContractorQuote.filter({ project_id: project?.id }),
     enabled: !!project?.id
   });
 
   // Delete document mutation
   const deleteDocMutation = useMutation({
-    mutationFn: (docId) => base44.entities.Document.delete(docId),
+    mutationFn: (docId) => archiflow.entities.Document.delete(docId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projectDocuments'] });
       showSuccess('הקובץ נמחק בהצלחה');
@@ -161,7 +161,7 @@ export default function TechnicalPlansStage({ project, onUpdate, onSubStageChang
     try {
       const approvalUrl = `${window.location.origin}/PublicApproval?id=${project.id}&type=technical`;
       
-      await base44.integrations.Core.SendEmail({
+      await archiflow.integrations.Core.SendEmail({
         to: project.client_email,
         subject: `תוכניות עבודה לאישור - ${project.name}`,
         body: `שלום ${project.client},
@@ -249,7 +249,7 @@ ArchiFlow`
       const selectedContractorDetails = contractors.filter(c => selectedContractors.includes(c.id));
 
       // Filter out contractors that already have a quote request
-      const existingQuotes = await base44.entities.ContractorQuote.filter({ project_id: project?.id });
+      const existingQuotes = await archiflow.entities.ContractorQuote.filter({ project_id: project?.id });
       const contractorsToSkip = existingQuotes.map(q => q.contractor_id);
       
       const newContractors = selectedContractorDetails.filter(c => !contractorsToSkip.includes(c.id));
@@ -267,7 +267,7 @@ ArchiFlow`
       for (const contractor of newContractors) {
         const token = crypto.randomUUID();
         
-        await base44.entities.ContractorQuote.create({
+        await archiflow.entities.ContractorQuote.create({
           project_id: String(project?.id),
           project_name: project?.name,
           contractor_id: String(contractor.id),
@@ -283,7 +283,7 @@ ArchiFlow`
         if (contractor.email) {
           const quoteUrl = `${window.location.origin}${window.location.pathname}#/PublicContractorQuote?token=${token}`;
           
-          await base44.integrations.Core.SendEmail({
+          await archiflow.integrations.Core.SendEmail({
             to: contractor.email,
             subject: `בקשה להצעת מחיר - ${project?.name}`,
             body: `שלום ${contractor.name},
@@ -330,7 +330,7 @@ ArchiFlow`
   const selectQuote = async (quoteId) => {
     try {
       // Update the selected quote status
-      await base44.entities.ContractorQuote.update(quoteId, { status: 'selected' });
+      await archiflow.entities.ContractorQuote.update(quoteId, { status: 'selected' });
 
       // Update project
       if (onUpdate) {

@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Upload, Loader2, FileText } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { showSuccess, showError } from '../utils/notifications';
 
@@ -28,11 +28,11 @@ export default function ConsultantDocumentUpload({ isOpen, onClose }) {
   // Fetch consultants
   const { data: consultants = [] } = useQuery({
     queryKey: ['consultants'],
-    queryFn: () => base44.entities.Consultant.list('-created_date', 100),
+    queryFn: () => archiflow.entities.Consultant.list('-created_date', 100),
   });
 
   const uploadMutation = useMutation({
-    mutationFn: (docData) => base44.entities.ConsultantDocument.create(docData),
+    mutationFn: (docData) => archiflow.entities.ConsultantDocument.create(docData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['consultantDocuments'] });
       showSuccess('מסמך הועלה בהצלחה');
@@ -79,7 +79,7 @@ export default function ConsultantDocumentUpload({ isOpen, onClose }) {
     setUploading(true);
     try {
       // Upload file to storage
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await archiflow.integrations.Core.UploadFile({ file });
 
       // Create document record
       await uploadMutation.mutateAsync({

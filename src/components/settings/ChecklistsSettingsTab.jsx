@@ -22,7 +22,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { showSuccess, showError } from '../utils/notifications';
 import {
   PROJECT_TYPES,

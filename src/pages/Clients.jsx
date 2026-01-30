@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import { 
   Users, 
@@ -63,13 +63,13 @@ export default function Clients() {
   // Fetch clients
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => base44.entities.Client.list('-created_date'),
+    queryFn: () => archiflow.entities.Client.list('-created_date'),
   });
 
   // Fetch projects for stats
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list(),
+    queryFn: () => archiflow.entities.Project.list(),
   });
 
   // Get project count per client

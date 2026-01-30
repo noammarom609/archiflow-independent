@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Settings, 
@@ -62,7 +62,7 @@ function ChecklistEditor({ title, icon: Icon, settingKey, defaultItems }) {
   const { data: existingSetting, isLoading } = useQuery({
     queryKey: ['systemSettings', settingKey],
     queryFn: async () => {
-      const settings = await base44.entities.SystemSettings.filter({ setting_key: settingKey });
+      const settings = await archiflow.entities.SystemSettings.filter({ setting_key: settingKey });
       return settings[0] || null;
     }
   });
@@ -80,11 +80,11 @@ function ChecklistEditor({ title, icon: Icon, settingKey, defaultItems }) {
   const saveMutation = useMutation({
     mutationFn: async (newItems) => {
       if (existingSetting?.id) {
-        return base44.entities.SystemSettings.update(existingSetting.id, {
+        return archiflow.entities.SystemSettings.update(existingSetting.id, {
           setting_value: newItems
         });
       } else {
-        return base44.entities.SystemSettings.create({
+        return archiflow.entities.SystemSettings.create({
           setting_key: settingKey,
           setting_value: newItems,
           description: title

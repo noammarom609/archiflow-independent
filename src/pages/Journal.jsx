@@ -15,7 +15,7 @@ import {
   TrendingUp,
   Sparkles,
 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 // Toaster moved to App.jsx for global fixed positioning
 import EntryCard from '../components/journal/EntryCard';
@@ -36,13 +36,13 @@ export default function Journal() {
   // Fetch journal entries
   const { data: journalEntries = [], isLoading } = useQuery({
     queryKey: ['journalEntries'],
-    queryFn: () => base44.entities.JournalEntry.list('-entry_date', 200),
+    queryFn: () => archiflow.entities.JournalEntry.list('-entry_date', 200),
   });
 
   // Fetch projects for filtering
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list(),
+    queryFn: () => archiflow.entities.Project.list(),
   });
 
   const filteredEntries = journalEntries.filter(entry => {

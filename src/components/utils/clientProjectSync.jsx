@@ -8,7 +8,7 @@
  * - Auto-populating data between entities
  */
 
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 
 /**
  * Sync client contact details to all associated projects
@@ -18,7 +18,7 @@ export async function syncClientToProjects(clientId, clientData, projects) {
   const updates = projects
     .filter(p => p.client_id === clientId)
     .map(project => 
-      base44.entities.Project.update(project.id, {
+      archiflow.entities.Project.update(project.id, {
         client: clientData.full_name,
         client_email: clientData.email,
         client_phone: clientData.phone,
@@ -33,7 +33,7 @@ export async function syncClientToProjects(clientId, clientData, projects) {
  * This should be called whenever a significant action occurs in a project
  */
 export async function addClientTimelineEvent(clientId, event) {
-  const client = await base44.entities.Client.filter({ id: clientId });
+  const client = await archiflow.entities.Client.filter({ id: clientId });
   if (!client || client.length === 0) return null;
   
   const existingTimeline = client[0].timeline || [];
@@ -44,7 +44,7 @@ export async function addClientTimelineEvent(clientId, event) {
   };
   
   // Update client with new timeline event
-  await base44.entities.Client.update(clientId, {
+  await archiflow.entities.Client.update(clientId, {
     timeline: [...existingTimeline, newEvent],
     last_contact_date: new Date().toISOString().split('T')[0],
   });

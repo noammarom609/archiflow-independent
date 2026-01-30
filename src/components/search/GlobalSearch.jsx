@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
@@ -47,31 +47,31 @@ export default function GlobalSearch({ isOpen, onClose }) {
   // Fetch all entities for search
   const { data: projects = [], isLoading: loadingProjects } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list('-created_date', 50),
+    queryFn: () => archiflow.entities.Project.list('-created_date', 50),
     enabled: isOpen,
   });
 
   const { data: clients = [], isLoading: loadingClients } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => base44.entities.Client.list('-created_date', 50),
+    queryFn: () => archiflow.entities.Client.list('-created_date', 50),
     enabled: isOpen,
   });
 
   const { data: documents = [], isLoading: loadingDocs } = useQuery({
     queryKey: ['documents'],
-    queryFn: () => base44.entities.Document.list('-created_date', 50),
+    queryFn: () => archiflow.entities.Document.list('-created_date', 50),
     enabled: isOpen,
   });
 
   const { data: tasks = [], isLoading: loadingTasks } = useQuery({
     queryKey: ['tasks'],
-    queryFn: () => base44.entities.Task.list('-created_date', 50),
+    queryFn: () => archiflow.entities.Task.list('-created_date', 50),
     enabled: isOpen,
   });
 
   const { data: recordings = [], isLoading: loadingRecordings } = useQuery({
     queryKey: ['recordings'],
-    queryFn: () => base44.entities.Recording.list('-created_date', 30),
+    queryFn: () => archiflow.entities.Recording.list('-created_date', 30),
     enabled: isOpen,
   });
 

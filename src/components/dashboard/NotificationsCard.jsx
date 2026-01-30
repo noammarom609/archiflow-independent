@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Bell, Clock, CheckCircle, AlertCircle, FileText, Users, ChevronLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -42,14 +42,14 @@ export default function NotificationsCard() {
   // Fetch current user for multi-tenant filtering (with bypass support)
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => getCurrentUser(base44),
+    queryFn: () => getCurrentUser(archiflow),
   });
 
   const isSuperAdmin = user?.app_role === 'super_admin';
 
   const { data: allNotifications = [], error: notificationsError } = useQuery({
     queryKey: ['notifications', user?.email],
-    queryFn: () => base44.entities.Notification.list('-created_date', 20),
+    queryFn: () => archiflow.entities.Notification.list('-created_date', 20),
     enabled: !!user,
     retry: 1,
     onError: (error) => {

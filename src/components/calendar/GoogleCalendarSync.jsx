@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calendar, Loader2, CheckCircle2, AlertCircle, Link2, Unlink, RefreshCw } from 'lucide-react';
 import { showSuccess, showError } from '../utils/notifications';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -35,7 +35,7 @@ export default function GoogleCalendarSync({ isOpen, onClose }) {
       if (event.data?.type === 'GOOGLE_OAUTH_SUCCESS') {
         const { code } = event.data;
         try {
-          const res = await base44.functions.invoke('userGoogleCalendar', {
+          const res = await archiflow.functions.invoke('userGoogleCalendar', {
             action: 'exchangeCode',
             code,
             redirectUri: `${window.location.origin}/oauth/callback`,
@@ -72,7 +72,7 @@ export default function GoogleCalendarSync({ isOpen, onClose }) {
     }
     setLoading(true);
     try {
-      const res = await base44.functions.invoke('userGoogleCalendar', { action: 'status', userEmail });
+      const res = await archiflow.functions.invoke('userGoogleCalendar', { action: 'status', userEmail });
       setConnectionStatus(res.data);
     } catch (error) {
       console.error('Status check error:', error);
@@ -85,7 +85,7 @@ export default function GoogleCalendarSync({ isOpen, onClose }) {
     setConnecting(true);
     try {
       console.log('[GoogleCalendarSync] Calling getAuthUrl with userEmail:', userEmail);
-      const res = await base44.functions.invoke('userGoogleCalendar', {
+      const res = await archiflow.functions.invoke('userGoogleCalendar', {
         action: 'getAuthUrl',
         redirectUri: `${window.location.origin}/oauth/callback`,
         userEmail
@@ -132,7 +132,7 @@ export default function GoogleCalendarSync({ isOpen, onClose }) {
     setSyncing(true);
     setSyncResult(null);
     try {
-      const res = await base44.functions.invoke('userGoogleCalendar', { action: 'sync', userEmail });
+      const res = await archiflow.functions.invoke('userGoogleCalendar', { action: 'sync', userEmail });
       if (res.data.success) {
         setSyncResult(res.data);
         showSuccess(`יובאו ${res.data.imported} אירועים חדשים מ-Google Calendar`);
@@ -152,7 +152,7 @@ export default function GoogleCalendarSync({ isOpen, onClose }) {
     
     setDisconnecting(true);
     try {
-      await base44.functions.invoke('userGoogleCalendar', { action: 'disconnect', userEmail });
+      await archiflow.functions.invoke('userGoogleCalendar', { action: 'disconnect', userEmail });
       showSuccess('חשבון Google נותק בהצלחה');
       setConnectionStatus({ connected: false });
       setSyncResult(null);

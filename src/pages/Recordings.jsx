@@ -6,7 +6,7 @@ import RecordingControls from '../components/recordings/RecordingControls';
 import AnalysisResults from '../components/recordings/AnalysisResults';
 import RecordingsGrid from '../components/recordings/RecordingsGrid';
 import LargeAudioProcessor from '../components/audio/LargeAudioProcessor';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { showSuccess, showError } from '../components/utils/notifications';
 import PageHeader from '../components/layout/PageHeader';
@@ -20,7 +20,7 @@ export default function Recordings() {
   const queryClient = useQueryClient();
 
   const createRecordingMutation = useMutation({
-    mutationFn: (data) => base44.entities.Recording.create(data),
+    mutationFn: (data) => archiflow.entities.Recording.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recordings'] });
     },
@@ -56,7 +56,7 @@ export default function Recordings() {
       console.log(`   File size: ${fileSizeMB.toFixed(2)} MB`);
       
       try {
-        const uploadResult = await base44.integrations.Core.UploadFile({ file: audioFile });
+        const uploadResult = await archiflow.integrations.Core.UploadFile({ file: audioFile });
         console.log('✅ Upload successful:', uploadResult);
         file_url = uploadResult.file_url;
       } catch (uploadError) {
@@ -92,7 +92,7 @@ export default function Recordings() {
       let transcription = '';
 
       try {
-        const transcribeResult = await base44.functions.invoke('transcribeLargeAudio', { audio_url: file_url });
+        const transcribeResult = await archiflow.functions.invoke('transcribeLargeAudio', { audio_url: file_url });
 
         console.log('📦 Transcribe result:', transcribeResult);
         console.log('📝 Transcription data:', transcribeResult.data);
@@ -132,7 +132,7 @@ export default function Recordings() {
         }
 
         // Update recording with error
-        await base44.entities.Recording.update(initialRecording.id, {
+        await archiflow.entities.Recording.update(initialRecording.id, {
           status: 'failed',
           error_message: errorMsg,
           error_step: 'transcription',
@@ -208,7 +208,7 @@ export default function Recordings() {
         // Run all 3 analyses in PARALLEL with Promise.allSettled
         const [basicResult, deepResult, advancedResult] = await Promise.allSettled([
           // Basic Analysis
-          base44.integrations.Core.InvokeLLM({
+          archiflow.integrations.Core.InvokeLLM({
             prompt: basicPrompt,
             response_json_schema: {
               type: 'object',
@@ -224,7 +224,7 @@ export default function Recordings() {
           }),
           
           // Deep Analysis
-          base44.integrations.Core.InvokeLLM({
+          archiflow.integrations.Core.InvokeLLM({
             prompt: deepPrompt,
             response_json_schema: {
               type: 'object',
@@ -286,7 +286,7 @@ export default function Recordings() {
           
           // Advanced Insights
           Promise.race([
-            base44.integrations.Core.InvokeLLM({
+            archiflow.integrations.Core.InvokeLLM({
               prompt: advancedPrompt,
               response_json_schema: {
                 type: 'object',
@@ -379,7 +379,7 @@ export default function Recordings() {
       } catch (analysisError) {
         console.error('❌ Analysis failed:', analysisError);
         
-        await base44.entities.Recording.update(initialRecording.id, {
+        await archiflow.entities.Recording.update(initialRecording.id, {
           transcription: transcription,
           status: 'failed',
           error_message: 'שגיאה בניתוח: ' + analysisError.message,
@@ -393,7 +393,7 @@ export default function Recordings() {
 
         // Step 7: Save complete analysis
       console.log('💾 Saving complete analysis...');
-      await base44.entities.Recording.update(initialRecording.id, {
+      await archiflow.entities.Recording.update(initialRecording.id, {
         transcription: transcription,
         analysis: analysis,
         deep_analysis: deepAnalysis,
@@ -421,7 +421,7 @@ export default function Recordings() {
       // Update recording if it exists
       if (initialRecording?.id) {
         try {
-          await base44.entities.Recording.update(initialRecording.id, {
+          await archiflow.entities.Recording.update(initialRecording.id, {
             status: 'failed',
             error_message: 'שגיאה כללית: ' + error.message,
             error_step: 'unknown',
@@ -447,7 +447,7 @@ export default function Recordings() {
     let audio_url = '';
     try {
       console.log('📤 Uploading original file for reference...');
-      const uploadResult = await base44.integrations.Core.UploadFile({ file });
+      const uploadResult = await archiflow.integrations.Core.UploadFile({ file });
       audio_url = uploadResult.file_url;
       console.log('✅ Original file uploaded:', audio_url);
     } catch (uploadErr) {
@@ -498,7 +498,7 @@ export default function Recordings() {
 
       // Save complete analysis
       console.log('💾 Saving complete analysis...');
-      await base44.entities.Recording.update(initialRecording.id, {
+      await archiflow.entities.Recording.update(initialRecording.id, {
         analysis: analysis,
         deep_analysis: deepAnalysis,
         advanced_insights: advancedInsights,
@@ -521,7 +521,7 @@ export default function Recordings() {
     } catch (error) {
       console.error('❌ Analysis error:', error);
       if (initialRecording?.id) {
-        await base44.entities.Recording.update(initialRecording.id, {
+        await archiflow.entities.Recording.update(initialRecording.id, {
           status: 'failed',
           error_message: error.message,
         });
@@ -584,7 +584,7 @@ export default function Recordings() {
 החזר JSON מובנה.`;
 
     const [basicResult, deepResult, advancedResult] = await Promise.allSettled([
-      base44.integrations.Core.InvokeLLM({
+      archiflow.integrations.Core.InvokeLLM({
         prompt: basicPrompt,
         response_json_schema: {
           type: 'object',
@@ -598,7 +598,7 @@ export default function Recordings() {
           required: ['summary']
         },
       }),
-      base44.integrations.Core.InvokeLLM({
+      archiflow.integrations.Core.InvokeLLM({
         prompt: deepPrompt,
         response_json_schema: {
           type: 'object',
@@ -611,7 +611,7 @@ export default function Recordings() {
           }
         },
       }),
-      base44.integrations.Core.InvokeLLM({
+      archiflow.integrations.Core.InvokeLLM({
         prompt: advancedPrompt,
         response_json_schema: {
           type: 'object',
@@ -654,7 +654,7 @@ export default function Recordings() {
       console.log('📤 Distributing data to system (V2)...', approvalData);
       
       // Use the new V2 distribution function
-      const result = await base44.functions.invoke('distributeRecordingDataV2', {
+      const result = await archiflow.functions.invoke('distributeRecordingDataV2', {
         recording: approvalData.recording,
         selections: approvalData.selections,
         clientData: approvalData.clientData,

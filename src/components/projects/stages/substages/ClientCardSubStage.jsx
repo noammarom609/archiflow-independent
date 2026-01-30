@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   User,
@@ -51,7 +51,7 @@ export default function ClientCardSubStage({ project, onComplete, onContinue, on
 
   const { data: recordings = [] } = useQuery({
     queryKey: ['projectRecordings', project?.id],
-    queryFn: () => base44.entities.Recording.filter({ project_id: String(project?.id) }),
+    queryFn: () => archiflow.entities.Recording.filter({ project_id: String(project?.id) }),
     enabled: !!project?.id
   });
 
@@ -66,7 +66,7 @@ export default function ClientCardSubStage({ project, onComplete, onContinue, on
 
   const createClientMutation = useMutation({
     mutationFn: async (data) => {
-      const newClient = await base44.entities.Client.create(data);
+      const newClient = await archiflow.entities.Client.create(data);
       // Also update project with synced client data
       if (onUpdate) {
         await onUpdate({ 
@@ -116,7 +116,7 @@ export default function ClientCardSubStage({ project, onComplete, onContinue, on
         .map(item => `${item.item}: ${item.notes || 'בוצע'}`)
         .join('\n');
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await archiflow.integrations.Core.InvokeLLM({
         prompt: `אתה עוזר חכם ליצירת כרטיסי לקוח ותיקי פרויקט מקיפים עבור משרד אדריכלות.
 
 ## נתונים זמינים:

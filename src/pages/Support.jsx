@@ -39,7 +39,7 @@ import {
 } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { showSuccess } from '../components/utils/notifications';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import PageHeader from '../components/layout/PageHeader';
 
 const faqs = [
@@ -337,7 +337,7 @@ export default function Support() {
     e.preventDefault();
     
     try {
-      await base44.integrations.Core.SendEmail({
+      await archiflow.integrations.Core.SendEmail({
         to: 'support@archiflow.com',
         subject: `פנייה חדשה: ${formData.subject}`,
         body: `קטגוריה: ${formData.category}\n\n${formData.message}`,

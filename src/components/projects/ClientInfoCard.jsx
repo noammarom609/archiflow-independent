@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   User, 
@@ -31,7 +31,7 @@ export default function ClientInfoCard({ project, onUpdate }) {
     queryKey: ['client', project?.client_id],
     queryFn: async () => {
       if (!project?.client_id) return null;
-      const clients = await base44.entities.Client.filter({ id: project.client_id });
+      const clients = await archiflow.entities.Client.filter({ id: project.client_id });
       return clients[0];
     },
     enabled: !!project?.client_id
@@ -44,7 +44,7 @@ export default function ClientInfoCard({ project, onUpdate }) {
       
       // If no client_id exists, create a new Client
       if (!clientId) {
-        const newClient = await base44.entities.Client.create({
+        const newClient = await archiflow.entities.Client.create({
           full_name: data.full_name,
           email: data.email,
           phone: data.phone,
@@ -55,7 +55,7 @@ export default function ClientInfoCard({ project, onUpdate }) {
         clientId = newClient.id;
       } else {
         // Update existing client
-        await base44.entities.Client.update(clientId, data);
+        await archiflow.entities.Client.update(clientId, data);
       }
       
       // Sync to project (including the new client_id if created)

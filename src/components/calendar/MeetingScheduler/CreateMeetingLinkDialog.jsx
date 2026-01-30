@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -153,7 +153,7 @@ export default function CreateMeetingLinkDialog({
         return;
       }
       try {
-        const allItems = await base44.entities.ContentItem.list();
+        const allItems = await archiflow.entities.ContentItem.list();
         const filtered = allItems.filter(item => attachedContentIds.includes(item.id));
         setAttachedContentItems(filtered);
       } catch (e) {
@@ -171,7 +171,7 @@ export default function CreateMeetingLinkDialog({
   // Create meeting slot mutation
   const createMeetingSlotMutation = useMutation({
     mutationFn: async (data) => {
-      return await base44.entities.MeetingSlot.create(data);
+      return await archiflow.entities.MeetingSlot.create(data);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['meetingSlots'] });
@@ -215,7 +215,7 @@ export default function CreateMeetingLinkDialog({
     if (sendMethod === 'email' || sendMethod === 'both') {
       if (clientEmail) {
         try {
-          await base44.integrations.Core.SendEmail({
+          await archiflow.integrations.Core.SendEmail({
             to: clientEmail,
             subject: `הזמנה לתיאום פגישה - ${title || 'פגישה'}`,
             body: `שלום ${clientName || ''},\n\nמזמינים אותך לבחור זמן נוח לפגישה.\n\nלחץ/י על הקישור הבא לבחירת מועד:\n${link}\n\nבברכה`
@@ -249,7 +249,7 @@ export default function CreateMeetingLinkDialog({
     }
     
     try {
-      await base44.integrations.Core.SendEmail({
+      await archiflow.integrations.Core.SendEmail({
         to: clientEmail,
         subject: `הזמנה לתיאום פגישה - ${title || 'פגישה'}`,
         body: `

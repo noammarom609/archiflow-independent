@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -171,7 +171,7 @@ export default function Dashboard() {
   // Fetch data for live metrics - Only if user is authenticated
   const { data: allProjects = [], error: projectsError } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list('-created_date'),
+    queryFn: () => archiflow.entities.Project.list('-created_date'),
     enabled: !!user,
     retry: 1,
     onError: (error) => {
@@ -192,7 +192,7 @@ export default function Dashboard() {
 
   const { data: allInvoices = [], error: invoicesError } = useQuery({
     queryKey: ['invoices'],
-    queryFn: () => base44.entities.Invoice.list('-created_date'),
+    queryFn: () => archiflow.entities.Invoice.list('-created_date'),
     enabled: !!user,
     retry: 1,
     onError: (error) => {
@@ -205,7 +205,7 @@ export default function Dashboard() {
 
   const { data: allProposals = [], error: proposalsError } = useQuery({
     queryKey: ['proposals'],
-    queryFn: () => base44.entities.Proposal.list('-created_date'),
+    queryFn: () => archiflow.entities.Proposal.list('-created_date'),
     enabled: !!user,
     retry: 1,
     onError: (error) => {

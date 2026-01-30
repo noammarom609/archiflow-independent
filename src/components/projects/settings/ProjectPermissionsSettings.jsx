@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import {
   Dialog,
   DialogContent,
@@ -84,7 +84,7 @@ export default function ProjectPermissionsSettings({ project, trigger }) {
   // Fetch permissions for this project
   const { data: permissions = [], isLoading } = useQuery({
     queryKey: ['projectPermissions', project?.id],
-    queryFn: () => base44.entities.ProjectPermission.filter({ project_id: String(project?.id) }),
+    queryFn: () => archiflow.entities.ProjectPermission.filter({ project_id: String(project?.id) }),
     enabled: !!project?.id && isOpen
   });
 
@@ -95,7 +95,7 @@ export default function ProjectPermissionsSettings({ project, trigger }) {
     queryFn: async () => {
       let users = [];
       try {
-        users = await base44.entities.User.list('-created_date', 100);
+        users = await archiflow.entities.User.list('-created_date', 100);
       } catch (error) {
         // If permission denied for User.list, continue with just clients/contractors
         if (!error.message?.includes('Permission denied')) {
@@ -104,8 +104,8 @@ export default function ProjectPermissionsSettings({ project, trigger }) {
       }
       
       const [clients, contractors] = await Promise.all([
-        base44.entities.Client.list('-created_date', 100),
-        base44.entities.Contractor.list('-created_date', 100)
+        archiflow.entities.Client.list('-created_date', 100),
+        archiflow.entities.Contractor.list('-created_date', 100)
       ]);
 
       const uniqueMembers = [...users];
@@ -148,7 +148,7 @@ export default function ProjectPermissionsSettings({ project, trigger }) {
   const addPermissionMutation = useMutation({
     mutationFn: async (data) => {
       // Check if already exists
-      const existing = await base44.entities.ProjectPermission.filter({
+      const existing = await archiflow.entities.ProjectPermission.filter({
         project_id: String(project.id),
         user_email: data.user_email
       });
@@ -157,7 +157,7 @@ export default function ProjectPermissionsSettings({ project, trigger }) {
         throw new Error('משתמש זה כבר קיים בפרויקט');
       }
 
-      return base44.entities.ProjectPermission.create(data);
+      return archiflow.entities.ProjectPermission.create(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projectPermissions'] });
@@ -171,7 +171,7 @@ export default function ProjectPermissionsSettings({ project, trigger }) {
 
   // Update permission mutation
   const updatePermissionMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.ProjectPermission.update(id, data),
+    mutationFn: ({ id, data }) => archiflow.entities.ProjectPermission.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projectPermissions'] });
       showSuccess('הרשאות עודכנו');
@@ -180,7 +180,7 @@ export default function ProjectPermissionsSettings({ project, trigger }) {
 
   // Delete permission mutation
   const deletePermissionMutation = useMutation({
-    mutationFn: (id) => base44.entities.ProjectPermission.delete(id),
+    mutationFn: (id) => archiflow.entities.ProjectPermission.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projectPermissions'] });
       showSuccess('משתמש הוסר מהפרויקט');

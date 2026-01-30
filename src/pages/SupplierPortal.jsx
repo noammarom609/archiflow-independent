@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,20 +39,20 @@ export default function SupplierPortal() {
   // Fetch Suppliers for dropdown
   const { data: allSuppliers = [] } = useQuery({
     queryKey: ['allSuppliersForImpersonation'],
-    queryFn: () => base44.entities.Supplier.list('-created_date'),
+    queryFn: () => archiflow.entities.Supplier.list('-created_date'),
     enabled: canImpersonate
   });
 
   // Fetch documents related to suppliers
   const { data: allDocuments = [] } = useQuery({
     queryKey: ['supplierDocuments'],
-    queryFn: () => base44.entities.Document.list('-created_date', 100),
+    queryFn: () => archiflow.entities.Document.list('-created_date', 100),
   });
 
   // Fetch messages
   const { data: allMessages = [] } = useQuery({
     queryKey: ['messages'],
-    queryFn: () => base44.entities.Message.list('-created_date', 100),
+    queryFn: () => archiflow.entities.Message.list('-created_date', 100),
   });
 
   // Multi-tenant filtering

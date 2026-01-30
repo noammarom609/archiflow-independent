@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCurrentUser } from '@/utils/authHelpers';
 import ProposalTemplatesPage from './ProposalTemplates';
@@ -1040,18 +1040,18 @@ export default function DesignLibrary() {
   // Get current user to check role (with bypass support)
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => getCurrentUser(base44),
+    queryFn: () => getCurrentUser(archiflow),
   });
 
   // Fetch design assets from DB
   // Multi-tenant logic: We want global assets (furniture/refs) AND private assets (my uploads)
-  // Since Base44 SDK 'list' typically returns everything readable, we will filter in client for now
+  // Since list typically returns everything readable, we will filter in client for now
   // unless we use specific filters.
   const { data: dbAssets = [], isLoading } = useQuery({
     queryKey: ['designAssets', user?.email],
     queryFn: async () => {
       // Fetch all available assets
-      const allAssets = await base44.entities.DesignAsset.list('-created_date', 500);
+      const allAssets = await archiflow.entities.DesignAsset.list('-created_date', 500);
       
       // Filter logic:
       // 1. If I am super_admin, show everything.
@@ -1070,7 +1070,7 @@ export default function DesignLibrary() {
   const { data: proposalTemplates = [] } = useQuery({
     queryKey: ['proposalTemplatesCount', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.ProposalTemplate.list('-created_date');
+      const all = await archiflow.entities.ProposalTemplate.list('-created_date');
       
       if (user?.app_role === 'super_admin') return all;
       
@@ -1084,7 +1084,7 @@ export default function DesignLibrary() {
   const { data: dbMoodboards = [] } = useQuery({
     queryKey: ['moodboards', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.Moodboard.list('-updated_date');
+      const all = await archiflow.entities.Moodboard.list('-updated_date');
       
       if (user?.app_role === 'super_admin') return all;
       return all.filter(mb => mb.created_by === user?.email);
@@ -1096,7 +1096,7 @@ export default function DesignLibrary() {
   const { data: contentItems = [] } = useQuery({
     queryKey: ['contentItems', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.ContentItem.list('-created_date');
+      const all = await archiflow.entities.ContentItem.list('-created_date');
       if (user?.app_role === 'super_admin') return all;
       return all.filter(item => item.created_by === user?.email);
     },
@@ -1153,14 +1153,14 @@ export default function DesignLibrary() {
   };
 
   const deleteAssetMutation = useMutation({
-    mutationFn: (id) => base44.entities.DesignAsset.delete(id),
+    mutationFn: (id) => archiflow.entities.DesignAsset.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['designAssets'] });
     },
   });
 
   const deleteMoodboardMutation = useMutation({
-    mutationFn: (id) => base44.entities.Moodboard.delete(id),
+    mutationFn: (id) => archiflow.entities.Moodboard.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['moodboards'] });
     },

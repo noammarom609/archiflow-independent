@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import { showSuccess } from '@/components/utils/notifications';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import MoodboardPreview from '@/components/library/moodboard/MoodboardPreview';
 
@@ -116,7 +116,7 @@ export default function ConceptStage({ project, onUpdate }) {
 
   const { data: moodboards = [] } = useQuery({
       queryKey: ['moodboards'],
-      queryFn: () => base44.entities.Moodboard.list('-created_date', 50),
+      queryFn: () => archiflow.entities.Moodboard.list('-created_date', 50),
       staleTime: 5 * 60 * 1000, // 5 minutes - prevent excessive refetching
       refetchOnWindowFocus: false,
   });
@@ -137,7 +137,7 @@ export default function ConceptStage({ project, onUpdate }) {
       // 2. Link Moodboard to Project if not already linked
       if (moodboard.project_id !== project.id) {
           try {
-              await base44.entities.Moodboard.update(moodboard.id, { 
+              await archiflow.entities.Moodboard.update(moodboard.id, { 
                   project_id: project.id,
                   project_name: project.name
               });

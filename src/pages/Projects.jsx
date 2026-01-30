@@ -59,7 +59,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Calendar, MapPin, Plus, Loader2, Trash2, DollarSign, ChevronDown, ChevronUp, Shield, Menu } from 'lucide-react';
 import ProjectPermissionsSettings from '../components/projects/settings/ProjectPermissionsSettings';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { ProjectDataProvider } from '../components/projects/ProjectDataContext';
@@ -234,7 +234,7 @@ export default function Projects() {
   // Fetch projects
   const { data: rawProjects = [], isLoading } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list('-created_date'),
+    queryFn: () => archiflow.entities.Project.list('-created_date'),
   });
 
   // Multi-tenant filtering: Show only projects belonging to current architect (or all for super_admin)
@@ -247,7 +247,7 @@ export default function Projects() {
 
   // Create project mutation
   const createProjectMutation = useMutation({
-    mutationFn: (data) => base44.entities.Project.create(data),
+    mutationFn: (data) => archiflow.entities.Project.create(data),
     onSuccess: (createdProject, variables) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       showSuccess('פרויקט נוצר בהצלחה!');
@@ -268,7 +268,7 @@ export default function Projects() {
 
   // Update project mutation
   const updateProjectMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Project.update(id, data),
+    mutationFn: ({ id, data }) => archiflow.entities.Project.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
     },
@@ -279,7 +279,7 @@ export default function Projects() {
 
   // Delete project mutation
   const deleteProjectMutation = useMutation({
-    mutationFn: (id) => base44.entities.Project.delete(id),
+    mutationFn: (id) => archiflow.entities.Project.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       showSuccess('הפרויקט נמחק בהצלחה');

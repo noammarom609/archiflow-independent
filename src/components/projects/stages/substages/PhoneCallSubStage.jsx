@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Phone, 
@@ -111,7 +111,7 @@ export default function PhoneCallSubStage({ project, onComplete, onContinue, onU
       // Check if project has a recording ID
       if (project?.first_call_recording_id) {
         try {
-          const recordings = await base44.entities.Recording.filter({ 
+          const recordings = await archiflow.entities.Recording.filter({ 
             id: project.first_call_recording_id 
           });
           if (recordings.length > 0) {
@@ -364,7 +364,7 @@ export default function PhoneCallSubStage({ project, onComplete, onContinue, onU
           message: `מעלה חלק ${i + 1} מתוך ${totalChunks}...`
         });
         
-        const { file_url } = await base44.integrations.Core.UploadFile({ file: chunk });
+        const { file_url } = await archiflow.integrations.Core.UploadFile({ file: chunk });
         uploadedUrls.push(file_url);
         
         setProgressInfo({
@@ -390,7 +390,7 @@ export default function PhoneCallSubStage({ project, onComplete, onContinue, onU
           message: `מתמלל חלק ${i + 1} מתוך ${uploadedUrls.length}...`
         });
         
-        const response = await base44.functions.invoke('transcribeLargeAudio', { audio_url: url });
+        const response = await archiflow.functions.invoke('transcribeLargeAudio', { audio_url: url });
         if (response.data?.transcription) {
           fullTranscription += response.data.transcription + ' ';
         }
@@ -434,7 +434,7 @@ export default function PhoneCallSubStage({ project, onComplete, onContinue, onU
       // Load previous learnings for context
       let learningsContext = '';
       try {
-        const learnings = await base44.entities.AILearning.filter({ is_active: true, category: 'client_info' });
+        const learnings = await archiflow.entities.AILearning.filter({ is_active: true, category: 'client_info' });
         if (learnings.length > 0) {
           learningsContext = '\n\n## תיקונים קודמים ללמידה:\n' + 
             learnings.slice(0, 20).map(l => `- "${l.original_value}" → "${l.corrected_value}"`).join('\n');
@@ -449,7 +449,7 @@ export default function PhoneCallSubStage({ project, onComplete, onContinue, onU
       }));
       
       // Analyze with AI - TWO-STAGE DEEP ANALYSIS for accurate checklist mapping
-      const analysisResult = await base44.integrations.Core.InvokeLLM({
+      const analysisResult = await archiflow.integrations.Core.InvokeLLM({
         prompt: `אתה מומחה לניתוח שיחות מכירה ויועץ אסטרטגי עבור משרדי אדריכלות מובילים. 
 יש לך ניסיון עשיר בזיהוי דפוסים, הבנת פסיכולוגיה של לקוחות, וחילוץ תובנות עסקיות מתמלולי שיחות.
 ${learningsContext}
@@ -678,7 +678,7 @@ ${fullTranscription}
       const serverUrl = uploadedUrls && uploadedUrls.length > 0 ? uploadedUrls[0] : '';
       
       // Save recording to database
-      const recording = await base44.entities.Recording.create({
+      const recording = await archiflow.entities.Recording.create({
         title: `שיחת טלפון - ${project?.name || 'פרויקט חדש'}`,
         audio_url: serverUrl, // ✅ Use server URL, not blob URL!
         transcription: fullTranscription,
@@ -692,7 +692,7 @@ ${fullTranscription}
       const autoTags = getRecordingTags('phone_call', project, 'first_call');
 
       // Also save as project document with link to recording
-      await base44.entities.Document.create({
+      await archiflow.entities.Document.create({
         title: `הקלטת שיחת טלפון - ${new Date().toLocaleDateString('he-IL')}`,
         file_url: serverUrl, // ✅ Use server URL here too!
         file_type: 'other',
@@ -708,7 +708,7 @@ ${fullTranscription}
       // ✅ NEW: Save AI insights using the centralized manager with source tracking
       if (project?.id) {
         try {
-          const user = await base44.auth.me();
+          const user = await archiflow.auth.me();
           const insightsResult = await saveProjectAIInsights({
             projectId: project.id,
             analysisData: {
@@ -784,7 +784,7 @@ ${fullTranscription}
           
           // Update preferences
           if (analysisResult.style_preferences?.length || analysisResult.color_preferences?.length || analysisResult.material_preferences?.length) {
-            const existingClients = await base44.entities.Client.filter({ id: project.client_id });
+            const existingClients = await archiflow.entities.Client.filter({ id: project.client_id });
             if (existingClients.length > 0) {
               const prefs = existingClients[0].preferences || {};
               clientUpdate.preferences = {
@@ -801,7 +801,7 @@ ${fullTranscription}
           
           // Update ai_insights on client
           if (ci.communication_style || ci.socio_economic_level || analysisResult.red_flags?.length || analysisResult.leverage_points?.length) {
-            const existingClients = await base44.entities.Client.filter({ id: project.client_id });
+            const existingClients = await archiflow.entities.Client.filter({ id: project.client_id });
             if (existingClients.length > 0) {
               const insights = existingClients[0].ai_insights || {};
               clientUpdate.ai_insights = {
@@ -818,7 +818,7 @@ ${fullTranscription}
           }
           
           if (Object.keys(clientUpdate).length > 0) {
-            await base44.entities.Client.update(project.client_id, clientUpdate);
+            await archiflow.entities.Client.update(project.client_id, clientUpdate);
             console.log('✅ Client updated with phone call insights');
           }
         } catch (clientErr) {

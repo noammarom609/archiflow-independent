@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   FileCheck, 
@@ -52,7 +52,7 @@ export default function PermitsStage({ project, currentSubStage, onSubStageChang
   const progressPercent = ((currentSubStageIndex + 1) / PERMIT_SUBSTAGES.length) * 100;
 
   const updateProjectMutation = useMutation({
-    mutationFn: (data) => base44.entities.Project.update(project.id, data),
+    mutationFn: (data) => archiflow.entities.Project.update(project.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['project', project.id] });
       showSuccess('נשמר בהצלחה');

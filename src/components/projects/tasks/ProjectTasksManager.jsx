@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
@@ -30,13 +30,13 @@ export default function ProjectTasksManager({ project }) {
   // Fetch tasks for this project
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['projectTasks', project?.id],
-    queryFn: () => base44.entities.Task.filter({ project_id: project?.id }, '-created_date'),
+    queryFn: () => archiflow.entities.Task.filter({ project_id: project?.id }, '-created_date'),
     enabled: !!project?.id,
   });
 
   // Create task mutation
   const createTaskMutation = useMutation({
-    mutationFn: (data) => base44.entities.Task.create(data),
+    mutationFn: (data) => archiflow.entities.Task.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projectTasks', project?.id] });
       setShowTaskForm(false);
@@ -45,7 +45,7 @@ export default function ProjectTasksManager({ project }) {
 
   // Update task mutation
   const updateTaskMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Task.update(id, data),
+    mutationFn: ({ id, data }) => archiflow.entities.Task.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projectTasks', project?.id] });
       setShowTaskForm(false);
@@ -55,7 +55,7 @@ export default function ProjectTasksManager({ project }) {
 
   // Delete task mutation
   const deleteTaskMutation = useMutation({
-    mutationFn: (id) => base44.entities.Task.delete(id),
+    mutationFn: (id) => archiflow.entities.Task.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projectTasks', project?.id] });
     },

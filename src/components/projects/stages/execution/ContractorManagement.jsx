@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, Phone, Mail, Clock, AlertCircle, FileText, Plus } from 'lucide-react';
 import TaskFormDialog from '@/components/projects/tasks/TaskFormDialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { showSuccess, showError } from '@/components/utils/notifications';
 
 export default function ContractorManagement({ project, selectedQuote, contractorDetails, tasks = [] }) {
@@ -15,7 +15,7 @@ export default function ContractorManagement({ project, selectedQuote, contracto
   const [editingTask, setEditingTask] = useState(null);
 
   const createTaskMutation = useMutation({
-    mutationFn: (data) => base44.entities.Task.create(data),
+    mutationFn: (data) => archiflow.entities.Task.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projectTasks'] });
       showSuccess('משימה נוצרה בהצלחה');
@@ -26,7 +26,7 @@ export default function ContractorManagement({ project, selectedQuote, contracto
   });
 
   const updateTaskMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Task.update(id, data),
+    mutationFn: ({ id, data }) => archiflow.entities.Task.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projectTasks'] });
       showSuccess('משימה עודכנה בהצלחה');

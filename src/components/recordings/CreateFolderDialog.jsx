@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { FolderPlus } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { showSuccess, showError } from '../utils/notifications';
 
@@ -27,7 +27,7 @@ export default function CreateFolderDialog({ isOpen, onClose }) {
   const [color, setColor] = useState('indigo');
 
   const createFolderMutation = useMutation({
-    mutationFn: (data) => base44.entities.RecordingFolder.create(data),
+    mutationFn: (data) => archiflow.entities.RecordingFolder.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recording-folders'] });
       showSuccess('תיקייה נוצרה בהצלחה');

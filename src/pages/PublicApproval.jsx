@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import { 
   CheckCircle2, 
@@ -100,7 +100,7 @@ export default function PublicApproval() {
     queryKey: ['publicApprovalData', approvalId, type],
     queryFn: async () => {
       // Use invoke syntax for calling backend functions
-      const response = await base44.functions.invoke('getPublicProposal', {
+      const response = await archiflow.functions.invoke('getPublicProposal', {
         id: approvalId,
         type: type
       });
@@ -147,7 +147,7 @@ export default function PublicApproval() {
 
       // Submit approval via serverless function (secure - no service token exposed)
       // Use invoke syntax for calling backend functions
-      const response = await base44.functions.invoke('submitPublicApproval', {
+      const response = await archiflow.functions.invoke('submitPublicApproval', {
         projectId: project.id,
         type: type,
         clientName: clientName,

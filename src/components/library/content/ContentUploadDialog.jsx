@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Upload,
@@ -33,7 +33,7 @@ export default function ContentUploadDialog({ isOpen, onClose, contentType }) {
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.ContentItem.create(data),
+    mutationFn: (data) => archiflow.entities.ContentItem.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contentItems'] });
       showSuccess('תוכן נוסף בהצלחה!');
@@ -94,7 +94,7 @@ export default function ContentUploadDialog({ isOpen, onClose, contentType }) {
 
       // Upload file if exists
       if (file) {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        const { file_url } = await archiflow.integrations.Core.UploadFile({ file });
         fileUrl = file_url;
         
         // For images, use the same URL as thumbnail

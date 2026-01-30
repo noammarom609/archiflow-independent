@@ -26,7 +26,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Sparkles, Loader2, Wand2, RefreshCw, FileText, Lightbulb, Settings2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 
 // Context definitions for smart AI generation
 const contextDefinitions = {
@@ -151,7 +151,7 @@ function AIContentDialog({ isOpen, onClose, onGenerate, fieldType, sectionTitle 
       const systemPrompt = buildAdvancedPrompt(fieldType, tone, context, styleExample, useStyleExample);
       const userPrompt = prompt.trim() || getAutoPrompt(fieldType, context);
       
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await archiflow.integrations.Core.InvokeLLM({
         prompt: `${systemPrompt}\n\nההנחיות מהמשתמש: ${userPrompt}`,
         response_json_schema: {
           type: 'object',
@@ -387,7 +387,7 @@ export function AIImageGenerator({ onImageGenerated, currentImageUrl }) {
     setGeneratedUrl('');
     
     try {
-      const result = await base44.integrations.Core.GenerateImage({
+      const result = await archiflow.integrations.Core.GenerateImage({
         prompt: `Professional business image for a proposal document, high quality, clean design: ${prompt}`,
         existing_image_urls: currentImageUrl ? [currentImageUrl] : undefined
       });

@@ -368,7 +368,7 @@ gcloud run services describe transcoding-service \\
   --region $REGION \\
   --format 'value(status.url)'
 
-# 7. Update Base44 secrets with the URL and TOKEN
+# 7. Update Supabase secrets with the URL and TOKEN
 `;
 
 export default function TranscodingMicroserviceDoc() {

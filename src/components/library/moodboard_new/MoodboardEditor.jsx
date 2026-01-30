@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Save, ArrowRight, ImageIcon, Type, Palette, StickyNote, 
@@ -143,7 +143,7 @@ function MoodboardEditorContent({ moodboardId: propMoodboardId, onClose, initial
   
   const { data: moodboardData, isLoading: isLoadingBoard } = useQuery({
     queryKey: ['moodboard_v2', currentMoodboardId],
-    queryFn: () => base44.entities.Moodboard.get(currentMoodboardId),
+    queryFn: () => archiflow.entities.Moodboard.get(currentMoodboardId),
     enabled: !!currentMoodboardId,
     staleTime: 5 * 60 * 1000, // 5 minutes - prevent excessive refetching
     refetchOnWindowFocus: false,
@@ -152,14 +152,14 @@ function MoodboardEditorContent({ moodboardId: propMoodboardId, onClose, initial
 
   const { data: dbFurnitureAssets = [], isLoading: loadingFurniture } = useQuery({
     queryKey: ['assets', 'furniture'],
-    queryFn: () => base44.entities.DesignAsset.filter({ category: 'furniture' }, '-created_date', 50),
+    queryFn: () => archiflow.entities.DesignAsset.filter({ category: 'furniture' }, '-created_date', 50),
     staleTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,
   });
 
   const { data: dbReferenceAssets = [], isLoading: loadingReferences } = useQuery({
     queryKey: ['assets', 'references'],
-    queryFn: () => base44.entities.DesignAsset.filter({ category: 'references' }, '-created_date', 50),
+    queryFn: () => archiflow.entities.DesignAsset.filter({ category: 'references' }, '-created_date', 50),
     staleTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,
   });
@@ -645,9 +645,9 @@ function MoodboardEditorContent({ moodboardId: propMoodboardId, onClose, initial
   const saveMutation = useMutation({
     mutationFn: async (data) => {
       if (currentMoodboardId) {
-        return base44.entities.Moodboard.update(currentMoodboardId, data);
+        return archiflow.entities.Moodboard.update(currentMoodboardId, data);
       }
-      return base44.entities.Moodboard.create(data);
+      return archiflow.entities.Moodboard.create(data);
     },
     onSuccess: (data) => {
       setLastSaved(new Date());
@@ -1070,7 +1070,7 @@ function MoodboardEditorContent({ moodboardId: propMoodboardId, onClose, initial
     
     try {
       showSuccess('מעלה תמונה...');
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await archiflow.integrations.Core.UploadFile({ file });
       
       if (isBackground) {
         setSettings(prev => ({ ...prev, backgroundImage: file_url }));

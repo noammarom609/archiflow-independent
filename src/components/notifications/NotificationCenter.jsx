@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -97,19 +97,19 @@ export default function NotificationCenter({ isOpen, onClose }) {
 
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['notifications'],
-    queryFn: () => base44.entities.Notification.list('-created_date', 50),
+    queryFn: () => archiflow.entities.Notification.list('-created_date', 50),
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 
   const markAsReadMutation = useMutation({
-    mutationFn: (id) => base44.entities.Notification.update(id, { is_read: true }),
+    mutationFn: (id) => archiflow.entities.Notification.update(id, { is_read: true }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
   });
 
   const deleteNotificationMutation = useMutation({
-    mutationFn: (id) => base44.entities.Notification.delete(id),
+    mutationFn: (id) => archiflow.entities.Notification.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
@@ -119,7 +119,7 @@ export default function NotificationCenter({ isOpen, onClose }) {
     mutationFn: async () => {
       const unreadNotifications = notifications.filter(n => !n.is_read);
       await Promise.all(
-        unreadNotifications.map(n => base44.entities.Notification.update(n.id, { is_read: true }))
+        unreadNotifications.map(n => archiflow.entities.Notification.update(n.id, { is_read: true }))
       );
     },
     onSuccess: () => {

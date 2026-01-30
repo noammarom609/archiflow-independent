@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { format } from 'date-fns';
 
 import {
@@ -106,7 +106,7 @@ export default function TimeEntryDialog({
   // Fetch tasks for selected project
   const { data: tasks = [] } = useQuery({
     queryKey: ['projectTasks', formData.project_id],
-    queryFn: () => base44.entities.Task.filter({ project_id: formData.project_id }),
+    queryFn: () => archiflow.entities.Task.filter({ project_id: formData.project_id }),
     enabled: !!formData.project_id,
   });
 

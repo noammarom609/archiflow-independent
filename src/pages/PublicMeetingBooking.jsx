@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -49,7 +49,7 @@ export default function PublicMeetingBooking() {
   const { data: meetingSlot, isLoading, error } = useQuery({
     queryKey: ['meetingSlot', token],
     queryFn: async () => {
-      const slots = await base44.entities.MeetingSlot.filter({ link_token: token });
+      const slots = await archiflow.entities.MeetingSlot.filter({ link_token: token });
       return slots[0];
     },
     enabled: !!token
@@ -58,7 +58,7 @@ export default function PublicMeetingBooking() {
   // Update meeting slot mutation
   const bookMeetingMutation = useMutation({
     mutationFn: async (data) => {
-      return await base44.entities.MeetingSlot.update(meetingSlot.id, data);
+      return await archiflow.entities.MeetingSlot.update(meetingSlot.id, data);
     },
     onSuccess: async (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['meetingSlot', token] });
@@ -72,7 +72,7 @@ export default function PublicMeetingBooking() {
           const meetingTime = selectedTime?.start || '';
           
           // Create in-app notification
-          await base44.entities.Notification.create({
+          await archiflow.entities.Notification.create({
             user_id: meetingSlot.created_by,
             title: '📅 בקשה לפגישה חדשה',
             message: `${clientDetails.name} ביקש/ה לקבוע פגישה בתאריך ${meetingDate} בשעה ${meetingTime}`,
@@ -83,7 +83,7 @@ export default function PublicMeetingBooking() {
           });
           
           // Send push notification
-          base44.functions.invoke('sendPushNotification', {
+          archiflow.functions.invoke('sendPushNotification', {
             userId: meetingSlot.created_by,
             title: '📅 בקשה לפגישה חדשה',
             body: `${clientDetails.name} ביקש/ה לקבוע פגישה בתאריך ${meetingDate}`,
@@ -174,7 +174,7 @@ export default function PublicMeetingBooking() {
       try {
         const startDateTime = new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime.start}`);
         
-        const response = await base44.functions.invoke('createGoogleMeet', {
+        const response = await archiflow.functions.invoke('createGoogleMeet', {
           userId: meetingSlot.created_by,
           topic: meetingSlot.title || `פגישה עם ${clientDetails.name}`,
           start_time: startDateTime.toISOString(),

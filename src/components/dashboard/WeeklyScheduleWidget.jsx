@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,13 +35,13 @@ export default function WeeklyScheduleWidget() {
   // Fetch calendar events
   const { data: calendarEvents = [], isLoading: loadingCalendar } = useQuery({
     queryKey: ['calendarEvents', 'week'],
-    queryFn: () => base44.entities.CalendarEvent.list('-start_date'),
+    queryFn: () => archiflow.entities.CalendarEvent.list('-start_date'),
   });
 
   // Fetch projects for name lookup
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list(),
+    queryFn: () => archiflow.entities.Project.list(),
   });
 
   // Create project lookup map
@@ -52,7 +52,7 @@ export default function WeeklyScheduleWidget() {
 
   // Update event mutation
   const updateEventMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.CalendarEvent.update(id, data),
+    mutationFn: ({ id, data }) => archiflow.entities.CalendarEvent.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calendarEvents'] });
       setIsEditing(false);

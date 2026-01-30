@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { showSuccess, showError } from '@/components/utils/notifications';
 
 export default function AIToolsPanel({ onAddItem, selectedItems, onUpdateItem, onLoadBoard }) {
@@ -38,7 +38,7 @@ export default function AIToolsPanel({ onAddItem, selectedItems, onUpdateItem, o
 
     setIsGenerating(true);
     try {
-      const res = await base44.integrations.Core.GenerateImage({
+      const res = await archiflow.integrations.Core.GenerateImage({
         prompt: prompt,
         // You can add style modifiers here if needed
       });
@@ -54,7 +54,7 @@ export default function AIToolsPanel({ onAddItem, selectedItems, onUpdateItem, o
             const imageRes = await fetch(res.url);
             const blob = await imageRes.blob();
             const file = new File([blob], "ai-generated.png", { type: "image/png" });
-            const uploadRes = await base44.integrations.Core.UploadFile({ file });
+            const uploadRes = await archiflow.integrations.Core.UploadFile({ file });
             
             const finalUrl = uploadRes.file_url;
             setGeneratedImages(prev => [finalUrl, ...prev]);
@@ -78,7 +78,7 @@ export default function AIToolsPanel({ onAddItem, selectedItems, onUpdateItem, o
 
     setIsGenerating(true);
     try {
-        const { data } = await base44.functions.invoke('generateMoodboard', { prompt: boardTheme });
+        const { data } = await archiflow.functions.invoke('generateMoodboard', { prompt: boardTheme });
         
         if (data && data.items) {
             if (onLoadBoard) {
@@ -109,7 +109,7 @@ export default function AIToolsPanel({ onAddItem, selectedItems, onUpdateItem, o
         userPrompt = `Generate a ${textAction} for an interior design moodboard in Hebrew.`;
       }
 
-      const res = await base44.integrations.Core.InvokeLLM({
+      const res = await archiflow.integrations.Core.InvokeLLM({
         prompt: userPrompt,
         add_context_from_internet: false
       });

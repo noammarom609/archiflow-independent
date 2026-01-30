@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { History, Play, CheckCircle2, Clock, Loader2, FileText, Calendar, Trash2, Eye, Search, FolderPlus, Folder, FolderOpen, Share2, Edit2, X } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -32,16 +32,16 @@ export default function RecordingsList() {
 
   const { data: recordings = [], isLoading } = useQuery({
     queryKey: ['recordings'],
-    queryFn: () => base44.entities.Recording.list('-created_date', 50),
+    queryFn: () => archiflow.entities.Recording.list('-created_date', 50),
   });
 
   const { data: folders = [] } = useQuery({
     queryKey: ['recording-folders'],
-    queryFn: () => base44.entities.RecordingFolder.list('name'),
+    queryFn: () => archiflow.entities.RecordingFolder.list('name'),
   });
 
   const deleteRecordingMutation = useMutation({
-    mutationFn: (id) => base44.entities.Recording.delete(id),
+    mutationFn: (id) => archiflow.entities.Recording.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recordings'] });
       showSuccess('הקלטה נמחקה בהצלחה');
@@ -51,7 +51,7 @@ export default function RecordingsList() {
   });
 
   const updateRecordingMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Recording.update(id, data),
+    mutationFn: ({ id, data }) => archiflow.entities.Recording.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recordings'] });
       showSuccess('שם ההקלטה עודכן בהצלחה');
@@ -62,7 +62,7 @@ export default function RecordingsList() {
 
   const moveToFolderMutation = useMutation({
     mutationFn: ({ recordingId, folderId }) => 
-      base44.entities.Recording.update(recordingId, { folder_id: folderId }),
+      archiflow.entities.Recording.update(recordingId, { folder_id: folderId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recordings'] });
       showSuccess('ההקלטה הועברה בהצלחה');

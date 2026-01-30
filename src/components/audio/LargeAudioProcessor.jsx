@@ -5,7 +5,7 @@ import { Loader2, CheckCircle2, AlertCircle, Upload, Scissors, FileAudio, X } fr
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 
 // Target chunk size ~10MB to stay well under 25MB Whisper limit and upload limits
 const TARGET_CHUNK_SIZE_MB = 10;
@@ -155,13 +155,13 @@ export default function LargeAudioProcessor({
     addLog(`Uploading chunk ${index + 1}/${total} (${chunk.sizeMB.toFixed(1)}MB)...`);
     
     // Upload
-    const uploadResult = await base44.integrations.Core.UploadFile({ file: chunk.file });
+    const uploadResult = await archiflow.integrations.Core.UploadFile({ file: chunk.file });
     const fileUrl = uploadResult.file_url;
     addLog(`Chunk ${index + 1} uploaded`);
 
     // Transcribe
     addLog(`Transcribing chunk ${index + 1}...`);
-    const transcribeResult = await base44.functions.invoke('transcribeLargeAudio', { 
+    const transcribeResult = await archiflow.functions.invoke('transcribeLargeAudio', { 
       audio_url: fileUrl 
     });
 

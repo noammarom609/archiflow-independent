@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Sparkles, FileText, Loader2, Download, RefreshCw } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { showSuccess, showError } from '@/components/utils/notifications';
 import { generatePDFFromElement } from '@/components/utils/pdfGenerator';
 
@@ -39,7 +39,7 @@ export const generatePhaseSummary = async (project, stageId, tasks = []) => {
       התשובה צריכה להיות בעברית, מקצועית ותמציתית.
     `;
 
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await archiflow.integrations.Core.InvokeLLM({
       prompt,
       response_json_schema: {
         type: 'object',
@@ -69,7 +69,7 @@ export function ProjectReportDialog({ isOpen, onClose, project }) {
     setIsGenerating(true);
     try {
       // 1. Fetch relevant data
-      const tasks = await base44.entities.Task.filter({ project_id: project.id });
+      const tasks = await archiflow.entities.Task.filter({ project_id: project.id });
       // We assume financials come from project or invoices, let's keep it simple for now
       
       const prompt = `
@@ -96,7 +96,7 @@ export function ProjectReportDialog({ isOpen, onClose, project }) {
         הטקסט צריך להיות בעברית.
       `;
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await archiflow.integrations.Core.InvokeLLM({
         prompt,
         response_json_schema: {
           type: 'object',

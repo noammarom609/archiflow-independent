@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Save,
@@ -64,7 +64,7 @@ export default function ContentEditorDialog({ item, onClose }) {
   const queryClient = useQueryClient();
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.ContentItem.update(item.id, data),
+    mutationFn: (data) => archiflow.entities.ContentItem.update(item.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contentItems'] });
       showSuccess('התוכן עודכן בהצלחה');

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,7 +15,7 @@ export default function AssignTaskDialog({ isOpen, onClose, task }) {
   // Fetch team members
   const { data: teamMembers = [] } = useQuery({
     queryKey: ['teamMembers'],
-    queryFn: () => base44.entities.TeamMember.list('-created_date'),
+    queryFn: () => archiflow.entities.TeamMember.list('-created_date'),
     enabled: isOpen,
   });
 
@@ -25,7 +25,7 @@ export default function AssignTaskDialog({ isOpen, onClose, task }) {
   );
 
   const updateTaskMutation = useMutation({
-    mutationFn: ({ taskId, data }) => base44.entities.Task.update(taskId, data),
+    mutationFn: ({ taskId, data }) => archiflow.entities.Task.update(taskId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       onClose();

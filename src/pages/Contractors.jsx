@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,13 +47,13 @@ export default function Contractors() {
   // Fetch contractors
   const { data: contractors = [], isLoading: loadingContractors } = useQuery({
     queryKey: ['contractors'],
-    queryFn: () => base44.entities.Contractor.list('-created_date'),
+    queryFn: () => archiflow.entities.Contractor.list('-created_date'),
   });
 
   // Fetch all tasks for stats
   const { data: allTasks = [] } = useQuery({
     queryKey: ['allTasks'],
-    queryFn: () => base44.entities.Task.list(),
+    queryFn: () => archiflow.entities.Task.list(),
   });
 
   // Calculate stats
@@ -69,7 +69,7 @@ export default function Contractors() {
     queryKey: ['tasks', selectedContractorId],
     queryFn: () => 
       selectedContractorId 
-        ? base44.entities.Task.filter({ contractor_id: selectedContractorId }, '-created_date')
+        ? archiflow.entities.Task.filter({ contractor_id: selectedContractorId }, '-created_date')
         : Promise.resolve([]),
     enabled: !!selectedContractorId,
   });
@@ -79,13 +79,13 @@ export default function Contractors() {
     queryKey: ['documents', selectedContractorId],
     queryFn: () => 
       selectedContractorId
-        ? base44.entities.Document.filter({ contractor_id: selectedContractorId }, '-created_date')
+        ? archiflow.entities.Document.filter({ contractor_id: selectedContractorId }, '-created_date')
         : Promise.resolve([]),
     enabled: !!selectedContractorId,
   });
 
   const updateTaskMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Task.update(id, data),
+    mutationFn: ({ id, data }) => archiflow.entities.Task.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },

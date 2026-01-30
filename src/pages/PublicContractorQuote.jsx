@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { 
   FileText,
@@ -66,7 +66,7 @@ export default function PublicContractorQuote() {
     queryKey: ['publicQuoteRequest', token],
     queryFn: async () => {
       if (!token) return null;
-      const quotes = await base44.asServiceRole.entities.ContractorQuote.filter({ token });
+      const quotes = await archiflow.asServiceRole.entities.ContractorQuote.filter({ token });
       return quotes[0];
     },
     enabled: !!token
@@ -81,7 +81,7 @@ export default function PublicContractorQuote() {
     queryFn: async () => {
       if (!projectId) return null;
       try {
-        const projects = await base44.asServiceRole.entities.Project.filter({ id: projectId });
+        const projects = await archiflow.asServiceRole.entities.Project.filter({ id: projectId });
         return projects[0];
       } catch (error) {
         console.error('Error fetching project:', error);
@@ -98,7 +98,7 @@ export default function PublicContractorQuote() {
     queryFn: async () => {
       if (!contractorId) return null;
       try {
-        const contractors = await base44.asServiceRole.entities.Contractor.filter({ id: contractorId });
+        const contractors = await archiflow.asServiceRole.entities.Contractor.filter({ id: contractorId });
         return contractors[0];
       } catch (error) {
         console.error('Error fetching contractor:', error);
@@ -114,7 +114,7 @@ export default function PublicContractorQuote() {
     queryKey: ['projectTechnicalDocs', projectId],
     queryFn: async () => {
       if (!projectId) return [];
-      return base44.asServiceRole.entities.Document.filter({ 
+      return archiflow.asServiceRole.entities.Document.filter({ 
         project_id: String(projectId),
         category: 'specification'
       });
@@ -158,9 +158,9 @@ export default function PublicContractorQuote() {
       // If not (legacy link), create a new one.
       
       if (quoteRequest) {
-        await base44.asServiceRole.entities.ContractorQuote.update(quoteRequest.id, quotePayload);
+        await archiflow.asServiceRole.entities.ContractorQuote.update(quoteRequest.id, quotePayload);
       } else {
-        await base44.asServiceRole.entities.ContractorQuote.create({
+        await archiflow.asServiceRole.entities.ContractorQuote.create({
           project_id: String(projectId),
           project_name: project?.name,
           contractor_id: String(contractorId),
@@ -178,7 +178,7 @@ export default function PublicContractorQuote() {
         const architectId = project.created_by || project.architect_id;
         try {
           // Create in-app notification
-          await base44.asServiceRole.entities.Notification.create({
+          await archiflow.asServiceRole.entities.Notification.create({
             user_id: architectId,
             title: '📩 הצעת קבלן התקבלה',
             message: `${contractor?.name || 'קבלן'} שלח הצעה בסך ₪${parseFloat(quoteData.quote_amount).toLocaleString()} לפרויקט "${project?.name}"`,
@@ -189,7 +189,7 @@ export default function PublicContractorQuote() {
           });
           
           // Send push notification
-          await base44.functions.invoke('sendPushNotification', {
+          await archiflow.functions.invoke('sendPushNotification', {
             userId: architectId,
             title: '📩 הצעת קבלן התקבלה',
             body: `${contractor?.name || 'קבלן'} שלח הצעה לפרויקט "${project?.name}"`,

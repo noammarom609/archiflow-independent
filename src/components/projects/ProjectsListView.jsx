@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import { ScrollReveal, FadeIn } from '@/components/animations';
 import {
@@ -55,7 +55,7 @@ export default function ProjectsListView({ projects, onSelectProject, isLoading 
   // Fetch proposals
   const { data: allProposals = [] } = useQuery({
     queryKey: ['allProposals'],
-    queryFn: () => base44.entities.Proposal.list('-created_date'),
+    queryFn: () => archiflow.entities.Proposal.list('-created_date'),
   });
 
   // Filter projects

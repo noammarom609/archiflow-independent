@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { 
   Users, 
   Mic, 
@@ -114,7 +114,7 @@ export default function FirstMeetingSubStage({ project, onComplete, onContinue, 
       if (analysis || transcription) return;
       
       try {
-        const recordings = await base44.entities.Recording.filter({ 
+        const recordings = await archiflow.entities.Recording.filter({ 
           id: project.first_meeting_recording_id 
         });
         if (recordings.length > 0) {
@@ -432,7 +432,7 @@ export default function FirstMeetingSubStage({ project, onComplete, onContinue, 
           message: `מעלה חלק ${i + 1} מתוך ${totalChunks}...`
         });
         
-        const { file_url } = await base44.integrations.Core.UploadFile({ file: chunk });
+        const { file_url } = await archiflow.integrations.Core.UploadFile({ file: chunk });
         uploadedUrls.push(file_url);
         
         setProgressInfo({
@@ -457,7 +457,7 @@ export default function FirstMeetingSubStage({ project, onComplete, onContinue, 
           message: `מתמלל חלק ${i + 1} מתוך ${uploadedUrls.length}...`
         });
         
-        const response = await base44.functions.invoke('transcribeLargeAudio', { audio_url: url });
+        const response = await archiflow.functions.invoke('transcribeLargeAudio', { audio_url: url });
         if (response.data?.transcription) {
           fullTranscription += response.data.transcription + ' ';
         }
@@ -506,7 +506,7 @@ export default function FirstMeetingSubStage({ project, onComplete, onContinue, 
       // Load previous learnings for context
       let learningsContext = '';
       try {
-        const learnings = await base44.entities.AILearning.filter({ is_active: true });
+        const learnings = await archiflow.entities.AILearning.filter({ is_active: true });
         if (learnings.length > 0) {
           learningsContext = '\n\n## תיקונים קודמים ללמידה:\n' + 
             learnings.slice(0, 20).map(l => `- "${l.original_value}" → "${l.corrected_value}" (${l.category})`).join('\n');
@@ -520,7 +520,7 @@ export default function FirstMeetingSubStage({ project, onComplete, onContinue, 
         question: item.item
       }));
 
-      const analysisResult = await base44.integrations.Core.InvokeLLM({
+      const analysisResult = await archiflow.integrations.Core.InvokeLLM({
         prompt: `אתה מומחה לניתוח פגישות ראשונות עם לקוחות אדריכלות ויועץ אסטרטגי למשרדי אדריכלות מובילים. 
 יש לך ניסיון עשיר בזיהוי צרכים, הבנת פסיכולוגיה של לקוחות, וחילוץ תובנות מתמלולי פגישות.
 ${learningsContext}
@@ -779,7 +779,7 @@ ${checklistItemsForAI.map(item => `${item.index + 1}. [ID: ${item.id}] ${item.qu
       // audioUrl parameter now contains the server URL from upload
       const serverUrl = audioUrl || '';
       
-      const recording = await base44.entities.Recording.create({
+      const recording = await archiflow.entities.Recording.create({
         title: `פגישה ראשונה - ${project?.name || 'פרויקט חדש'}`,
         audio_url: serverUrl, // ✅ Use server URL, not blob!
         transcription: fullTranscription,
@@ -793,7 +793,7 @@ ${checklistItemsForAI.map(item => `${item.index + 1}. [ID: ${item.id}] ${item.qu
       const autoTags = getRecordingTags('meeting', project, 'first_call');
 
       // Also save as project document with appropriate category and link to recording
-      await base44.entities.Document.create({
+      await archiflow.entities.Document.create({
         title: `הקלטת פגישה ראשונה - ${new Date().toLocaleDateString('he-IL')}`,
         file_url: serverUrl, // ✅ Use server URL here too!
         file_type: 'other',
@@ -809,7 +809,7 @@ ${checklistItemsForAI.map(item => `${item.index + 1}. [ID: ${item.id}] ${item.qu
       // ✅ NEW: Save AI insights using the centralized manager with source tracking
       if (project?.id) {
         try {
-          const user = await base44.auth.me();
+          const user = await archiflow.auth.me();
           const insightsResult = await saveProjectAIInsights({
             projectId: project.id,
             analysisData: {
@@ -886,7 +886,7 @@ ${checklistItemsForAI.map(item => `${item.index + 1}. [ID: ${item.id}] ${item.qu
           
           // Update preferences
           if (analysisResult.style_preferences?.length || analysisResult.color_preferences?.length) {
-            const existingClient = await base44.entities.Client.filter({ id: project.client_id });
+            const existingClient = await archiflow.entities.Client.filter({ id: project.client_id });
             if (existingClient.length > 0) {
               const prefs = existingClient[0].preferences || {};
               clientUpdate.preferences = {
@@ -901,7 +901,7 @@ ${checklistItemsForAI.map(item => `${item.index + 1}. [ID: ${item.id}] ${item.qu
           }
           
           if (Object.keys(clientUpdate).length > 0) {
-            await base44.entities.Client.update(project.client_id, clientUpdate);
+            await archiflow.entities.Client.update(project.client_id, clientUpdate);
             console.log('✅ Client updated with meeting insights');
           }
         } catch (clientErr) {

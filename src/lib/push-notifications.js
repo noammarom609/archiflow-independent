@@ -153,10 +153,10 @@ export async function unsubscribeFromPush(userId) {
 }
 
 /**
- * Save subscription to Base44 PushSubscription entity
+ * Save subscription to PushSubscription entity
  */
 async function saveSubscriptionToServer(subscription, userId) {
-  const { base44 } = await import('@/api/base44Client');
+  const { archiflow } = await import('@/api/archiflow');
   
   const subscriptionJson = subscription.toJSON();
   const subscriptionData = {
@@ -170,22 +170,22 @@ async function saveSubscriptionToServer(subscription, userId) {
 
   try {
     // Check if subscription already exists
-    const existing = await base44.entities.PushSubscription.filter({
+    const existing = await archiflow.entities.PushSubscription.filter({
       endpoint: subscription.endpoint
     });
 
     if (existing && existing.length > 0) {
       // Update existing subscription
-      await base44.entities.PushSubscription.update(existing[0].id, {
+      await archiflow.entities.PushSubscription.update(existing[0].id, {
         user_id: userId,
         is_active: true,
         last_used: new Date().toISOString()
       });
-      console.log('[Push] Subscription updated in Base44');
+      console.log('[Push] Subscription updated');
     } else {
       // Create new subscription
-      await base44.entities.PushSubscription.create(subscriptionData);
-      console.log('[Push] Subscription saved to Base44');
+      await archiflow.entities.PushSubscription.create(subscriptionData);
+      console.log('[Push] Subscription saved');
     }
 
     // Also save to localStorage as backup
@@ -193,7 +193,7 @@ async function saveSubscriptionToServer(subscription, userId) {
     
     return true;
   } catch (error) {
-    console.error('[Push] Error saving subscription to Base44:', error);
+    console.error('[Push] Error saving subscription:', error);
     // Still save locally even if server fails
     localStorage.setItem('pushSubscription', JSON.stringify(subscriptionData));
     return false;
@@ -201,28 +201,28 @@ async function saveSubscriptionToServer(subscription, userId) {
 }
 
 /**
- * Remove subscription from Base44
+ * Remove subscription from database
  */
 async function removeSubscriptionFromServer(endpoint, userId) {
   try {
-    const { base44 } = await import('@/api/base44Client');
+    const { archiflow } = await import('@/api/archiflow');
     
     // Find and deactivate the subscription
-    const existing = await base44.entities.PushSubscription.filter({
+    const existing = await archiflow.entities.PushSubscription.filter({
       endpoint: endpoint
     });
 
     if (existing && existing.length > 0) {
       // Mark as inactive instead of deleting (for audit trail)
-      await base44.entities.PushSubscription.update(existing[0].id, {
+      await archiflow.entities.PushSubscription.update(existing[0].id, {
         is_active: false
       });
-      console.log('[Push] Subscription deactivated in Base44');
+      console.log('[Push] Subscription deactivated');
     }
     
     localStorage.removeItem('pushSubscription');
   } catch (error) {
-    console.error('[Push] Error removing subscription from Base44:', error);
+    console.error('[Push] Error removing subscription:', error);
   }
 }
 

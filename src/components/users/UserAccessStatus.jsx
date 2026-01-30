@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { getCurrentUser } from '@/utils/authHelpers';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +17,7 @@ export default function UserAccessStatus({ email, name, type, entityId, userStat
   // Get current user to check permissions
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => getCurrentUser(base44),
+    queryFn: () => getCurrentUser(archiflow),
   });
 
   // Check if user exists using backend function (bypasses User entity permissions)
@@ -26,7 +26,7 @@ export default function UserAccessStatus({ email, name, type, entityId, userStat
     queryFn: async () => {
       if (!email) return null;
       try {
-        const response = await base44.functions.invoke('checkUserByEmail', { email });
+        const response = await archiflow.functions.invoke('checkUserByEmail', { email });
         if (response.data?.exists) {
           return response.data.user;
         }
@@ -42,17 +42,17 @@ export default function UserAccessStatus({ email, name, type, entityId, userStat
 
   const inviteMutation = useMutation({
     mutationFn: async ({ email, role, app_role, full_name }) => {
-      // Use base44.users.inviteUser directly - works for all authenticated users
+      // Use archiflow.users.inviteUser directly - works for all authenticated users
       const platformRole = ['admin', 'super_admin'].includes(app_role) ? 'admin' : 'user';
-      await base44.users.inviteUser(email, platformRole);
+      await archiflow.users.inviteUser(email, platformRole);
       
       // Update entity user_status to 'invited'
       if (entityId && type) {
         const entityMap = {
-          consultant: base44.entities.Consultant,
-          contractor: base44.entities.Contractor,
-          client: base44.entities.Client,
-          team_member: base44.entities.TeamMember,
+          consultant: archiflow.entities.Consultant,
+          contractor: archiflow.entities.Contractor,
+          client: archiflow.entities.Client,
+          team_member: archiflow.entities.TeamMember,
         };
         const entity = entityMap[type];
         if (entity) {

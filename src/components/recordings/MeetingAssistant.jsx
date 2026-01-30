@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { showSuccess, showError } from '../utils/notifications';
 import {
@@ -45,11 +45,11 @@ export default function MeetingAssistant({ event, onClose }) {
 
   const { data: attendeesList = [] } = useQuery({
     queryKey: ['teamMembers'],
-    queryFn: () => base44.entities.TeamMember.list(),
+    queryFn: () => archiflow.entities.TeamMember.list(),
   });
 
   const createTaskMutation = useMutation({
-    mutationFn: (data) => base44.entities.Task.create(data),
+    mutationFn: (data) => archiflow.entities.Task.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       showSuccess('משימה נוצרה בהצלחה');
@@ -57,7 +57,7 @@ export default function MeetingAssistant({ event, onClose }) {
   });
 
   const updateEventMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.CalendarEvent.update(id, data),
+    mutationFn: ({ id, data }) => archiflow.entities.CalendarEvent.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calendarEvents'] });
       showSuccess('הערות follow-up נשמרו');
@@ -80,7 +80,7 @@ export default function MeetingAssistant({ event, onClose }) {
 
 פורמט JSON:`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await archiflow.integrations.Core.InvokeLLM({
         prompt,
         response_json_schema: {
           type: 'object',

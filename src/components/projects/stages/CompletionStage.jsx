@@ -30,7 +30,7 @@ import {
 import { sendWhatsApp } from '../../utils/integrations';
 import { showSuccess, showError } from '../../utils/notifications';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 
 export default function CompletionStage({ project, onUpdate, onSubStageChange }) {
   const queryClient = useQueryClient();
@@ -42,7 +42,7 @@ export default function CompletionStage({ project, onUpdate, onSubStageChange })
   const { data: proposals = [] } = useQuery({
     queryKey: ['proposals', project?.id],
     queryFn: () => project?.id 
-      ? base44.entities.Proposal.filter({ project_id: project.id })
+      ? archiflow.entities.Proposal.filter({ project_id: project.id })
       : Promise.resolve([]),
     enabled: !!project?.id,
   });
@@ -51,7 +51,7 @@ export default function CompletionStage({ project, onUpdate, onSubStageChange })
   const { data: selectedQuote } = useQuery({
     queryKey: ['selectedQuote', project?.selected_quote_id],
     queryFn: () => project?.selected_quote_id 
-      ? base44.entities.ContractorQuote.filter({ id: project.selected_quote_id })
+      ? archiflow.entities.ContractorQuote.filter({ id: project.selected_quote_id })
       : Promise.resolve([]),
     enabled: !!project?.selected_quote_id,
     select: (data) => data?.[0],

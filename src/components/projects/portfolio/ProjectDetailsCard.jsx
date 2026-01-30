@@ -23,7 +23,7 @@ import {
   Image as ImageIcon,
   Upload
 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { showSuccess, showError } from '../../utils/notifications';
@@ -72,7 +72,7 @@ export default function ProjectDetailsCard({ project, onUpdate }) {
     const file = e.target.files?.[0];
     if (file) {
       try {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        const { file_url } = await archiflow.integrations.Core.UploadFile({ file });
         setFormData(prev => ({ ...prev, image: file_url }));
       } catch (err) {
         showError('שגיאה בהעלאת התמונה');

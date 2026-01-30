@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 
 export default function AudioConverter({ file, onConverted, onError, onProgress }) {
   const [converting, setConverting] = useState(false);
@@ -28,14 +28,14 @@ export default function AudioConverter({ file, onConverted, onError, onProgress 
       console.log('🔄 [CONVERT] Uploading file for conversion...');
 
       // Upload original file
-      const uploadResult = await base44.integrations.Core.UploadFile({ file });
+      const uploadResult = await archiflow.integrations.Core.UploadFile({ file });
       console.log('✅ [CONVERT] File uploaded:', uploadResult.file_url);
 
       setStatus('ממיר קובץ (1-2 דקות)...');
       onProgress?.(10);
 
       // Use CloudConvert via backend function
-      const response = await base44.functions.invoke('convertAudioToMP3', {
+      const response = await archiflow.functions.invoke('convertAudioToMP3', {
         audio_url: uploadResult.file_url,
         original_filename: file.name
       });

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,13 +28,13 @@ export default function ApprovalButtons({
       };
 
       if (itemType === 'task') {
-        await base44.entities.Task.update(item.id, updateData);
+        await archiflow.entities.Task.update(item.id, updateData);
       } else if (itemType === 'document') {
-        await base44.entities.Document.update(item.id, updateData);
+        await archiflow.entities.Document.update(item.id, updateData);
       }
 
       // Create notification
-      await base44.entities.Notification.create({
+      await archiflow.entities.Notification.create({
         title: approved ? 'אושר על ידי הלקוח' : 'נדחה על ידי הלקוח',
         message: `${currentUser.name} ${approved ? 'אישר' : 'דחה'} את ${itemType === 'task' ? 'המשימה' : 'המסמך'}: ${item.title}`,
         type: itemType,

@@ -9,7 +9,7 @@
  * - SMART_MERGE: שדות שמתמזגים ללא כפילויות (חדרים, חומרים)
  */
 
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 
 // ============================================
 // קונפיגורציית סוגי שדות
@@ -318,7 +318,7 @@ async function saveHistorySnapshot(params) {
   const changesSummary = generateChangesSummary(changedFields, stats);
   
   // שמירה ב-ProjectAIHistory Entity
-  const historyRecord = await base44.entities.ProjectAIHistory.create({
+  const historyRecord = await archiflow.entities.ProjectAIHistory.create({
     project_id: projectId,
     project_name: projectName,
     timestamp: new Date().toISOString(),
@@ -410,7 +410,7 @@ export async function saveProjectAIInsights(params) {
   
   try {
     // 1. טעינת הפרויקט הנוכחי
-    const [project] = await base44.entities.Project.filter({ id: projectId });
+    const [project] = await archiflow.entities.Project.filter({ id: projectId });
     if (!project) {
       throw new Error(`Project not found: ${projectId}`);
     }
@@ -462,7 +462,7 @@ export async function saveProjectAIInsights(params) {
     const trimmedHistory = insightsHistory.slice(-20);
     
     // 7. עדכון הפרויקט
-    await base44.entities.Project.update(projectId, {
+    await archiflow.entities.Project.update(projectId, {
       ai_insights: mergedInsights,
       ai_insights_history: trimmedHistory,
       // עדכון גם את השדות הישנים לתאימות אחורה
@@ -470,7 +470,7 @@ export async function saveProjectAIInsights(params) {
     });
     
     // 8. טעינת הפרויקט המעודכן
-    const [updatedProject] = await base44.entities.Project.filter({ id: projectId });
+    const [updatedProject] = await archiflow.entities.Project.filter({ id: projectId });
     
     console.log(`[AIInsightsManager] Saved insights for project ${projectId}:`, {
       changedFields,
@@ -518,7 +518,7 @@ function convertToLegacyFormat(insights) {
  * קבלת היסטוריית שינויים מלאה לפרויקט
  */
 export async function getProjectInsightsHistory(projectId) {
-  const history = await base44.entities.ProjectAIHistory.filter(
+  const history = await archiflow.entities.ProjectAIHistory.filter(
     { project_id: projectId },
     '-timestamp',
     50
@@ -530,7 +530,7 @@ export async function getProjectInsightsHistory(projectId) {
  * שחזור snapshot קודם
  */
 export async function restoreInsightsSnapshot(projectId, snapshotId) {
-  const [snapshot] = await base44.entities.ProjectAIHistory.filter({ id: snapshotId });
+  const [snapshot] = await archiflow.entities.ProjectAIHistory.filter({ id: snapshotId });
   if (!snapshot || snapshot.project_id !== projectId) {
     throw new Error('Snapshot not found or does not belong to this project');
   }
@@ -544,7 +544,7 @@ export async function restoreInsightsSnapshot(projectId, snapshotId) {
   });
   
   // שחזור
-  await base44.entities.Project.update(projectId, {
+  await archiflow.entities.Project.update(projectId, {
     ai_insights: snapshot.previous_snapshot,
     ai_summary: convertToLegacyFormat(snapshot.previous_snapshot)
   });

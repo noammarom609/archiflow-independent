@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { showSuccess, showError } from '../utils/notifications';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 
 export default function AddJournalEntryDialog({ isOpen, onClose }) {
@@ -41,12 +41,12 @@ export default function AddJournalEntryDialog({ isOpen, onClose }) {
   // Fetch projects for dropdown
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list(),
+    queryFn: () => archiflow.entities.Project.list(),
     enabled: isOpen,
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.JournalEntry.create(data),
+    mutationFn: (data) => archiflow.entities.JournalEntry.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['journalEntries'] });
       showSuccess('רשומת יומן נוספה בהצלחה! ✓');
@@ -107,7 +107,7 @@ export default function AddJournalEntryDialog({ isOpen, onClose }) {
     const files = Array.from(e.target.files);
     for (const file of files) {
       try {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        const { file_url } = await archiflow.integrations.Core.UploadFile({ file });
         const attachment = {
           type: file.type.startsWith('image/') ? 'image' : 'document',
           url: file_url,

@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { User, Phone, Mail, MapPin, Loader2, Plus, X, Users, Heart, Ruler, Home, Accessibility } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -60,7 +60,7 @@ export default function NewClientModal({ isOpen, onClose }) {
   const [errors, setErrors] = useState({});
 
   const createClientMutation = useMutation({
-    mutationFn: (data) => base44.entities.Client.create(data),
+    mutationFn: (data) => archiflow.entities.Client.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       showSuccess('לקוח נוצר בהצלחה!');

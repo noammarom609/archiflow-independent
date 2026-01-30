@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Upload, Loader2, FileText, Tag, Folder } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { showSuccess, showError } from '@/components/utils/notifications';
 import { Badge } from '@/components/ui/badge';
 import { useNotifications } from '@/hooks/use-notifications';
@@ -88,7 +88,7 @@ export default function DocumentUploadDialog({
     setIsUploading(true);
     try {
       // 1. Upload File
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await archiflow.integrations.Core.UploadFile({ file });
 
       // 2. Create Document Entity
       const docData = {
@@ -108,7 +108,7 @@ export default function DocumentUploadDialog({
         ...(formData.taskId !== 'none' && { related_task_id: formData.taskId })
       };
 
-      await base44.entities.Document.create(docData);
+      await archiflow.entities.Document.create(docData);
 
       // Send notification to client if they have a user account
       if (project?.client_id) {

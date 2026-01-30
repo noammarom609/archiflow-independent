@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,7 +30,7 @@ export default function CommentSection({ relatedId, relatedType, projectId, curr
   const { data: comments = [], isLoading } = useQuery({
     queryKey: ['comments', relatedId, relatedType],
     queryFn: () => 
-      base44.entities.Comment.filter({ 
+      archiflow.entities.Comment.filter({ 
         related_id: relatedId,
         related_type: relatedType,
         is_internal: false
@@ -38,7 +38,7 @@ export default function CommentSection({ relatedId, relatedType, projectId, curr
   });
 
   const addCommentMutation = useMutation({
-    mutationFn: (data) => base44.entities.Comment.create(data),
+    mutationFn: (data) => archiflow.entities.Comment.create(data),
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['comments'] });
       setNewComment('');
@@ -47,7 +47,7 @@ export default function CommentSection({ relatedId, relatedType, projectId, curr
       try {
         // Get project to find who to notify
         if (projectId) {
-          const projects = await base44.entities.Project.filter({ id: projectId });
+          const projects = await archiflow.entities.Project.filter({ id: projectId });
           const project = projects[0];
           
           if (project) {
@@ -66,7 +66,7 @@ export default function CommentSection({ relatedId, relatedType, projectId, curr
             
             // Create notifications for each recipient
             for (const userId of notifyIds) {
-              await base44.entities.Notification.create({
+              await archiflow.entities.Notification.create({
                 user_id: userId,
                 title: '💬 תגובה חדשה',
                 message: `${currentUser.name} הוסיף תגובה בפרויקט "${project.name}"`,
@@ -78,7 +78,7 @@ export default function CommentSection({ relatedId, relatedType, projectId, curr
               });
               
               // Send push notification
-              base44.functions.invoke('sendPushNotification', {
+              archiflow.functions.invoke('sendPushNotification', {
                 userId: userId,
                 title: '💬 תגובה חדשה',
                 body: `${currentUser.name}: ${newComment.substring(0, 50)}${newComment.length > 50 ? '...' : ''}`,

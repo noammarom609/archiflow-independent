@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,26 +47,26 @@ export default function ConsultantPortal() {
   // Fetch Consultants for dropdown
   const { data: allConsultants = [] } = useQuery({
     queryKey: ['allConsultantsForImpersonation'],
-    queryFn: () => base44.entities.Consultant.list('-created_date'),
+    queryFn: () => archiflow.entities.Consultant.list('-created_date'),
     enabled: canImpersonate
   });
 
   // Fetch consultant documents
   const { data: allDocuments = [] } = useQuery({
     queryKey: ['consultantDocuments'],
-    queryFn: () => base44.entities.ConsultantDocument.list('-created_date', 100),
+    queryFn: () => archiflow.entities.ConsultantDocument.list('-created_date', 100),
   });
 
   // Fetch consultant tasks
   const { data: allTasks = [] } = useQuery({
     queryKey: ['consultantTasks'],
-    queryFn: () => base44.entities.ConsultantTask.list('-updated_date', 100),
+    queryFn: () => archiflow.entities.ConsultantTask.list('-updated_date', 100),
   });
 
   // Fetch consultant messages
   const { data: allMessages = [] } = useQuery({
     queryKey: ['consultantMessages'],
-    queryFn: () => base44.entities.ConsultantMessage.list('-created_date', 100),
+    queryFn: () => archiflow.entities.ConsultantMessage.list('-created_date', 100),
   });
 
   // Fetch project consultants to show assigned projects
@@ -75,10 +75,10 @@ export default function ConsultantPortal() {
     queryFn: async () => {
       if (!user?.email) return [];
       // Find consultant record by email
-      const consultants = await base44.entities.Consultant.filter({ email: user.email });
+      const consultants = await archiflow.entities.Consultant.filter({ email: user.email });
       if (consultants.length === 0) return [];
       const consultantId = consultants[0].id;
-      return base44.entities.ProjectConsultant.filter({ consultant_id: consultantId }, '-created_date');
+      return archiflow.entities.ProjectConsultant.filter({ consultant_id: consultantId }, '-created_date');
     },
     enabled: !!user?.email,
   });
@@ -86,13 +86,13 @@ export default function ConsultantPortal() {
   // Fetch projects for names
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list(),
+    queryFn: () => archiflow.entities.Project.list(),
   });
 
   // Fetch signatures
   const { data: allSignatures = [] } = useQuery({
     queryKey: ['consultantDocumentSignatures'],
-    queryFn: () => base44.entities.DocumentSignature.list('-created_date', 200),
+    queryFn: () => archiflow.entities.DocumentSignature.list('-created_date', 200),
   });
 
   // Multi-tenant filtering

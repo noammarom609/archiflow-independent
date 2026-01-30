@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 
 /**
  * Add an event to client's timeline history
@@ -8,7 +8,7 @@ export async function addClientHistoryEvent(clientId, event) {
 
   try {
     // Get current client
-    const clients = await base44.entities.Client.filter({ id: clientId });
+    const clients = await archiflow.entities.Client.filter({ id: clientId });
     if (clients.length === 0) return;
 
     const client = clients[0];
@@ -21,7 +21,7 @@ export async function addClientHistoryEvent(clientId, event) {
     };
 
     // Update client with new timeline
-    await base44.entities.Client.update(clientId, {
+    await archiflow.entities.Client.update(clientId, {
       timeline: [...currentTimeline, newEvent],
       last_contact_date: new Date().toISOString().split('T')[0],
     });
@@ -40,7 +40,7 @@ export async function addRecordingToClientHistory(clientId, recording, project) 
   if (!clientId) return;
 
   try {
-    const clients = await base44.entities.Client.filter({ id: clientId });
+    const clients = await archiflow.entities.Client.filter({ id: clientId });
     if (clients.length === 0) return;
 
     const client = clients[0];
@@ -72,7 +72,7 @@ export async function addRecordingToClientHistory(clientId, recording, project) 
       data: { recording_id: recording?.id || '' },
     };
 
-    await base44.entities.Client.update(clientId, {
+    await archiflow.entities.Client.update(clientId, {
       recordings: [...currentRecordings, newRecording],
       timeline: [...currentTimeline, timelineEvent],
       last_contact_date: new Date().toISOString().split('T')[0],
@@ -92,7 +92,7 @@ export async function addMeetingToClientHistory(clientId, meetingData, project) 
   if (!clientId) return;
 
   try {
-    const clients = await base44.entities.Client.filter({ id: clientId });
+    const clients = await archiflow.entities.Client.filter({ id: clientId });
     if (clients.length === 0) return;
 
     const client = clients[0];
@@ -123,7 +123,7 @@ export async function addMeetingToClientHistory(clientId, meetingData, project) 
       data: { checklist_completed: meetingData?.checklist?.filter(c => c.checked)?.length || 0 },
     };
 
-    await base44.entities.Client.update(clientId, {
+    await archiflow.entities.Client.update(clientId, {
       meetings: [...currentMeetings, newMeeting],
       timeline: [...currentTimeline, timelineEvent],
       last_contact_date: new Date().toISOString().split('T')[0],
@@ -143,7 +143,7 @@ export async function addProposalToClientHistory(clientId, proposal, project) {
   if (!clientId) return;
 
   try {
-    const clients = await base44.entities.Client.filter({ id: clientId });
+    const clients = await archiflow.entities.Client.filter({ id: clientId });
     if (clients.length === 0) return;
 
     const client = clients[0];
@@ -174,7 +174,7 @@ export async function addProposalToClientHistory(clientId, proposal, project) {
       data: { proposal_id: proposal?.id || '', amount: proposal?.total_amount || 0 },
     };
 
-    await base44.entities.Client.update(clientId, {
+    await archiflow.entities.Client.update(clientId, {
       proposals: [...currentProposals, newProposal],
       timeline: [...currentTimeline, timelineEvent],
       last_contact_date: new Date().toISOString().split('T')[0],
@@ -194,7 +194,7 @@ export async function addSignatureToClientHistory(clientId, signatureData, proje
   if (!clientId) return;
 
   try {
-    const clients = await base44.entities.Client.filter({ id: clientId });
+    const clients = await archiflow.entities.Client.filter({ id: clientId });
     if (clients.length === 0) return;
 
     const client = clients[0];
@@ -220,7 +220,7 @@ export async function addSignatureToClientHistory(clientId, signatureData, proje
       },
     };
 
-    await base44.entities.Client.update(clientId, {
+    await archiflow.entities.Client.update(clientId, {
       timeline: [...currentTimeline, timelineEvent],
       last_contact_date: new Date().toISOString().split('T')[0],
     });
@@ -239,7 +239,7 @@ export async function addDocumentToClientHistory(clientId, document, project, si
   if (!clientId) return;
 
   try {
-    const clients = await base44.entities.Client.filter({ id: clientId });
+    const clients = await archiflow.entities.Client.filter({ id: clientId });
     if (clients.length === 0) return;
 
     const client = clients[0];
@@ -268,7 +268,7 @@ export async function addDocumentToClientHistory(clientId, document, project, si
       data: { document_id: document.id },
     };
 
-    await base44.entities.Client.update(clientId, {
+    await archiflow.entities.Client.update(clientId, {
       documents: [...currentDocuments, newDocument],
       timeline: [...currentTimeline, timelineEvent],
       last_contact_date: new Date().toISOString().split('T')[0],
@@ -299,7 +299,7 @@ export async function addStageChangeToClientHistory(clientId, stage, project) {
   };
 
   try {
-    const clients = await base44.entities.Client.filter({ id: clientId });
+    const clients = await archiflow.entities.Client.filter({ id: clientId });
     if (clients.length === 0) return;
 
     const client = clients[0];
@@ -319,7 +319,7 @@ export async function addStageChangeToClientHistory(clientId, stage, project) {
       stage,
     };
 
-    await base44.entities.Client.update(clientId, {
+    await archiflow.entities.Client.update(clientId, {
       timeline: [...currentTimeline, timelineEvent],
       last_contact_date: new Date().toISOString().split('T')[0],
     });
@@ -338,7 +338,7 @@ export async function addPaymentToClientHistory(clientId, paymentData, project) 
   if (!clientId) return;
 
   try {
-    const clients = await base44.entities.Client.filter({ id: clientId });
+    const clients = await archiflow.entities.Client.filter({ id: clientId });
     if (clients.length === 0) return;
 
     const client = clients[0];
@@ -371,7 +371,7 @@ export async function addPaymentToClientHistory(clientId, paymentData, project) 
     // Update total revenue
     const totalRevenue = (client.total_revenue || 0) + (paymentData.amount || 0);
 
-    await base44.entities.Client.update(clientId, {
+    await archiflow.entities.Client.update(clientId, {
       payments: [...currentPayments, newPayment],
       timeline: [...currentTimeline, timelineEvent],
       total_revenue: totalRevenue,
@@ -393,11 +393,11 @@ export async function syncClientToProjects(clientId, clientData) {
 
   try {
     // Find all projects for this client
-    const projects = await base44.entities.Project.filter({ client_id: clientId });
+    const projects = await archiflow.entities.Project.filter({ client_id: clientId });
     
     // Update each project with the latest client info
     const updates = projects.map(project => 
-      base44.entities.Project.update(project.id, {
+      archiflow.entities.Project.update(project.id, {
         client: clientData.full_name,
         client_email: clientData.email,
         client_phone: clientData.phone,
@@ -419,8 +419,8 @@ export async function updateClientStatusFromProjects(clientId) {
   if (!clientId) return;
 
   try {
-    const projects = await base44.entities.Project.filter({ client_id: clientId });
-    const clients = await base44.entities.Client.filter({ id: clientId });
+    const projects = await archiflow.entities.Project.filter({ client_id: clientId });
+    const clients = await archiflow.entities.Client.filter({ id: clientId });
     if (clients.length === 0) return;
 
     // Determine status based on projects
@@ -438,7 +438,7 @@ export async function updateClientStatusFromProjects(clientId) {
       }
     }
 
-    await base44.entities.Client.update(clientId, { status: newStatus });
+    await archiflow.entities.Client.update(clientId, { status: newStatus });
     return true;
   } catch (error) {
     console.error('Error updating client status:', error);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 // Toaster moved to App.jsx for global fixed positioning
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCurrentUser } from '@/utils/authHelpers';
 import { useAuth } from '@/lib/AuthContext';
@@ -173,7 +173,7 @@ export default function Settings() {
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
-    mutationFn: (data) => base44.auth.updateMe(data),
+    mutationFn: (data) => archiflow.auth.updateMe(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
       showSuccess('הפרופיל עודכן בהצלחה ✓');
@@ -202,7 +202,7 @@ export default function Settings() {
       showError('יש להזין סיסמה נוכחית');
       return;
     }
-    // Note: Password change is managed through Base44 authentication system
+    // Note: Password change is managed through Clerk authentication system
     showError('שינוי סיסמה מתבצע דרך מערכת ההתחברות. לחץ על "שכחתי סיסמה" בעת הכניסה.');
     setPasswords({ current: '', new: '', confirm: '' });
   };
@@ -223,7 +223,7 @@ export default function Settings() {
 
     setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await archiflow.integrations.Core.UploadFile({ file });
       setProfile(prev => ({ ...prev, avatar_url: file_url }));
       await updateProfileMutation.mutateAsync({ avatar_url: file_url });
     } catch (error) {

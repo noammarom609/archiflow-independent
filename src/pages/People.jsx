@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCurrentUser } from '@/utils/authHelpers';
 import { useLanguage } from '@/components/providers/LanguageProvider';
@@ -158,7 +158,7 @@ export default function People() {
   // --- Queries ---
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => getCurrentUser(base44),
+    queryFn: () => getCurrentUser(archiflow),
   });
   
   const isAdmin = currentUser?.role === 'admin';
@@ -168,37 +168,37 @@ export default function People() {
 
   const { data: allClients = [], isLoading: loadingClients } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => base44.entities.Client.list('-created_date', 500),
+    queryFn: () => archiflow.entities.Client.list('-created_date', 500),
   });
 
   const { data: allContractors = [], isLoading: loadingContractors } = useQuery({
     queryKey: ['contractors'],
-    queryFn: () => base44.entities.Contractor.list('-created_date', 500),
+    queryFn: () => archiflow.entities.Contractor.list('-created_date', 500),
   });
 
   const { data: allTeamMembers = [], isLoading: loadingTeam } = useQuery({
     queryKey: ['teamMembers'],
-    queryFn: () => base44.entities.TeamMember.list('-created_date', 200),
+    queryFn: () => archiflow.entities.TeamMember.list('-created_date', 200),
   });
 
   const { data: allConsultants = [], isLoading: loadingConsultants } = useQuery({
     queryKey: ['consultants'],
-    queryFn: () => base44.entities.Consultant.list('-created_date', 500),
+    queryFn: () => archiflow.entities.Consultant.list('-created_date', 500),
   });
 
   const { data: allSuppliers = [], isLoading: loadingSuppliers } = useQuery({
     queryKey: ['suppliers'],
-    queryFn: () => base44.entities.Supplier.list('-created_date', 500),
+    queryFn: () => archiflow.entities.Supplier.list('-created_date', 500),
   });
 
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list(),
+    queryFn: () => archiflow.entities.Project.list(),
   });
 
   const { data: allProjectConsultants = [] } = useQuery({
     queryKey: ['allProjectConsultants'],
-    queryFn: () => base44.entities.ProjectConsultant.list(),
+    queryFn: () => archiflow.entities.ProjectConsultant.list(),
   });
 
   // Multi-tenant filtering
@@ -723,12 +723,12 @@ export default function People() {
             // Determine platform role - admin or user
             const platformRole = ['admin', 'super_admin'].includes(data.app_role) ? 'admin' : 'user';
             
-            // Use base44.users.inviteUser directly from frontend SDK
+            // Use archiflow.users.inviteUser directly from frontend SDK
             // This is the ONLY correct method - no backend function needed
-            await base44.users.inviteUser(data.email, platformRole);
+            await archiflow.users.inviteUser(data.email, platformRole);
             
             // Create TeamMember record to track the invited user
-            await base44.entities.TeamMember.create({
+            await archiflow.entities.TeamMember.create({
               full_name: data.full_name || data.email.split('@')[0],
               email: data.email,
               role: data.app_role || 'team_member',

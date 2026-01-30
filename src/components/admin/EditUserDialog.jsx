@@ -15,7 +15,7 @@ import {
   getAssignableRoles,
   roleRequiresApproval
 } from './constants';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import { getCurrentUser } from '@/utils/authHelpers';
 import { canManageUser, getRoleDisplayInfo, getStatusDisplayInfo } from '@/utils/roleHelpers';
@@ -29,7 +29,7 @@ export default function EditUserDialog({ isOpen, onClose, user, onUpdate, onDele
   // Get current user to check permissions
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => getCurrentUser(base44),
+    queryFn: () => getCurrentUser(archiflow),
   });
 
   useEffect(() => {

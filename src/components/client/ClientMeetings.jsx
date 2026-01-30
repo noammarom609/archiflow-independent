@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, Calendar, MapPin, User, FileText } from 'lucide-react';
 import { format } from 'date-fns';
@@ -9,7 +9,7 @@ import { he } from 'date-fns/locale';
 export default function ClientMeetings({ projectId }) {
   const { data: entries = [], isLoading } = useQuery({
     queryKey: ['clientJournal', projectId],
-    queryFn: () => base44.entities.JournalEntry.filter({ 
+    queryFn: () => archiflow.entities.JournalEntry.filter({ 
       project_id: parseInt(projectId) || projectId, // Handle both string and number IDs
       shared_with_client: true 
     }, '-entry_date'),

@@ -51,7 +51,6 @@ self.addEventListener('fetch', (event) => {
 
   // Skip API requests (let them go to network)
   if (event.request.url.includes('/api/') || 
-      event.request.url.includes('base44.com') ||
       event.request.url.includes('supabase')) {
     return;
   }

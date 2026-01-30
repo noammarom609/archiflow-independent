@@ -57,7 +57,7 @@ import {
   Maximize,
   Grid3X3
 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import PageTabs from './PageTabs';
 import { AIGenerateButton, AIImageGenerator } from './AIContentGenerator';
 

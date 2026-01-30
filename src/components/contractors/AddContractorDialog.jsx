@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,7 +26,7 @@ export default function AddContractorDialog({ isOpen, onClose, initialType = 'co
   // Get current user to set architect_id
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
+    queryFn: () => archiflow.auth.me(),
   });
   
   const [formData, setFormData] = useState({
@@ -53,7 +53,7 @@ export default function AddContractorDialog({ isOpen, onClose, initialType = 'co
   }, [isOpen, initialType]);
 
   const createContractorMutation = useMutation({
-    mutationFn: (data) => base44.entities.Contractor.create(data),
+    mutationFn: (data) => archiflow.entities.Contractor.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contractors'] });
       

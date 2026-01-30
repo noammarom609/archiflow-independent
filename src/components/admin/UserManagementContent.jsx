@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { motion } from 'framer-motion';
 import { 
     Users, 
@@ -67,7 +67,7 @@ export default function UserManagementContent() {
             };
             
             try {
-                const response = await base44.functions.invoke('getArchitectUsers', {});
+                const response = await archiflow.functions.invoke('getArchitectUsers', {});
                 const result = response?.data || response;
                 
                 if (!result || result.error) {
@@ -103,7 +103,7 @@ export default function UserManagementContent() {
     // Approve/Reject mutation
     const approveMutation = useMutation({
         mutationFn: async ({ entityType, recordId, action, rejectionReason }) => {
-            await base44.functions.invoke('approveRecord', { 
+            await archiflow.functions.invoke('approveRecord', { 
                 entityType, 
                 recordId, 
                 action,

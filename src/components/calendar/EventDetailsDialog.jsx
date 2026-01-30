@@ -6,7 +6,7 @@ import { Calendar, Clock, MapPin, Users, Trash2, Edit, X, FileText, ExternalLink
 import MeetingAssistant from '../recordings/MeetingAssistant';
 import { format, parseISO } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { showSuccess, showError } from '../utils/notifications';
 import { useNavigate } from 'react-router-dom';
@@ -18,7 +18,7 @@ export default function EventDetailsDialog({ event, onClose }) {
   const [showAssistant, setShowAssistant] = useState(false);
 
   const deleteEventMutation = useMutation({
-    mutationFn: (id) => base44.entities.CalendarEvent.delete(id),
+    mutationFn: (id) => archiflow.entities.CalendarEvent.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calendarEvents'] });
       showSuccess('אירוע נמחק בהצלחה');
@@ -30,7 +30,7 @@ export default function EventDetailsDialog({ event, onClose }) {
   });
 
   const createJournalMutation = useMutation({
-    mutationFn: (data) => base44.entities.JournalEntry.create(data),
+    mutationFn: (data) => archiflow.entities.JournalEntry.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['journalEntries'] });
       showSuccess('נוסף ליומן בהצלחה! ✓');

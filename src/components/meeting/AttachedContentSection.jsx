@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import {
   Image,
@@ -138,7 +138,7 @@ export default function AttachedContentSection({ contentIds = [] }) {
     queryKey: ['attachedContent', contentIds],
     queryFn: async () => {
       if (!contentIds || contentIds.length === 0) return [];
-      const allItems = await base44.entities.ContentItem.list();
+      const allItems = await archiflow.entities.ContentItem.list();
       return allItems.filter(item => contentIds.includes(item.id));
     },
     enabled: contentIds && contentIds.length > 0,

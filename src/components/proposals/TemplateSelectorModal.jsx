@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import {
   Dialog,
@@ -28,7 +28,7 @@ export default function TemplateSelectorModal({ isOpen, onClose, onSelectTemplat
   // Fetch templates
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ['proposalTemplates', 'active'],
-    queryFn: () => base44.entities.ProposalTemplate.filter({ status: 'active' }, '-usage_count'),
+    queryFn: () => archiflow.entities.ProposalTemplate.filter({ status: 'active' }, '-usage_count'),
     enabled: isOpen,
   });
 

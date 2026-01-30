@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, Calendar, Loader2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { showSuccess, showError } from '@/components/utils/notifications';
 import ClientEmailDialog from '../ClientEmailDialog';
 import AddEventDialog from '@/components/calendar/AddEventDialog';
@@ -33,7 +33,7 @@ export default function ClientUpdates({ project, onUpdate }) {
   const sendEmailToClient = async (emailAddress) => {
     setIsSending(true);
     try {
-      await base44.integrations.Core.SendEmail({
+      await archiflow.integrations.Core.SendEmail({
         to: emailAddress,
         subject: `עדכון פרויקט - ${project.name}`,
         body: `שלום ${project.client},
@@ -57,7 +57,7 @@ ArchiFlow`
   const handleEmailSubmit = async (email) => {
     try {
       if (project?.client_id) {
-        await base44.entities.Client.update(project.client_id, { email });
+        await archiflow.entities.Client.update(project.client_id, { email });
         if (onUpdate) await onUpdate({ client_email: email });
         queryClient.invalidateQueries({ queryKey: ['projects'] });
       }

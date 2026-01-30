@@ -3,7 +3,7 @@
  * Handles Web Push API subscription and management
  */
 
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 
 // VAPID Public Key - must match the one used in the backend
 const VAPID_PUBLIC_KEY = 'BCpBJ36HxvLa9SdBjJQJNQLdMcQ6GjqzZvEqSK8g8j6qP5d7I_2q8Pk-v5A3bA6xHmOqIbNBvPzj9yJLPD9qKm0';
@@ -89,14 +89,14 @@ export async function subscribeToPush(userId) {
     // Get current user email
     let userEmail = null;
     try {
-      const user = await base44.auth.me();
+      const user = await archiflow.auth.me();
       userEmail = user?.email?.toLowerCase();
     } catch (e) {
       console.error('Could not get user email:', e);
     }
 
     // Save to database
-    await base44.entities.PushSubscription.create({
+    await archiflow.entities.PushSubscription.create({
       user_id: userId,
       user_email: userEmail,
       endpoint: subscriptionJSON.endpoint,
@@ -132,12 +132,12 @@ export async function unsubscribeFromPush(userId) {
       await subscription.unsubscribe();
 
       // Remove from database - find by endpoint
-      const subs = await base44.entities.PushSubscription.filter({
+      const subs = await archiflow.entities.PushSubscription.filter({
         endpoint: subscription.endpoint
       });
       
       for (const sub of subs) {
-        await base44.entities.PushSubscription.delete(sub.id);
+        await archiflow.entities.PushSubscription.delete(sub.id);
       }
     }
 

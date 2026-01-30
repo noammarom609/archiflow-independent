@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import {
   User, Building2, DollarSign, Calendar, Palette, CheckCircle2,
@@ -53,18 +53,18 @@ export default function DataExtractionPanel({
   // Load existing projects and clients for matching
   const { data: existingProjects = [] } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list(),
+    queryFn: () => archiflow.entities.Project.list(),
   });
 
   const { data: existingClients = [] } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => base44.entities.Client.list(),
+    queryFn: () => archiflow.entities.Client.list(),
   });
 
   // Load AI learnings for context enhancement
   const { data: aiLearnings = [] } = useQuery({
     queryKey: ['ai-learnings'],
-    queryFn: () => base44.entities.AILearning.filter({ is_active: true }),
+    queryFn: () => archiflow.entities.AILearning.filter({ is_active: true }),
   });
 
   // Initialize data from analysis
@@ -271,7 +271,7 @@ export default function DataExtractionPanel({
     // Save corrections to database
     for (const correction of corrections) {
       try {
-        await base44.entities.AILearning.create(correction);
+        await archiflow.entities.AILearning.create(correction);
       } catch (err) {
         console.error('Error saving correction:', err);
       }

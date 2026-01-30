@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import {
   History,
@@ -77,7 +77,7 @@ export default function AIInsightsHistory({ project, onRestoreSnapshot }) {
   const { data: fullHistory = [], isLoading, refetch } = useQuery({
     queryKey: ['aiHistory', project?.id],
     queryFn: () => project?.id 
-      ? base44.entities.ProjectAIHistory.filter({ project_id: project.id }, '-timestamp')
+      ? archiflow.entities.ProjectAIHistory.filter({ project_id: project.id }, '-timestamp')
       : Promise.resolve([]),
     enabled: !!project?.id && showFullHistory,
   });

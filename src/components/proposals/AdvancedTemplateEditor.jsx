@@ -59,7 +59,7 @@ import {
   MousePointer,
   Move
 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import PageTabs from './PageTabs';
 import FreeformCanvas from './canvas/FreeformCanvas';
 import ElementPropertiesPanel from './canvas/ElementPropertiesPanel';
@@ -1932,7 +1932,7 @@ function ImageBlockEditor({ section, onUpdate }) {
 
     setIsUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await archiflow.integrations.Core.UploadFile({ file });
       onUpdate({ image_url: file_url });
     } catch (error) {
       console.error('Error uploading image:', error);
@@ -2030,7 +2030,7 @@ function HeaderBlockEditor({ section, onUpdate }) {
 
     setIsUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await archiflow.integrations.Core.UploadFile({ file });
       onUpdate({ logo_url: file_url });
     } catch (error) {
       console.error('Error uploading logo:', error);

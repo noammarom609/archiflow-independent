@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MapPin, Calendar, DollarSign, Upload, X, User, Search, Check, Home, Building, Building2, Briefcase, Castle, UtensilsCrossed, Store, Sparkles, ChevronDown, ChevronUp, Pencil } from 'lucide-react';
 import { showSuccess, showError } from '../utils/notifications';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { PROJECT_TYPES, PROJECT_CATEGORIES } from '../utils/checklistLoader';
@@ -27,7 +27,7 @@ export default function NewProjectModal({ isOpen, onClose, onCreateProject, pres
   // Fetch existing clients for selection
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => base44.entities.Client.list('-created_date'),
+    queryFn: () => archiflow.entities.Client.list('-created_date'),
     enabled: isOpen,
   });
 
@@ -152,7 +152,7 @@ export default function NewProjectModal({ isOpen, onClose, onCreateProject, pres
     // If a new client name was entered (no existing client selected), create a Client entity
     if (!formData.client_id && formData.client.trim()) {
       try {
-        const newClient = await base44.entities.Client.create({
+        const newClient = await archiflow.entities.Client.create({
           full_name: formData.client.trim(),
           email: formData.client_email || null,
           phone: formData.client_phone || null,

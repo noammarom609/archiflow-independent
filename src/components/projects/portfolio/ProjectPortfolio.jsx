@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import {
   FolderKanban,
@@ -67,31 +67,31 @@ export default function ProjectPortfolio({ project, onUpdate }) {
   // Fetch all project-related data
   const { data: documents = [], isLoading: loadingDocs } = useQuery({
     queryKey: ['portfolioDocuments', project?.id],
-    queryFn: () => base44.entities.Document.filter({ project_id: String(project.id) }, '-created_date'),
+    queryFn: () => archiflow.entities.Document.filter({ project_id: String(project.id) }, '-created_date'),
     enabled: !!project?.id,
   });
 
   const { data: tasks = [], isLoading: loadingTasks } = useQuery({
     queryKey: ['portfolioTasks', project?.id],
-    queryFn: () => base44.entities.Task.filter({ project_id: project?.id }, '-created_date'),
+    queryFn: () => archiflow.entities.Task.filter({ project_id: project?.id }, '-created_date'),
     enabled: !!project?.id,
   });
 
   const { data: recordings = [], isLoading: loadingRecordings } = useQuery({
     queryKey: ['portfolioRecordings', project?.id],
-    queryFn: () => base44.entities.Recording.filter({ project_id: String(project.id) }, '-created_date'),
+    queryFn: () => archiflow.entities.Recording.filter({ project_id: String(project.id) }, '-created_date'),
     enabled: !!project?.id,
   });
 
   const { data: proposals = [] } = useQuery({
     queryKey: ['portfolioProposals', project?.id],
-    queryFn: () => base44.entities.Proposal.filter({ project_id: String(project.id) }, '-created_date'),
+    queryFn: () => archiflow.entities.Proposal.filter({ project_id: String(project.id) }, '-created_date'),
     enabled: !!project?.id,
   });
 
   const { data: journalEntries = [] } = useQuery({
     queryKey: ['portfolioJournal', project?.id],
-    queryFn: () => base44.entities.JournalEntry.filter({ project_id: String(project.id) }, '-created_date'),
+    queryFn: () => archiflow.entities.JournalEntry.filter({ project_id: String(project.id) }, '-created_date'),
     enabled: !!project?.id,
   });
 

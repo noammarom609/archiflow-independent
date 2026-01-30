@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCurrentUser } from '@/utils/authHelpers';
 import { Button } from '@/components/ui/button';
@@ -43,7 +43,7 @@ export default function Team() {
   // 1. Fetch current user to check permissions (with bypass support)
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => getCurrentUser(base44),
+    queryFn: () => getCurrentUser(archiflow),
   });
   
   const isAdmin = currentUser?.role === 'admin';
@@ -55,7 +55,7 @@ export default function Team() {
     queryKey: ['teamUsers'],
     queryFn: async () => {
       try {
-        return await base44.entities.User.list('-created_date', 100);
+        return await archiflow.entities.User.list('-created_date', 100);
       } catch (error) {
         // If permission denied, return empty array (non-admin users)
         if (error.message?.includes('Permission denied')) {
@@ -74,7 +74,7 @@ export default function Team() {
   // Invite User - using backend function to bypass User entity permissions
   const inviteMutation = useMutation({
     mutationFn: async ({ email, role, app_role, allowed_pages, full_name }) => {
-      const response = await base44.functions.invoke('inviteUserToApp', {
+      const response = await archiflow.functions.invoke('inviteUserToApp', {
         email,
         role: role || 'user',
         full_name,
@@ -102,7 +102,7 @@ export default function Team() {
   // Update User
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }) => {
-      return await base44.entities.User.update(id, data);
+      return await archiflow.entities.User.update(id, data);
     },
     onSuccess: () => {
       showSuccess('פרטי המשתמש עודכנו בהצלחה');
@@ -118,7 +118,7 @@ export default function Team() {
   // Delete User
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
-      return await base44.entities.User.delete(id);
+      return await archiflow.entities.User.delete(id);
     },
     onSuccess: () => {
       showSuccess('המשתמש נמחק בהצלחה');

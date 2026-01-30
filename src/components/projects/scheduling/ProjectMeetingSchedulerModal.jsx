@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { format, startOfWeek, addDays, addWeeks, subWeeks, isBefore, isToday, isSameDay } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import CreateMeetingLinkDialog from '../../calendar/MeetingScheduler/CreateMeetingLinkDialog';
 
@@ -49,7 +49,7 @@ export default function ProjectMeetingSchedulerModal({
   // Fetch existing calendar events to show busy times
   const { data: calendarEvents = [] } = useQuery({
     queryKey: ['calendarEventsForScheduler'],
-    queryFn: () => base44.entities.CalendarEvent.list('-start_date', 100),
+    queryFn: () => archiflow.entities.CalendarEvent.list('-start_date', 100),
     enabled: isOpen,
   });
 

@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Upload, X, Loader2 } from 'lucide-react';
 import { showSuccess, showError } from '../utils/notifications';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 export default function FileUploadDialog({ isOpen, onClose, folderName, category }) {
@@ -23,7 +23,7 @@ export default function FileUploadDialog({ isOpen, onClose, folderName, category
   };
 
   const uploadMutation = useMutation({
-    mutationFn: async (fileData) => base44.entities.DesignAsset.create(fileData),
+    mutationFn: async (fileData) => archiflow.entities.DesignAsset.create(fileData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['designAssets'] });
     },
@@ -37,7 +37,7 @@ export default function FileUploadDialog({ isOpen, onClose, folderName, category
       // Upload each file
       for (const file of files) {
         // Upload file to storage
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        const { file_url } = await archiflow.integrations.Core.UploadFile({ file });
         
         // Create asset record
         await uploadMutation.mutateAsync({

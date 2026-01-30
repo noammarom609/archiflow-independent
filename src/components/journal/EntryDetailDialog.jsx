@@ -18,7 +18,7 @@ import {
 import { format, parseISO } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { showSuccess, showError } from '../utils/notifications';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
@@ -45,7 +45,7 @@ export default function EntryDetailDialog({ entry, onClose, onEdit }) {
   const queryClient = useQueryClient();
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.JournalEntry.delete(id),
+    mutationFn: (id) => archiflow.entities.JournalEntry.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['journalEntries'] });
       showSuccess('הרשומה נמחקה בהצלחה');

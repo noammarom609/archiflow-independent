@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCurrentUser } from '@/utils/authHelpers';
 import { Card } from '@/components/ui/card';
@@ -160,14 +160,14 @@ export default function ProposalTemplates({ onBack }) {
   // Fetch current user (with bypass support)
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => getCurrentUser(base44),
+    queryFn: () => getCurrentUser(archiflow),
   });
 
   // Fetch templates - Multi-tenant: Show system templates + own templates
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ['proposalTemplates', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.ProposalTemplate.list('-updated_date');
+      const all = await archiflow.entities.ProposalTemplate.list('-updated_date');
       
       if (user?.app_role === 'super_admin') return all;
       
@@ -179,7 +179,7 @@ export default function ProposalTemplates({ onBack }) {
 
   // Create template mutation
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.ProposalTemplate.create(data),
+    mutationFn: (data) => archiflow.entities.ProposalTemplate.create(data),
     onSuccess: (newTemplate) => {
       queryClient.invalidateQueries({ queryKey: ['proposalTemplates'] });
       setSelectedTemplateId(newTemplate.id);
@@ -192,7 +192,7 @@ export default function ProposalTemplates({ onBack }) {
 
   // Update template mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.ProposalTemplate.update(id, data),
+    mutationFn: ({ id, data }) => archiflow.entities.ProposalTemplate.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['proposalTemplates'] });
       showSuccess('התבנית נשמרה');
@@ -202,7 +202,7 @@ export default function ProposalTemplates({ onBack }) {
 
   // Delete template mutation
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.ProposalTemplate.delete(id),
+    mutationFn: (id) => archiflow.entities.ProposalTemplate.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['proposalTemplates'] });
       setSelectedTemplateId(null);

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   User, 
@@ -65,7 +65,7 @@ export default function ClientDetailView({ client, onBack }) {
   // Fetch projects for this client
   const { data: projects = [] } = useQuery({
     queryKey: ['clientProjects', client?.id],
-    queryFn: () => base44.entities.Project.filter({ client_id: client?.id }),
+    queryFn: () => archiflow.entities.Project.filter({ client_id: client?.id }),
     enabled: !!client?.id,
   });
 
@@ -75,7 +75,7 @@ export default function ClientDetailView({ client, onBack }) {
     queryFn: async () => {
       const projectIds = projects.map(p => p.id);
       if (projectIds.length === 0) return [];
-      const allRecordings = await base44.entities.Recording.list('-created_date');
+      const allRecordings = await archiflow.entities.Recording.list('-created_date');
       return allRecordings.filter(r => projectIds.includes(r.project_id));
     },
     enabled: projects.length > 0,
@@ -84,7 +84,7 @@ export default function ClientDetailView({ client, onBack }) {
   // Fetch proposals
   const { data: proposals = [] } = useQuery({
     queryKey: ['clientProposals', client?.id],
-    queryFn: () => base44.entities.Proposal.filter({ client_id: client?.id }, '-created_date'),
+    queryFn: () => archiflow.entities.Proposal.filter({ client_id: client?.id }, '-created_date'),
     enabled: !!client?.id,
   });
 
@@ -94,7 +94,7 @@ export default function ClientDetailView({ client, onBack }) {
     queryFn: async () => {
       if (projects.length === 0) return [];
       const projectIds = projects.map(p => p.id);
-      const allTasks = await base44.entities.Task.list('-created_date');
+      const allTasks = await archiflow.entities.Task.list('-created_date');
       return allTasks.filter(t => projectIds.includes(t.project_id));
     },
     enabled: projects.length > 0,
@@ -128,12 +128,12 @@ export default function ClientDetailView({ client, onBack }) {
   // Update client mutation with project sync
   const updateClientMutation = useMutation({
     mutationFn: async (data) => {
-      await base44.entities.Client.update(client.id, data);
+      await archiflow.entities.Client.update(client.id, data);
       
       // Sync to all client's projects
-      const clientProjects = await base44.entities.Project.filter({ client_id: client.id });
+      const clientProjects = await archiflow.entities.Project.filter({ client_id: client.id });
       for (const project of clientProjects) {
-        await base44.entities.Project.update(project.id, {
+        await archiflow.entities.Project.update(project.id, {
           client: data.full_name || project.client,
           client_email: data.email || project.client_email,
           client_phone: data.phone || project.client_phone,

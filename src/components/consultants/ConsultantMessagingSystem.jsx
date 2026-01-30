@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { MessageSquare, Send, HardHat } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { getCurrentUser } from '@/utils/authHelpers';
 import { showSuccess, showError } from '../utils/notifications';
@@ -37,7 +37,7 @@ export default function ConsultantMessagingSystem({ messages }) {
   // Fetch current user for multi-tenant filtering (with bypass support)
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => getCurrentUser(base44),
+    queryFn: () => getCurrentUser(archiflow),
   });
 
   const isSuperAdmin = user?.app_role === 'super_admin';
@@ -47,7 +47,7 @@ export default function ConsultantMessagingSystem({ messages }) {
     queryKey: ['architectUsers', user?.email],
     queryFn: async () => {
       try {
-        const response = await base44.functions.invoke('getArchitectUsers', {});
+        const response = await archiflow.functions.invoke('getArchitectUsers', {});
         return response?.data || response || { consultants: [] };
       } catch (err) {
         console.error('Error fetching architect users:', err);
@@ -61,7 +61,7 @@ export default function ConsultantMessagingSystem({ messages }) {
   const consultants = architectData?.consultants || [];
 
   const sendMessageMutation = useMutation({
-    mutationFn: (messageData) => base44.entities.ConsultantMessage.create(messageData),
+    mutationFn: (messageData) => archiflow.entities.ConsultantMessage.create(messageData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['consultantMessages'] });
       showSuccess('הודעה נשלחה');

@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Calendar, Clock, MapPin, Users, Plus, Loader2, CheckCircle, Upload } from 'lucide-react';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { showSuccess, showError } from '../utils/notifications';
 import { format } from 'date-fns';
@@ -73,12 +73,12 @@ export default function AddEventDialog({ isOpen, onClose, selectedDate, prefille
       const { exportToGoogle, ...eventData } = data;
       
       // Create event in our database
-      const event = await base44.entities.CalendarEvent.create(eventData);
+      const event = await archiflow.entities.CalendarEvent.create(eventData);
       
       // Export to Google Calendar if requested
       if (exportToGoogle) {
         try {
-          await base44.functions.invoke('exportToGoogleCalendar', { eventId: event.id });
+          await archiflow.functions.invoke('exportToGoogleCalendar', { eventId: event.id });
         } catch (error) {
           console.error('Failed to export to Google Calendar:', error);
         }
@@ -102,7 +102,7 @@ export default function AddEventDialog({ isOpen, onClose, selectedDate, prefille
       // If project is linked, notify the client (async, non-blocking)
       if (originalData.project_id) {
         // Look up the project to get the client_id
-        base44.entities.Project.filter({ id: originalData.project_id })
+        archiflow.entities.Project.filter({ id: originalData.project_id })
           .then(projects => {
             if (projects.length > 0 && projects[0].client_id) {
               sendTemplate('meetingScheduled', projects[0].client_id, {

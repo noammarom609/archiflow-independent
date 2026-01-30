@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,7 +41,7 @@ export default function ShareDocumentDialog({ document, onClose }) {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + parseInt(data.expiryDays));
       
-      return base44.entities.ShareLink.create({
+      return archiflow.entities.ShareLink.create({
         document_id: document.id,
         document_title: document.title,
         link_token: token,
@@ -61,7 +61,7 @@ export default function ShareDocumentDialog({ document, onClose }) {
       
       // Create notification
       if (recipientEmail) {
-        base44.entities.Notification.create({
+        archiflow.entities.Notification.create({
           title: 'מסמך חדש שותף איתך',
           message: `${recipientName || 'מישהו'} שיתף איתך את המסמך "${document.title}"`,
           type: 'document',

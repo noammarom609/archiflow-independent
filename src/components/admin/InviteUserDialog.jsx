@@ -14,7 +14,7 @@ import {
   roleRequiresApproval,
   getAssignableRoles 
 } from './constants';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import { getCurrentUser } from '@/utils/authHelpers';
 
@@ -28,7 +28,7 @@ export default function InviteUserDialog({ isOpen, onClose, onInvite, isLoading,
   // Get current user to determine which roles they can assign
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => getCurrentUser(base44),
+    queryFn: () => getCurrentUser(archiflow),
   });
 
   // Reset form when dialog opens with initial data

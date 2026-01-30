@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { 
   Upload, 
@@ -53,7 +53,7 @@ export default function DocumentApprovalSubStage({
 
   const { data: documents = [] } = useQuery({
     queryKey: ['projectDocuments', project?.id, type],
-    queryFn: () => base44.entities.Document.filter({ 
+    queryFn: () => archiflow.entities.Document.filter({ 
       project_id: project?.id,
       category: getCategory()
     }),
@@ -62,7 +62,7 @@ export default function DocumentApprovalSubStage({
 
   // Delete document mutation
   const deleteDocMutation = useMutation({
-    mutationFn: (docId) => base44.entities.Document.delete(docId),
+    mutationFn: (docId) => archiflow.entities.Document.delete(docId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projectDocuments', project?.id, type] });
       showSuccess('הקובץ נמחק בהצלחה');
@@ -82,7 +82,7 @@ export default function DocumentApprovalSubStage({
       // Create approval link
       const approvalUrl = `${window.location.origin}/PublicApproval?id=${project.id}&type=${type}`;
       
-      await base44.integrations.Core.SendEmail({
+      await archiflow.integrations.Core.SendEmail({
         to: project.client_email,
         subject: `${typeLabel} מוכנים לאישור - ${project.name}`,
         body: `שלום ${project.client},
@@ -124,7 +124,7 @@ ArchiFlow`
   const handleApprove = async () => {
     try {
       // Create signature record with full metadata
-      const signatureRecord = await base44.entities.DocumentSignature.create({
+      const signatureRecord = await archiflow.entities.DocumentSignature.create({
         document_id: documents[0]?.id || 'approval',
         document_title: `אישור ${typeLabel} - ${project?.name}`,
         document_type: type,

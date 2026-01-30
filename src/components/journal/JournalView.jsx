@@ -11,7 +11,7 @@ import {
   Calendar,
   TrendingUp,
 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import EntryCard from './EntryCard';
 import AddJournalEntryDialog from './AddJournalEntryDialog';
@@ -30,7 +30,7 @@ export default function JournalView() {
   // Fetch journal entries
   const { data: journalEntries = [], isLoading } = useQuery({
     queryKey: ['journalEntries'],
-    queryFn: () => base44.entities.JournalEntry.list('-entry_date', 200),
+    queryFn: () => archiflow.entities.JournalEntry.list('-entry_date', 200),
   });
 
   const filteredEntries = journalEntries.filter(entry => {

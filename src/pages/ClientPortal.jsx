@@ -48,7 +48,7 @@ export default function ClientPortal() {
   // Fetch Clients for Admin dropdown (to view portal as specific client)
   const { data: allClients = [] } = useQuery({
     queryKey: ['allClientsForImpersonation'],
-    queryFn: () => base44.entities.Client.list('-created_date', 1000),
+    queryFn: () => archiflow.entities.Client.list('-created_date', 1000),
     enabled: canImpersonate
   });
 
@@ -57,7 +57,7 @@ export default function ClientPortal() {
     queryKey: ['clientProfile', effectiveEmail],
     queryFn: async () => {
       if (!effectiveEmail) return null;
-      const clients = await base44.entities.Client.filter({ email: effectiveEmail });
+      const clients = await archiflow.entities.Client.filter({ email: effectiveEmail });
       return clients[0];
     },
     enabled: !!effectiveEmail,
@@ -69,25 +69,25 @@ export default function ClientPortal() {
     queryFn: async () => {
       // Admin "Show All" Mode
       if (canImpersonate && impersonateEmail === 'ALL') {
-        return await base44.entities.Project.list('-created_date');
+        return await archiflow.entities.Project.list('-created_date');
       }
 
       const targetEmail = effectiveEmail;
       if (!targetEmail) return [];
       
       // Get projects where user has explicit permission
-      const permissions = await base44.entities.ProjectPermission.filter({ user_email: targetEmail });
+      const permissions = await archiflow.entities.ProjectPermission.filter({ user_email: targetEmail });
       const permissionProjectIds = permissions.map(p => p.project_id);
       
       // Also get projects where user is the designated client (legacy/direct link)
-      const directProjects = await base44.entities.Project.filter({ client_email: targetEmail });
+      const directProjects = await archiflow.entities.Project.filter({ client_email: targetEmail });
       
       // Fetch details for permission-based projects (with error handling for deleted projects)
       let permissionProjects = [];
       if (permissionProjectIds.length > 0) {
         const projectPromises = permissionProjectIds.map(async (id) => {
           try {
-            return await base44.entities.Project.get(id);
+            return await archiflow.entities.Project.get(id);
           } catch (error) {
             console.warn(`Project ${id} not found, skipping...`);
             return null;
@@ -111,7 +111,7 @@ export default function ClientPortal() {
     queryKey: ['projectPermissions', selectedProjectId, effectiveEmail],
     queryFn: async () => {
       if (!selectedProjectId || !effectiveEmail) return null;
-      const perms = await base44.entities.ProjectPermission.filter({ 
+      const perms = await archiflow.entities.ProjectPermission.filter({ 
         project_id: String(selectedProjectId),
         user_email: effectiveEmail
       });
@@ -125,7 +125,7 @@ export default function ClientPortal() {
     queryKey: ['clientTasks', selectedProjectId],
     queryFn: () =>
       selectedProjectId
-        ? base44.entities.Task.filter({ project_id: String(selectedProjectId) })
+        ? archiflow.entities.Task.filter({ project_id: String(selectedProjectId) })
         : Promise.resolve([]),
     enabled: !!selectedProjectId,
   });
@@ -135,7 +135,7 @@ export default function ClientPortal() {
     queryKey: ['clientDocuments', selectedProjectId],
     queryFn: () =>
       selectedProjectId
-        ? base44.entities.Document.filter({ project_id: String(selectedProjectId) })
+        ? archiflow.entities.Document.filter({ project_id: String(selectedProjectId) })
         : Promise.resolve([]),
     enabled: !!selectedProjectId,
   });
@@ -145,7 +145,7 @@ export default function ClientPortal() {
     queryKey: ['clientAccess', effectiveEmail],
     queryFn: () => 
       effectiveEmail 
-        ? base44.entities.ClientAccess.filter({ 
+        ? archiflow.entities.ClientAccess.filter({ 
             client_email: effectiveEmail,
             is_active: true 
           })

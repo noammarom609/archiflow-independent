@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -47,7 +47,7 @@ export default function PublicContent() {
   const { data: contentItems = [], isLoading, error } = useQuery({
     queryKey: ['publicContent', token],
     queryFn: async () => {
-      const items = await base44.entities.ContentItem.filter({
+      const items = await archiflow.entities.ContentItem.filter({
         'share_settings.share_token': token
       });
       return items;
@@ -62,7 +62,7 @@ export default function PublicContent() {
   useEffect(() => {
     if (item) {
       const currentCount = item.share_settings?.view_count || 0;
-      base44.entities.ContentItem.update(item.id, {
+      archiflow.entities.ContentItem.update(item.id, {
         share_settings: {
           ...item.share_settings,
           view_count: currentCount + 1,

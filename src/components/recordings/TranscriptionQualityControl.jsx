@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
@@ -51,7 +51,7 @@ export default function TranscriptionQualityControl({ recording, onTranscription
   // Fetch existing corrections for this recording
   const { data: existingCorrections = [] } = useQuery({
     queryKey: ['transcriptionCorrections', recording?.id],
-    queryFn: () => base44.entities.TranscriptionCorrection.filter({ 
+    queryFn: () => archiflow.entities.TranscriptionCorrection.filter({ 
       recording_id: recording?.id 
     }),
     enabled: !!recording?.id
@@ -60,14 +60,14 @@ export default function TranscriptionQualityControl({ recording, onTranscription
   // Fetch learned terms for context
   const { data: learnedTerms = [] } = useQuery({
     queryKey: ['learnedTerms'],
-    queryFn: () => base44.entities.TranscriptionCorrection.filter({ 
+    queryFn: () => archiflow.entities.TranscriptionCorrection.filter({ 
       learned: true 
     }, '-created_date', 100)
   });
 
   // Create correction mutation
   const createCorrectionMutation = useMutation({
-    mutationFn: (data) => base44.entities.TranscriptionCorrection.create(data),
+    mutationFn: (data) => archiflow.entities.TranscriptionCorrection.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transcriptionCorrections'] });
       showSuccess('התיקון נשמר בהצלחה');
@@ -76,7 +76,7 @@ export default function TranscriptionQualityControl({ recording, onTranscription
 
   // Update correction mutation
   const updateCorrectionMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.TranscriptionCorrection.update(id, data),
+    mutationFn: ({ id, data }) => archiflow.entities.TranscriptionCorrection.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transcriptionCorrections'] });
     }
@@ -98,7 +98,7 @@ export default function TranscriptionQualityControl({ recording, onTranscription
         .slice(0, 50)
         .join('\n');
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await archiflow.integrations.Core.InvokeLLM({
         prompt: `אתה מומחה לבקרת איכות תמלולים בעברית, במיוחד בתחום האדריכלות והעיצוב.
 
 נתח את התמלול הבא וזהה קטעים בעייתיים:
@@ -201,7 +201,7 @@ ${recording.transcription}
       // Also save to AILearning for broader context
       if (markAsLearned && correctedText !== segment.original_text) {
         try {
-          await base44.entities.AILearning.create({
+          await archiflow.entities.AILearning.create({
             learning_type: 'transcription_correction',
             original_value: segment.original_text,
             corrected_value: correctedText,

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import {
   Image,
@@ -32,7 +32,7 @@ export default function ContentSelectorModal({ isOpen, onClose, onSelect, select
 
   const { data: contentItems = [], isLoading } = useQuery({
     queryKey: ['contentItems'],
-    queryFn: () => base44.entities.ContentItem.filter({ status: 'ready' }, '-created_date', 50),
+    queryFn: () => archiflow.entities.ContentItem.filter({ status: 'ready' }, '-created_date', 50),
     enabled: isOpen,
     staleTime: 5 * 60 * 1000, // 5 minutes - prevent excessive refetching
     refetchOnWindowFocus: false,

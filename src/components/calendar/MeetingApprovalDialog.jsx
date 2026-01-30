@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,7 @@ export default function MeetingApprovalDialog({ event, onClose }) {
   const approveMutation = useMutation({
     mutationFn: async ({ approved }) => {
       const status = approved ? 'approved' : 'cancelled';
-      return await base44.entities.MeetingSlot.update(event.originalId, { status });
+      return await archiflow.entities.MeetingSlot.update(event.originalId, { status });
     },
     onSuccess: (_, { approved }) => {
       queryClient.invalidateQueries({ queryKey: ['meetingSlotsForCalendar'] });

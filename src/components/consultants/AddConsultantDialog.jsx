@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 import { 
@@ -55,7 +55,7 @@ export default function AddConsultantDialog({ isOpen, onClose }) {
   // Get current user to set architect_id
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
+    queryFn: () => archiflow.auth.me(),
   });
   
   const [formData, setFormData] = useState({
@@ -74,7 +74,7 @@ export default function AddConsultantDialog({ isOpen, onClose }) {
   const [errors, setErrors] = useState({});
 
   const createConsultantMutation = useMutation({
-    mutationFn: (data) => base44.entities.Consultant.create(data),
+    mutationFn: (data) => archiflow.entities.Consultant.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['consultants'] });
       showSuccess(t('consultants.addSuccess') || 'יועץ נוסף בהצלחה!');

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { getCurrentUser } from '@/utils/authHelpers';
 import { format, startOfWeek, endOfWeek, subWeeks, addWeeks } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -54,7 +54,7 @@ export default function TimeTracking() {
   // Get current user
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => getCurrentUser(base44),
+    queryFn: () => getCurrentUser(archiflow),
   });
 
   // Check permissions
@@ -63,19 +63,19 @@ export default function TimeTracking() {
   // Fetch time entries
   const { data: allTimeEntries = [], isLoading: loadingEntries } = useQuery({
     queryKey: ['timeEntries'],
-    queryFn: () => base44.entities.TimeEntry.list('-date'),
+    queryFn: () => archiflow.entities.TimeEntry.list('-date'),
   });
 
   // Fetch projects for filters
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list(),
+    queryFn: () => archiflow.entities.Project.list(),
   });
 
   // Fetch team members for filters
   const { data: teamMembers = [] } = useQuery({
     queryKey: ['teamMembers'],
-    queryFn: () => base44.entities.TeamMember.list(),
+    queryFn: () => archiflow.entities.TeamMember.list(),
     enabled: canViewAll,
   });
 
@@ -146,7 +146,7 @@ export default function TimeTracking() {
         architect_id: currentUser?.architect_id || currentUser?.id,
         architect_email: currentUser?.architect_email || currentUser?.email,
       };
-      return base44.entities.TimeEntry.create(entryData);
+      return archiflow.entities.TimeEntry.create(entryData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['timeEntries'] });
@@ -160,7 +160,7 @@ export default function TimeTracking() {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }) => {
-      return base44.entities.TimeEntry.update(id, data);
+      return archiflow.entities.TimeEntry.update(id, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['timeEntries'] });
@@ -173,7 +173,7 @@ export default function TimeTracking() {
 
   // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.TimeEntry.delete(id),
+    mutationFn: (id) => archiflow.entities.TimeEntry.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['timeEntries'] });
       showSuccess('הדיווח נמחק');

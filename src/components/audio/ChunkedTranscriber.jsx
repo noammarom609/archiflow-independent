@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { Progress } from '@/components/ui/progress';
 
 const MAX_SIZE_MB = 25;
@@ -28,7 +28,7 @@ export default function ChunkedTranscriber({ file, onComplete, onError, addLog }
       setProgress(20);
       addLog?.(`📤 מעלה קובץ...`, 'info');
       
-      const uploadResult = await base44.integrations.Core.UploadFile({ file });
+      const uploadResult = await archiflow.integrations.Core.UploadFile({ file });
       addLog?.(`✅ קובץ הועלה: ${uploadResult.file_url}`, 'success');
       setProgress(40);
 
@@ -38,7 +38,7 @@ export default function ChunkedTranscriber({ file, onComplete, onError, addLog }
         setStatus('מעבד קובץ גדול בשרת...');
         setProgress(50);
         
-        const response = await base44.functions.invoke('splitAndTranscribe', {
+        const response = await archiflow.functions.invoke('splitAndTranscribe', {
           audio_url: uploadResult.file_url
         });
 
@@ -56,7 +56,7 @@ export default function ChunkedTranscriber({ file, onComplete, onError, addLog }
         setProgress(60);
         addLog?.('🎙️ מתמלל עם OpenAI Whisper...', 'info');
         
-        const response = await base44.functions.invoke('transcribeWithWhisper', {
+        const response = await archiflow.functions.invoke('transcribeWithWhisper', {
           audio_url: uploadResult.file_url
         });
 

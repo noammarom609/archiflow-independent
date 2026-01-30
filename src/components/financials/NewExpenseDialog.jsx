@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { showSuccess, showError } from '../utils/notifications';
@@ -38,18 +38,18 @@ export default function NewExpenseDialog({ isOpen, onClose }) {
 
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list('-created_date'),
+    queryFn: () => archiflow.entities.Project.list('-created_date'),
     enabled: isOpen,
   });
 
   const { data: contractors = [] } = useQuery({
     queryKey: ['contractors'],
-    queryFn: () => base44.entities.Contractor.list('-created_date'),
+    queryFn: () => archiflow.entities.Contractor.list('-created_date'),
     enabled: isOpen,
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Expense.create(data),
+    mutationFn: (data) => archiflow.entities.Expense.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       showSuccess('הוצאה נוספה בהצלחה!');

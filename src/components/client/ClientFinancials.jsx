@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 export default function ClientFinancials({ projectId }) {
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ['clientInvoices', projectId],
-    queryFn: () => base44.entities.Invoice.filter({ project_id: projectId }, '-issue_date'),
+    queryFn: () => archiflow.entities.Invoice.filter({ project_id: projectId }, '-issue_date'),
     enabled: !!projectId
   });
 

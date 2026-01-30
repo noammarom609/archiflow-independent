@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Calendar, 
@@ -52,7 +52,7 @@ export default function GanttStage({ project, onUpdate, onSubStageChange, curren
   const { data: proposal } = useQuery({
     queryKey: ['proposal', project?.proposal_id],
     queryFn: () => project?.proposal_id 
-      ? base44.entities.Proposal.filter({ id: project.proposal_id }).then(res => res[0]) 
+      ? archiflow.entities.Proposal.filter({ id: project.proposal_id }).then(res => res[0]) 
       : Promise.resolve(null),
     enabled: !!project?.proposal_id
   });
@@ -92,7 +92,7 @@ export default function GanttStage({ project, onUpdate, onSubStageChange, curren
     setIsGenerating(true);
     try {
       // Fetch existing tasks to inform the Gantt
-      const tasks = await base44.entities.Task.filter({ project_id: project.id });
+      const tasks = await archiflow.entities.Task.filter({ project_id: project.id });
       const tasksText = tasks.length > 0 
         ? tasks.map(t => `- ${t.title} (${t.status})`).join('\n') 
         : 'אין משימות קיימות עדיין';
@@ -121,7 +121,7 @@ export default function GanttStage({ project, onUpdate, onSubStageChange, curren
 
       פלט רצוי: JSON עם מערך milestones.`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await archiflow.integrations.Core.InvokeLLM({
         prompt,
         response_json_schema: {
           type: 'object',
@@ -218,7 +218,7 @@ export default function GanttStage({ project, onUpdate, onSubStageChange, curren
     try {
       // Create calendar events for each milestone
       for (const milestone of milestonesWithDates) {
-        await base44.entities.CalendarEvent.create({
+        await archiflow.entities.CalendarEvent.create({
           title: `${project?.name}: ${milestone.name}`,
           description: `אבן דרך בפרויקט ${project?.name}`,
           event_type: 'deadline',

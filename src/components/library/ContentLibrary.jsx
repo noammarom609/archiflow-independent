@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCurrentUser } from '@/utils/authHelpers';
 import {
@@ -71,7 +71,7 @@ export default function ContentLibrary({ onBack }) {
   // Fetch current user for multi-tenant filtering (with bypass support)
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => getCurrentUser(base44),
+    queryFn: () => getCurrentUser(archiflow),
   });
 
   const isSuperAdmin = user?.app_role === 'super_admin';
@@ -79,7 +79,7 @@ export default function ContentLibrary({ onBack }) {
   // Fetch content items
   const { data: allContentItems = [], isLoading } = useQuery({
     queryKey: ['contentItems'],
-    queryFn: () => base44.entities.ContentItem.list('-created_date'),
+    queryFn: () => archiflow.entities.ContentItem.list('-created_date'),
     staleTime: 5 * 60 * 1000, // 5 minutes - prevent excessive refetching
     refetchOnWindowFocus: false,
   });
@@ -91,7 +91,7 @@ export default function ContentLibrary({ onBack }) {
 
   // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.ContentItem.delete(id),
+    mutationFn: (id) => archiflow.entities.ContentItem.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contentItems'] });
       showSuccess('תוכן נמחק בהצלחה');
@@ -102,7 +102,7 @@ export default function ContentLibrary({ onBack }) {
   // Toggle favorite mutation
   const toggleFavoriteMutation = useMutation({
     mutationFn: ({ id, is_favorite }) => 
-      base44.entities.ContentItem.update(id, { is_favorite: !is_favorite }),
+      archiflow.entities.ContentItem.update(id, { is_favorite: !is_favorite }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['contentItems'] }),
   });
 

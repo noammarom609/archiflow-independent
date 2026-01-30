@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { showSuccess, showError } from '../utils/notifications';
@@ -36,7 +36,7 @@ export default function NewReceiptDialog({ isOpen, onClose }) {
   // Fetch pending/overdue invoices only
   const { data: invoices = [] } = useQuery({
     queryKey: ['invoices'],
-    queryFn: () => base44.entities.Invoice.list('-created_date'),
+    queryFn: () => archiflow.entities.Invoice.list('-created_date'),
     enabled: isOpen,
   });
 
@@ -45,10 +45,10 @@ export default function NewReceiptDialog({ isOpen, onClose }) {
   const createMutation = useMutation({
     mutationFn: async (data) => {
       // Create receipt
-      const receipt = await base44.entities.Receipt.create(data);
+      const receipt = await archiflow.entities.Receipt.create(data);
       // Update invoice status to paid
       if (data.invoice_id) {
-        await base44.entities.Invoice.update(data.invoice_id, { 
+        await archiflow.entities.Invoice.update(data.invoice_id, { 
           status: 'paid',
           paid_date: data.payment_date,
         });

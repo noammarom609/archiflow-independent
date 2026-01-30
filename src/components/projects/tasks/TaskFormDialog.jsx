@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import {
   Select,
@@ -52,13 +52,13 @@ export default function TaskFormDialog({ isOpen, onClose, task, project, onSave,
   // Fetch contractors for assignment
   const { data: contractors = [] } = useQuery({
     queryKey: ['contractors'],
-    queryFn: () => base44.entities.Contractor.list('-created_date'),
+    queryFn: () => archiflow.entities.Contractor.list('-created_date'),
   });
 
   // Fetch documents for linking
   const { data: documents = [] } = useQuery({
     queryKey: ['projectDocuments', project?.id],
-    queryFn: () => base44.entities.Document.filter({ project_id: project?.id }),
+    queryFn: () => archiflow.entities.Document.filter({ project_id: project?.id }),
     enabled: !!project?.id,
   });
 

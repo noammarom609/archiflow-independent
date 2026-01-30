@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, Calendar, FolderKanban, Loader2, ArrowRight } from 'lucide-react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, differenceInDays, isSameMonth, isWithinInterval, parseISO, startOfWeek, endOfWeek } from 'date-fns';
@@ -35,13 +35,13 @@ export default function GanttView({ currentDate: initialDate, onDateChange }) {
   // Fetch projects with gantt data
   const { data: projects = [], isLoading: loadingProjects } = useQuery({
     queryKey: ['projectsGantt'],
-    queryFn: () => base44.entities.Project.list('-created_date'),
+    queryFn: () => archiflow.entities.Project.list('-created_date'),
   });
 
   // Fetch tasks
   const { data: tasks = [], isLoading: loadingTasks } = useQuery({
     queryKey: ['allTasks'],
-    queryFn: () => base44.entities.Task.list('-created_date'),
+    queryFn: () => archiflow.entities.Task.list('-created_date'),
   });
 
   const isLoading = loadingProjects || loadingTasks;

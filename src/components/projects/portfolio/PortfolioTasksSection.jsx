@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
@@ -56,7 +56,7 @@ export default function PortfolioTasksSection({ tasks, project, isLoading }) {
 
   // Mutations
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Task.create({ 
+    mutationFn: (data) => archiflow.entities.Task.create({ 
       ...data, 
       project_id: project?.id,
       project_name: project?.name 
@@ -69,7 +69,7 @@ export default function PortfolioTasksSection({ tasks, project, isLoading }) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Task.update(id, data),
+    mutationFn: ({ id, data }) => archiflow.entities.Task.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['portfolioTasks', project?.id] });
       setShowTaskForm(false);
@@ -78,7 +78,7 @@ export default function PortfolioTasksSection({ tasks, project, isLoading }) {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Task.delete(id),
+    mutationFn: (id) => archiflow.entities.Task.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['portfolioTasks', project?.id] });
       showSuccess('משימה נמחקה');

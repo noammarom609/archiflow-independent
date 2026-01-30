@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 
 /**
  * Central hook for sending push notifications
@@ -42,12 +42,12 @@ export function useNotifications() {
         notificationData.user_id = userIdOrEmail;
       }
       
-      base44.entities.Notification.create(notificationData)
+      archiflow.entities.Notification.create(notificationData)
         .catch(err => console.warn('[Notifications] Failed to create in-app notification:', err));
 
       // Send push notification via server function
       // Edge function expects userEmail
-      await base44.functions.invoke('sendPushNotification', {
+      await archiflow.functions.invoke('sendPushNotification', {
         userEmail: isEmail ? userIdOrEmail.toLowerCase() : null,
         userId: !isEmail ? userIdOrEmail : null,
         title: notification.title,

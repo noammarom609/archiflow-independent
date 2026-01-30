@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { 
   Upload, 
   Loader2, 
@@ -239,7 +239,7 @@ function ImageElement({ content, styling, isEditing, type }) {
 
     setIsUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await archiflow.integrations.Core.UploadFile({ file });
       setImageUrl(file_url);
     } catch (error) {
       console.error('Upload error:', error);
@@ -428,7 +428,7 @@ function AITextElement({ content, styling, isEditing }) {
     
     setIsGenerating(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await archiflow.integrations.Core.InvokeLLM({
         prompt: `צור טקסט מקצועי להצעת מחיר בעברית. הנחיות: ${prompt}`,
         response_json_schema: {
           type: 'object',
@@ -499,7 +499,7 @@ function AIImageElement({ content, styling, isEditing }) {
     
     setIsGenerating(true);
     try {
-      const result = await base44.integrations.Core.GenerateImage({
+      const result = await archiflow.integrations.Core.GenerateImage({
         prompt: `Professional business image for a proposal document: ${prompt}`
       });
       setGeneratedUrl(result.url || '');

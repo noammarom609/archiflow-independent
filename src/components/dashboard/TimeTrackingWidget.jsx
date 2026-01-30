@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { getCurrentUser } from '@/utils/authHelpers';
 import { startOfWeek, endOfWeek, format } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -14,12 +14,12 @@ import { Clock, TrendingUp, ArrowLeft, DollarSign } from 'lucide-react';
 export default function TimeTrackingWidget() {
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => getCurrentUser(base44),
+    queryFn: () => getCurrentUser(archiflow),
   });
 
   const { data: timeEntries = [], isLoading } = useQuery({
     queryKey: ['timeEntriesWidget'],
-    queryFn: () => base44.entities.TimeEntry.list('-date', 100),
+    queryFn: () => archiflow.entities.TimeEntry.list('-date', 100),
     enabled: !!currentUser,
   });
 

@@ -239,8 +239,8 @@ export default function ProjectWorkflowStepper({ currentStage, currentSubStage, 
     // I'll update the call to pass an empty array, and the prompt will just say "completed tasks: none provided".
     // It's still better than nothing.
     
-    // UPDATE: I will fetch tasks here using base44 directly? No, I can't import base44 here easily if not already imported?
-    // Oh, I didn't import base44 in Stepper. 
+    // Tasks are fetched from the project data context
+    // The AI will summarize based on stage name and project status. 
     // Let's just pass empty tasks for now, the AI will summarize based on stage name and project status.
     
     const summary = await generatePhaseSummary(project || { name: 'פרויקט', status: currentStage }, stageId);

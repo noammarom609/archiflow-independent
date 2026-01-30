@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Send,
@@ -48,7 +48,7 @@ export default function ContentShareDialog({ item, onClose }) {
       const shareToken = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
       // Update item with share settings
-      await base44.entities.ContentItem.update(item.id, {
+      await archiflow.entities.ContentItem.update(item.id, {
         share_settings: {
           is_shared: true,
           share_token: shareToken,
@@ -101,7 +101,7 @@ export default function ContentShareDialog({ item, onClose }) {
       const linkToSend = shareLink || `${window.location.origin}/PublicContent?token=${Date.now()}`;
 
       if (sendMethod === 'email') {
-        await base44.integrations.Core.SendEmail({
+        await archiflow.integrations.Core.SendEmail({
           to: recipientEmail,
           subject: `תוכן: ${item.title}`,
           body: `

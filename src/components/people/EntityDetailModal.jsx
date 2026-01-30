@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { showSuccess, showError } from '@/components/utils/notifications';
 import UserAccessStatus from '@/components/users/UserAccessStatus';
@@ -157,7 +157,7 @@ export default function EntityDetailModal({ isOpen, onClose, entity, entityType,
   const { data: projectConsultants = [] } = useQuery({
     queryKey: ['projectConsultants', entity?.id],
     queryFn: () => entityType === 'consultant' && entity?.id
-      ? base44.entities.ProjectConsultant.filter({ consultant_id: entity.id })
+      ? archiflow.entities.ProjectConsultant.filter({ consultant_id: entity.id })
       : Promise.resolve([]),
     enabled: !!entity?.id && entityType === 'consultant' && !!config,
   });
@@ -165,7 +165,7 @@ export default function EntityDetailModal({ isOpen, onClose, entity, entityType,
   // Fetch projects
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list(),
+    queryFn: () => archiflow.entities.Project.list(),
     enabled: (entityType === 'consultant' || entityType === 'client') && !!config,
   });
 
@@ -173,7 +173,7 @@ export default function EntityDetailModal({ isOpen, onClose, entity, entityType,
   const { data: tasks = [] } = useQuery({
     queryKey: ['contractorTasks', entity?.id],
     queryFn: () => entityType === 'contractor' && entity?.id
-      ? base44.entities.Task.filter({ contractor_id: entity.id })
+      ? archiflow.entities.Task.filter({ contractor_id: entity.id })
       : Promise.resolve([]),
     enabled: !!entity?.id && entityType === 'contractor' && !!config,
   });
@@ -182,7 +182,7 @@ export default function EntityDetailModal({ isOpen, onClose, entity, entityType,
   const updateMutation = useMutation({
     mutationFn: async (data) => {
       if (!config) return;
-      return base44.entities[config.entityName].update(entity.id, data);
+      return archiflow.entities[config.entityName].update(entity.id, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [entityType + 's'] });
@@ -202,7 +202,7 @@ export default function EntityDetailModal({ isOpen, onClose, entity, entityType,
   const deleteMutation = useMutation({
     mutationFn: () => {
       if (!config) return;
-      return base44.entities[config.entityName].delete(entity.id);
+      return archiflow.entities[config.entityName].delete(entity.id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [entityType + 's'] });

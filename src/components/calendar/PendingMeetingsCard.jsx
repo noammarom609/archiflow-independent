@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,14 +25,14 @@ export default function PendingMeetingsCard() {
 
   const { data: pendingMeetings = [], isLoading } = useQuery({
     queryKey: ['pendingMeetings'],
-    queryFn: () => base44.entities.MeetingSlot.filter({ status: 'pending_approval' }),
+    queryFn: () => archiflow.entities.MeetingSlot.filter({ status: 'pending_approval' }),
     refetchInterval: 30000
   });
 
   const approveMutation = useMutation({
     mutationFn: async ({ id, approved }) => {
       const status = approved ? 'approved' : 'cancelled';
-      return await base44.entities.MeetingSlot.update(id, { status });
+      return await archiflow.entities.MeetingSlot.update(id, { status });
     },
     onSuccess: (_, { approved }) => {
       queryClient.invalidateQueries({ queryKey: ['pendingMeetings'] });

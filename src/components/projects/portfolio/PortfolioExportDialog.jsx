@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import {
   Download,
   FileText,
@@ -98,7 +98,7 @@ ${JSON.stringify(exportData, null, 2)}
 
 השתמש בסגנון מקצועי ונקי. החזר HTML בלבד ללא הסברים.`;
 
-      const htmlContent = await base44.integrations.Core.InvokeLLM({
+      const htmlContent = await archiflow.integrations.Core.InvokeLLM({
         prompt,
       });
 

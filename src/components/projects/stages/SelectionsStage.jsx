@@ -30,7 +30,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { showSuccess, showError } from '@/components/utils/notifications';
 
@@ -52,17 +52,17 @@ export default function SelectionsStage({ project, onUpdate }) {
   // Fetch Selections
   const { data: selections = [], isLoading } = useQuery({
       queryKey: ['projectSelections', project.id],
-      queryFn: () => base44.entities.ProjectSelection.filter({ project_id: project.id }),
+      queryFn: () => archiflow.entities.ProjectSelection.filter({ project_id: project.id }),
   });
 
   // Fetch Suppliers
   const { data: suppliers = [] } = useQuery({
       queryKey: ['suppliers'],
-      queryFn: () => base44.entities.Contractor.filter({ type: 'supplier' }),
+      queryFn: () => archiflow.entities.Contractor.filter({ type: 'supplier' }),
   });
 
   const createSelectionMutation = useMutation({
-      mutationFn: (data) => base44.entities.ProjectSelection.create({ ...data, project_id: project.id }),
+      mutationFn: (data) => archiflow.entities.ProjectSelection.create({ ...data, project_id: project.id }),
       onSuccess: () => {
           queryClient.invalidateQueries(['projectSelections']);
           setIsAddModalOpen(false);
@@ -73,7 +73,7 @@ export default function SelectionsStage({ project, onUpdate }) {
   });
 
   const deleteSelectionMutation = useMutation({
-      mutationFn: (id) => base44.entities.ProjectSelection.delete(id),
+      mutationFn: (id) => archiflow.entities.ProjectSelection.delete(id),
       onSuccess: () => {
           queryClient.invalidateQueries(['projectSelections']);
           showSuccess('פריט נמחק');
@@ -81,7 +81,7 @@ export default function SelectionsStage({ project, onUpdate }) {
   });
 
   const updateStatusMutation = useMutation({
-      mutationFn: ({ id, status }) => base44.entities.ProjectSelection.update(id, { status }),
+      mutationFn: ({ id, status }) => archiflow.entities.ProjectSelection.update(id, { status }),
       onSuccess: () => queryClient.invalidateQueries(['projectSelections'])
   });
 

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { getCurrentUser } from '@/utils/authHelpers';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
@@ -70,7 +70,7 @@ export default function MeetingSummaries() {
   // Fetch current user
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => getCurrentUser(base44),
+    queryFn: () => getCurrentUser(archiflow),
   });
 
   // Get architect context for multi-tenant filtering
@@ -79,7 +79,7 @@ export default function MeetingSummaries() {
   // Fetch recordings - filtered by user
   const { data: allRecordings = [], isLoading: loadingRecordings } = useQuery({
     queryKey: ['recordings'],
-    queryFn: () => base44.entities.Recording.list('-created_date', 100),
+    queryFn: () => archiflow.entities.Recording.list('-created_date', 100),
   });
 
   // Multi-tenant filter: show only user's recordings or recordings they're associated with
@@ -94,7 +94,7 @@ export default function MeetingSummaries() {
   // Fetch projects for filtering
   const { data: allProjects = [] } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list('name'),
+    queryFn: () => archiflow.entities.Project.list('name'),
   });
 
   // Multi-tenant filter for projects
@@ -108,7 +108,7 @@ export default function MeetingSummaries() {
 
   // Create recording mutation
   const createRecordingMutation = useMutation({
-    mutationFn: (data) => base44.entities.Recording.create(data),
+    mutationFn: (data) => archiflow.entities.Recording.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recordings'] });
     },
@@ -168,7 +168,7 @@ export default function MeetingSummaries() {
     try {
       // Upload file
       showSuccess('מעלה את ההקלטה...');
-      const uploadResult = await base44.integrations.Core.UploadFile({ file: audioFile });
+      const uploadResult = await archiflow.integrations.Core.UploadFile({ file: audioFile });
       const file_url = uploadResult.file_url;
 
       // Create recording record
@@ -184,7 +184,7 @@ export default function MeetingSummaries() {
 
       // Transcribe
       showSuccess('מתמלל את ההקלטה...');
-      const transcribeResult = await base44.functions.invoke('transcribeLargeAudio', { audio_url: file_url });
+      const transcribeResult = await archiflow.functions.invoke('transcribeLargeAudio', { audio_url: file_url });
       
       if (!transcribeResult.data?.transcription) {
         throw new Error('התמלול נכשל');
@@ -197,7 +197,7 @@ export default function MeetingSummaries() {
       const analysisResult = await runAnalysis(transcription);
 
       // Update recording
-      await base44.entities.Recording.update(recording.id, {
+      await archiflow.entities.Recording.update(recording.id, {
         transcription: transcription,
         analysis: analysisResult.analysis,
         deep_analysis: analysisResult.deepAnalysis,
@@ -243,7 +243,7 @@ export default function MeetingSummaries() {
 החזר JSON מובנה.`;
 
     const [basicResult, deepResult] = await Promise.allSettled([
-      base44.integrations.Core.InvokeLLM({
+      archiflow.integrations.Core.InvokeLLM({
         prompt: basicPrompt,
         response_json_schema: {
           type: 'object',
@@ -257,7 +257,7 @@ export default function MeetingSummaries() {
           required: ['summary']
         },
       }),
-      base44.integrations.Core.InvokeLLM({
+      archiflow.integrations.Core.InvokeLLM({
         prompt: deepPrompt,
         response_json_schema: {
           type: 'object',
@@ -285,7 +285,7 @@ export default function MeetingSummaries() {
     try {
       let audio_url = '';
       try {
-        const uploadResult = await base44.integrations.Core.UploadFile({ file });
+        const uploadResult = await archiflow.integrations.Core.UploadFile({ file });
         audio_url = uploadResult.file_url;
       } catch (e) {
         console.warn('Could not upload original file');
@@ -306,7 +306,7 @@ export default function MeetingSummaries() {
       const analysisResult = await runAnalysis(result.transcription);
 
       // Update
-      await base44.entities.Recording.update(recording.id, {
+      await archiflow.entities.Recording.update(recording.id, {
         analysis: analysisResult.analysis,
         deep_analysis: analysisResult.deepAnalysis,
         status: 'analyzed',
@@ -328,12 +328,12 @@ export default function MeetingSummaries() {
     try {
       showSuccess('מפזר את הנתונים...');
       
-      const result = await base44.functions.invoke('distributeRecordingDataV2', {
+      const result = await archiflow.functions.invoke('distributeRecordingDataV2', {
         recording: recording,
         selections: selections,
       });
 
-      await base44.entities.Recording.update(recording.id, {
+      await archiflow.entities.Recording.update(recording.id, {
         status: 'distributed',
         distribution_log: [
           ...(recording.distribution_log || []),
@@ -375,7 +375,7 @@ export default function MeetingSummaries() {
       
       const analysisResult = await runAnalysis(recording.transcription);
 
-      await base44.entities.Recording.update(recording.id, {
+      await archiflow.entities.Recording.update(recording.id, {
         analysis: analysisResult.analysis,
         deep_analysis: analysisResult.deepAnalysis,
         status: 'analyzed',

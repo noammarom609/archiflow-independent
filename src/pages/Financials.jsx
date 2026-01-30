@@ -19,7 +19,7 @@ import {
   Loader2,
   Receipt
 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import { getCurrentUser } from '@/utils/authHelpers';
 import { showSuccess } from '../components/utils/notifications';
@@ -55,7 +55,7 @@ export default function Financials() {
   // Fetch current user for multi-tenant filtering (with bypass support)
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => getCurrentUser(base44),
+    queryFn: () => getCurrentUser(archiflow),
   });
 
   const isSuperAdmin = user?.app_role === 'super_admin';
@@ -63,13 +63,13 @@ export default function Financials() {
   // Fetch invoices from database
   const { data: allInvoices = [], isLoading: loadingInvoices } = useQuery({
     queryKey: ['invoices'],
-    queryFn: () => base44.entities.Invoice.list('-created_date'),
+    queryFn: () => archiflow.entities.Invoice.list('-created_date'),
   });
 
   // Fetch expenses from database
   const { data: allExpenses = [], isLoading: loadingExpenses } = useQuery({
     queryKey: ['expenses'],
-    queryFn: () => base44.entities.Expense.list('-expense_date'),
+    queryFn: () => archiflow.entities.Expense.list('-expense_date'),
   });
 
   // Multi-tenant filtering

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 // Toaster moved to App.jsx for global fixed positioning
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,32 +48,32 @@ export default function ContractorPortal() {
   // Fetch Contractors for dropdown
   const { data: allContractors = [] } = useQuery({
     queryKey: ['allContractorsForImpersonation'],
-    queryFn: () => base44.entities.Contractor.list('-created_date'),
+    queryFn: () => archiflow.entities.Contractor.list('-created_date'),
     enabled: canImpersonate
   });
 
   // Fetch contractor documents
   const { data: allDocuments = [] } = useQuery({
     queryKey: ['contractorDocuments'],
-    queryFn: () => base44.entities.ContractorDocument.list('-created_date', 100),
+    queryFn: () => archiflow.entities.ContractorDocument.list('-created_date', 100),
   });
 
   // Fetch contractor tasks
   const { data: allTasks = [] } = useQuery({
     queryKey: ['contractorTasks'],
-    queryFn: () => base44.entities.Task.list('-updated_date', 100),
+    queryFn: () => archiflow.entities.Task.list('-updated_date', 100),
   });
 
   // Fetch messages
   const { data: allMessages = [] } = useQuery({
     queryKey: ['messages'],
-    queryFn: () => base44.entities.Message.list('-created_date', 100),
+    queryFn: () => archiflow.entities.Message.list('-created_date', 100),
   });
 
   // Fetch signatures
   const { data: allSignatures = [] } = useQuery({
     queryKey: ['documentSignatures'],
-    queryFn: () => base44.entities.DocumentSignature.list('-created_date', 200),
+    queryFn: () => archiflow.entities.DocumentSignature.list('-created_date', 200),
   });
 
   // Multi-tenant filtering

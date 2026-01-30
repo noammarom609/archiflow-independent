@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Users, 
@@ -82,7 +82,7 @@ export default function SuperAdminDashboard() {
     const { data: systemData, isLoading } = useQuery({
         queryKey: ['systemHierarchy'],
         queryFn: async () => {
-            const response = await base44.functions.invoke('getSystemHierarchy', {});
+            const response = await archiflow.functions.invoke('getSystemHierarchy', {});
             return response.data;
         },
     });
@@ -90,7 +90,7 @@ export default function SuperAdminDashboard() {
     // Delete Record Mutation
     const deleteRecordMutation = useMutation({
         mutationFn: async ({ entityType, recordId }) => {
-            await base44.functions.invoke('adminDeleteRecord', { entityType, recordId });
+            await archiflow.functions.invoke('adminDeleteRecord', { entityType, recordId });
         },
         onSuccess: () => {
             showSuccess('הרשומה נמחקה בהצלחה');
@@ -102,7 +102,7 @@ export default function SuperAdminDashboard() {
     // Assign User Mutation
     const assignUserMutation = useMutation({
         mutationFn: async (data) => {
-            await base44.functions.invoke('adminAssignUser', data);
+            await archiflow.functions.invoke('adminAssignUser', data);
         },
         onSuccess: () => {
             showSuccess('הפעולה בוצעה בהצלחה');
@@ -118,7 +118,7 @@ export default function SuperAdminDashboard() {
     // Assign Orphan Record Mutation
     const assignOrphanMutation = useMutation({
         mutationFn: async (data) => {
-            await base44.functions.invoke('assignOrphanedRecord', data);
+            await archiflow.functions.invoke('assignOrphanedRecord', data);
         },
         onSuccess: () => {
             showSuccess('הרשומה שויכה בהצלחה');
@@ -133,7 +133,7 @@ export default function SuperAdminDashboard() {
     // Approve/Reject Mutation
     const approveMutation = useMutation({
         mutationFn: async ({ entityType, recordId, action, rejectionReason }) => {
-            await base44.functions.invoke('approveRecord', { entityType, recordId, action, rejectionReason });
+            await archiflow.functions.invoke('approveRecord', { entityType, recordId, action, rejectionReason });
         },
         onSuccess: (_, variables) => {
             showSuccess(variables.action === 'approve' ? 'אושר בהצלחה!' : 'נדחה');

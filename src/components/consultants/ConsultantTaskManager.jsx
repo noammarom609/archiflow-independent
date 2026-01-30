@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CheckCircle2, Clock, AlertCircle, Briefcase, FileText, Calendar } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { showSuccess, showError } from '../utils/notifications';
 
@@ -12,7 +12,7 @@ export default function ConsultantTaskManager({ tasks }) {
   const queryClient = useQueryClient();
 
   const updateTaskMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.ConsultantTask.update(id, data),
+    mutationFn: ({ id, data }) => archiflow.entities.ConsultantTask.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['consultantTasks'] });
       showSuccess('סטטוס המשימה עודכן');

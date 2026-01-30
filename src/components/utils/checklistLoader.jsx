@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 
 /**
  * Project Types Configuration
@@ -629,7 +629,7 @@ export async function loadChecklist(settingKey) {
   }
   
   try {
-    const settings = await base44.entities.SystemSettings.filter({ setting_key: settingKey });
+    const settings = await archiflow.entities.SystemSettings.filter({ setting_key: settingKey });
     
     if (settings && settings.length > 0 && settings[0].setting_value) {
       // Convert from DB format (no checked/notes) to UI format
@@ -712,15 +712,15 @@ export async function saveChecklist(settingKey, items, description = '') {
     }));
     
     // Check if setting already exists
-    const existing = await base44.entities.SystemSettings.filter({ setting_key: settingKey });
+    const existing = await archiflow.entities.SystemSettings.filter({ setting_key: settingKey });
     
     if (existing && existing.length > 0) {
-      await base44.entities.SystemSettings.update(existing[0].id, {
+      await archiflow.entities.SystemSettings.update(existing[0].id, {
         setting_value: dbItems,
         description: description || existing[0].description
       });
     } else {
-      await base44.entities.SystemSettings.create({
+      await archiflow.entities.SystemSettings.create({
         setting_key: settingKey,
         setting_value: dbItems,
         description

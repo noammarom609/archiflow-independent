@@ -5,7 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { PenTool, Loader2, CheckCircle2, AlertCircle, Trash2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { showSuccess, showError } from '../utils/notifications';
 
@@ -18,7 +18,7 @@ export default function DigitalSignatureDialog({ isOpen, onClose, document, sign
   const queryClient = useQueryClient();
 
   const signatureMutation = useMutation({
-    mutationFn: (signatureData) => base44.entities.DocumentSignature.create(signatureData),
+    mutationFn: (signatureData) => archiflow.entities.DocumentSignature.create(signatureData),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['documentSignatures'] });
       queryClient.invalidateQueries({ queryKey: ['contractorDocuments'] });

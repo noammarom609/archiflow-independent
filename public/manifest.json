@@ -1,0 +1,98 @@
+{
+  "name": "ArchiFlow",
+  "short_name": "ArchiFlow",
+  "description": "מערכת ניהול פרויקטים מקצועית לאדריכלים ומעצבי פנים",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F7F5F2",
+  "theme_color": "#984E39",
+  "orientation": "portrait-primary",
+  "lang": "he",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/archiflow-logoV2.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/archiflow-logoV2.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/archiflow-logoV2.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/archiflow-logoV2.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/archiflow-logoV2.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/archiflow-logoV2.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/archiflow-logoV2.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/archiflow-logoV2.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "דשבורד",
+      "short_name": "דשבורד",
+      "description": "פתח את הדשבורד הראשי",
+      "url": "/Dashboard",
+      "icons": [{ "src": "/archiflow-logoV2.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "פרויקטים",
+      "short_name": "פרויקטים",
+      "description": "צפה בפרויקטים שלך",
+      "url": "/Projects",
+      "icons": [{ "src": "/archiflow-logoV2.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "לוח שנה",
+      "short_name": "יומן",
+      "description": "פתח את לוח השנה",
+      "url": "/Calendar",
+      "icons": [{ "src": "/archiflow-logoV2.png", "sizes": "96x96" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/archiflow-logoV2.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "דשבורד ArchiFlow"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

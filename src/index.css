@@ -1,0 +1,388 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ArchiFlow Design System - "Organic Modernism"
+   Natural Tech: Apple-style cleanliness + Glassmorphism with warm natural colors
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@layer base {
+  :root {
+    /* ─────────────────────────────────────────────────────────────────────────
+       ORGANIC MODERNISM COLOR PALETTE (Light Mode)
+       ───────────────────────────────────────────────────────────────────────── */
+    
+    /* Background: Off-White #F7F5F2 - Warm cream instead of stark white */
+    --background: 36 25% 96%;
+    --foreground: 23 19% 24%; /* Espresso #4A3B32 */
+    
+    /* Cards: Slightly warmer than background */
+    --card: 30 20% 98%;
+    --card-foreground: 23 19% 24%;
+    
+    /* Popover: Same as card */
+    --popover: 30 20% 98%;
+    --popover-foreground: 23 19% 24%;
+    
+    /* Primary: Terracotta #984E39 - Warm rust for CTAs */
+    --primary: 13 45% 41%;
+    --primary-foreground: 36 25% 96%;
+    
+    /* Secondary: Forest Green #354231 - Deep natural green */
+    --secondary: 106 15% 23%;
+    --secondary-foreground: 36 25% 96%;
+    
+    /* Muted: Taupe #8C7D70 variants */
+    --muted: 28 12% 90%;
+    --muted-foreground: 28 12% 40%;
+    
+    /* Accent: Light terracotta tint */
+    --accent: 13 30% 92%;
+    --accent-foreground: 13 45% 35%;
+    
+    /* Destructive: Warm red that fits the palette */
+    --destructive: 0 65% 45%;
+    --destructive-foreground: 36 25% 96%;
+    
+    /* Borders & Inputs: Taupe-based */
+    --border: 28 12% 82%;
+    --input: 28 12% 85%;
+    --ring: 13 45% 41%;
+    
+    /* Charts: Using the natural palette */
+    --chart-1: 13 45% 41%;   /* Terracotta */
+    --chart-2: 106 15% 35%;  /* Forest Green lighter */
+    --chart-3: 28 12% 49%;   /* Taupe */
+    --chart-4: 36 40% 70%;   /* Warm beige */
+    --chart-5: 13 35% 55%;   /* Light terracotta */
+    
+    /* Radius: Rounded corners (12-16px feel) */
+    --radius: 0.75rem;
+    
+    /* Sidebar: Forest Green based with glassmorphism support */
+    --sidebar-background: 106 15% 18%;
+    --sidebar-foreground: 36 25% 92%;
+    --sidebar-primary: 13 45% 50%;
+    --sidebar-primary-foreground: 36 25% 96%;
+    --sidebar-accent: 106 12% 25%;
+    --sidebar-accent-foreground: 36 25% 92%;
+    --sidebar-border: 106 10% 25%;
+    --sidebar-ring: 13 45% 50%;
+    
+    /* Custom ArchiFlow variables */
+    --terracotta: 13 45% 41%;
+    --forest-green: 106 15% 23%;
+    --taupe: 28 12% 49%;
+    --espresso: 23 19% 24%;
+    --off-white: 36 25% 96%;
+    
+    /* Glassmorphism */
+    --glass-bg: rgba(247, 245, 242, 0.7);
+    --glass-border: rgba(140, 125, 112, 0.2);
+    --glass-shadow: 0 8px 32px rgba(74, 59, 50, 0.1);
+  }
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     DARK MODE - Premium Dark Slate
+     ───────────────────────────────────────────────────────────────────────── */
+  .dark {
+    /* Background: Dark charcoal with warmth #1C1917 */
+    --background: 20 14% 10%;
+    --foreground: 36 20% 90%;
+    
+    /* Cards: Slightly elevated #292524 */
+    --card: 20 10% 15%;
+    --card-foreground: 36 20% 90%;
+    
+    --popover: 20 10% 15%;
+    --popover-foreground: 36 20% 90%;
+    
+    /* Primary: Brighter terracotta for dark mode */
+    --primary: 13 50% 55%;
+    --primary-foreground: 20 14% 10%;
+    
+    /* Secondary: Lighter forest green */
+    --secondary: 106 20% 35%;
+    --secondary-foreground: 36 20% 90%;
+    
+    --muted: 20 10% 20%;
+    --muted-foreground: 28 12% 55%;
+    
+    --accent: 13 30% 20%;
+    --accent-foreground: 13 50% 65%;
+    
+    --destructive: 0 60% 50%;
+    --destructive-foreground: 36 20% 90%;
+    
+    --border: 20 10% 20%;
+    --input: 20 10% 20%;
+    --ring: 13 50% 55%;
+    
+    --chart-1: 13 50% 55%;
+    --chart-2: 106 25% 45%;
+    --chart-3: 28 15% 55%;
+    --chart-4: 36 35% 50%;
+    --chart-5: 13 40% 65%;
+    
+    --sidebar-background: 20 12% 8%;
+    --sidebar-foreground: 36 20% 90%;
+    --sidebar-primary: 13 50% 55%;
+    --sidebar-primary-foreground: 20 14% 10%;
+    --sidebar-accent: 20 10% 15%;
+    --sidebar-accent-foreground: 36 20% 90%;
+    --sidebar-border: 20 10% 18%;
+    --sidebar-ring: 13 50% 55%;
+    
+    /* Glassmorphism Dark */
+    --glass-bg: rgba(28, 25, 23, 0.8);
+    --glass-border: rgba(140, 125, 112, 0.15);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TYPOGRAPHY - Heebo Font Family
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  
+  html {
+    font-family: 'Heebo', system-ui, sans-serif;
+    font-optical-sizing: auto;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Heebo', system-ui, sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Headings with Espresso color */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    line-height: 1.3;
+    color: hsl(var(--espresso));
+  }
+  
+  h1 { font-size: 2rem; font-weight: 700; }
+  h2 { font-size: 1.5rem; font-weight: 600; }
+  h3 { font-size: 1.25rem; font-weight: 600; }
+  h4 { font-size: 1.125rem; font-weight: 500; }
+  
+  /* Dark mode heading adjustment */
+  .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+    color: hsl(36 20% 90%);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GLASSMORPHISM UTILITIES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@layer utilities {
+  .glass {
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+  
+  .glass-subtle {
+    background: rgba(247, 245, 242, 0.5);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+  
+  .dark .glass-subtle {
+    background: rgba(28, 25, 23, 0.6);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TEXTURE OVERLAYS - Subtle noise/paper effect
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@layer utilities {
+  .texture-noise {
+    position: relative;
+  }
+  
+  .texture-noise::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  }
+  
+  .texture-paper {
+    background-image: 
+      linear-gradient(to bottom, transparent 50%, rgba(140, 125, 112, 0.02) 50%);
+    background-size: 100% 4px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SOFT SHADOWS - Brown-gray tinted shadows
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@layer utilities {
+  .shadow-organic-sm {
+    box-shadow: 0 1px 2px rgba(74, 59, 50, 0.05), 
+                0 1px 3px rgba(74, 59, 50, 0.1);
+  }
+  
+  .shadow-organic {
+    box-shadow: 0 2px 4px rgba(74, 59, 50, 0.05), 
+                0 4px 12px rgba(74, 59, 50, 0.1);
+  }
+  
+  .shadow-organic-lg {
+    box-shadow: 0 4px 6px rgba(74, 59, 50, 0.05), 
+                0 10px 24px rgba(74, 59, 50, 0.12);
+  }
+  
+  .shadow-organic-xl {
+    box-shadow: 0 8px 16px rgba(74, 59, 50, 0.08), 
+                0 20px 40px rgba(74, 59, 50, 0.15);
+  }
+  
+  /* Dark mode shadows */
+  .dark .shadow-organic-sm,
+  .dark .shadow-organic,
+  .dark .shadow-organic-lg,
+  .dark .shadow-organic-xl {
+    --tw-shadow-color: rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Soft organic shadows (alternative naming) */
+  .shadow-soft-organic {
+    box-shadow: 0 2px 8px rgba(74, 59, 50, 0.08), 
+                0 4px 16px rgba(74, 59, 50, 0.06);
+  }
+  
+  .shadow-soft-organic-hover {
+    box-shadow: 0 4px 12px rgba(74, 59, 50, 0.1), 
+                0 8px 24px rgba(74, 59, 50, 0.08);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CUSTOM SCROLLBAR - Organic style
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@layer base {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--taupe));
+    border-radius: 4px;
+    border: 2px solid hsl(var(--muted));
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--terracotta));
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MICRO-INTERACTIONS & ANIMATIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@layer utilities {
+  /* Button hover scale */
+  .hover-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(74, 59, 50, 0.15);
+  }
+  
+  /* Card hover effect */
+  .card-hover {
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+  
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(74, 59, 50, 0.12);
+    border-color: hsl(var(--terracotta) / 0.3);
+  }
+  
+  /* Smooth fade in */
+  .fade-in {
+    animation: fadeIn 0.4s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Staggered animation delay classes */
+  .stagger-1 { animation-delay: 0.1s; }
+  .stagger-2 { animation-delay: 0.2s; }
+  .stagger-3 { animation-delay: 0.3s; }
+  .stagger-4 { animation-delay: 0.4s; }
+  .stagger-5 { animation-delay: 0.5s; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FOCUS STATES - Terracotta ring
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@layer base {
+  *:focus-visible {
+    outline: 2px solid hsl(var(--terracotta));
+    outline-offset: 2px;
+  }
+  
+  button:focus-visible,
+  [role="button"]:focus-visible {
+    outline: 2px solid hsl(var(--terracotta));
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px hsl(var(--terracotta) / 0.2);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SELECTION STYLING
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@layer base {
+  ::selection {
+    background-color: hsl(var(--terracotta) / 0.2);
+    color: hsl(var(--espresso));
+  }
+  
+  .dark ::selection {
+    background-color: hsl(var(--terracotta) / 0.3);
+    color: hsl(36 20% 95%);
+  }
+}

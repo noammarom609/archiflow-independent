@@ -43,9 +43,28 @@ const entityMap = {
   SystemSettings: entities.SystemSettings,
   TranscriptionCorrection: entities.TranscriptionCorrection,
   UserGoogleToken: entities.UserGoogleToken,
+  // Migration 015 - Critical entities
+  RecordingFolder: entities.RecordingFolder,
+  DocumentSignature: entities.DocumentSignature,
+  ShareLink: entities.ShareLink,
+  ClientAccess: entities.ClientAccess,
+  // Migration 016 - Specialized entities
+  ContractorDocument: entities.ContractorDocument,
+  ConsultantMessage: entities.ConsultantMessage,
+  ConsultantDocument: entities.ConsultantDocument,
+  CADFile: entities.CADFile,
+  ProjectSelection: entities.ProjectSelection,
+  // Migration 017 - AI tracking entities
+  AILearning: entities.AILearning,
+  ProjectAIHistory: entities.ProjectAIHistory,
 };
 
+// Get Supabase config from environment
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
 // Functions wrapper - invokes Supabase edge functions
+// Uses direct fetch to ensure proper headers are sent
 const functionsWrapper = {
   invoke: async (functionName, params = {}) => {
     // Convert camelCase to kebab-case for Supabase
@@ -53,33 +72,38 @@ const functionsWrapper = {
     
     console.log(`[Archiflow] Invoking function: ${kebabName}`);
     
+    // Build the URL
+    const url = `${SUPABASE_URL}/functions/v1/${kebabName}`;
+    console.log(`[Archiflow] Function URL: ${url}`);
+    
     try {
-      // Use authenticated client if available
-      const client = getClient();
-      const { data, error } = await client.functions.invoke(kebabName, {
-        body: params
+      // Make direct fetch call with proper headers
+      // The apikey header is required for Supabase to identify the project
+      // Authorization with anon key is needed for functions deployed with --no-verify-jwt
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify(params)
       });
       
-      if (error) {
-        console.error(`[Archiflow] Function error:`, error);
-        // Return error as data so caller can handle it
-        return { data: { error: error.message || error }, error };
+      console.log(`[Archiflow] Response status: ${response.status}`);
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        console.error(`[Archiflow] Function error:`, data);
+        return { data: { error: data.message || data.error || 'Function error' }, error: data };
       }
+      
+      console.log(`[Archiflow] Response data:`, data);
       return { data };
     } catch (err) {
       console.error(`[Archiflow] Function exception:`, err);
-      // Try to parse error context if available
-      if (err.context?.body) {
-        try {
-          const bodyText = await err.context.body.text?.() || err.context.body;
-          const parsed = typeof bodyText === 'string' ? JSON.parse(bodyText) : bodyText;
-          console.log(`[Archiflow] Error body:`, parsed);
-          return { data: parsed, error: err };
-        } catch (parseErr) {
-          console.log(`[Archiflow] Could not parse error body`);
-        }
-      }
-      throw err;
+      return { data: { error: err.message }, error: err };
     }
   }
 };
@@ -105,11 +129,12 @@ const authWrapper = {
 };
 
 // Create Archiflow client object
+// integrations.Core is used across the app (UploadFile, InvokeLLM, etc.)
 export const archiflow = {
   entities: entityMap,
   functions: functionsWrapper,
   auth: authWrapper,
-  integrations: integrations.Core,
+  integrations: { Core: integrations.Core },
   
   // For service role operations (should be done in Edge Functions)
   asServiceRole: {

@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { showSuccess, showError } from '../utils/notifications';
+import { useAuth } from '@/lib/AuthContext';
 
 // Validation patterns
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -22,8 +23,9 @@ const PHONE_REGEX = /^[\d\-+().\s]{7,20}$/;
 
 export default function AddContractorDialog({ isOpen, onClose, initialType = 'contractor' }) {
   const queryClient = useQueryClient();
+  const { user: authUser } = useAuth();
   
-  // Get current user to set architect_id
+  // Get current user to set architect_id (fallback: authUser from context)
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => archiflow.auth.me(),
@@ -127,9 +129,10 @@ export default function AddContractorDialog({ isOpen, onClose, initialType = 'co
       rating: 0,
       projects_completed: 0,
       hourly_rate: formData.hourly_rate ? Number(formData.hourly_rate) : undefined,
-      // Add architect_id and architect_email for multi-tenant filtering
+      // Add architect_id, architect_email, created_by for multi-tenant (use auth context if query not yet loaded)
       architect_id: currentUser?.id || null,
-      architect_email: currentUser?.email || null,
+      architect_email: currentUser?.email || authUser?.email || null,
+      created_by: currentUser?.email || authUser?.email || null,
       approval_status: 'approved', // Auto-approve when created by architect
     };
 

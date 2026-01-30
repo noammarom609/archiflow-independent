@@ -54,6 +54,20 @@ const tableNameMap = {
   SystemSettings: 'system_settings',
   TranscriptionCorrection: 'transcription_corrections',
   UserGoogleToken: 'user_google_tokens',
+  // Migration 015 - Critical entities
+  RecordingFolder: 'recording_folders',
+  DocumentSignature: 'document_signatures',
+  ShareLink: 'share_links',
+  ClientAccess: 'client_access',
+  // Migration 016 - Specialized entities
+  ContractorDocument: 'contractor_documents',
+  ConsultantMessage: 'consultant_messages',
+  ConsultantDocument: 'consultant_documents',
+  CADFile: 'cad_files',
+  ProjectSelection: 'project_selections',
+  // Migration 017 - AI tracking entities
+  AILearning: 'ai_learning',
+  ProjectAIHistory: 'project_ai_history',
 };
 
 // Get table name from entity name
@@ -226,6 +240,20 @@ export const SystemSettings = createEntityHelper('SystemSettings');
 export const TranscriptionCorrection = createEntityHelper('TranscriptionCorrection');
 export const UserGoogleToken = createEntityHelper('UserGoogleToken');
 export const User = createEntityHelper('User');
+// Migration 015 - Critical entities
+export const RecordingFolder = createEntityHelper('RecordingFolder');
+export const DocumentSignature = createEntityHelper('DocumentSignature');
+export const ShareLink = createEntityHelper('ShareLink');
+export const ClientAccess = createEntityHelper('ClientAccess');
+// Migration 016 - Specialized entities
+export const ContractorDocument = createEntityHelper('ContractorDocument');
+export const ConsultantMessage = createEntityHelper('ConsultantMessage');
+export const ConsultantDocument = createEntityHelper('ConsultantDocument');
+export const CADFile = createEntityHelper('CADFile');
+export const ProjectSelection = createEntityHelper('ProjectSelection');
+// Migration 017 - AI tracking entities
+export const AILearning = createEntityHelper('AILearning');
+export const ProjectAIHistory = createEntityHelper('ProjectAIHistory');
 
 // Query helper for more complex queries
 export const Query = {

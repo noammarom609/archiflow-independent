@@ -27,6 +27,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { showSuccess, showError } from '../utils/notifications';
+import { useAuth } from '@/lib/AuthContext';
 
 // Validation patterns
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -51,8 +52,9 @@ const CONSULTANT_TYPES = [
 export default function AddConsultantDialog({ isOpen, onClose }) {
   const queryClient = useQueryClient();
   const { t, isRTL } = useLanguage();
+  const { user: authUser } = useAuth();
   
-  // Get current user to set architect_id
+  // Get current user to set architect_id (fallback: authUser from context)
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => archiflow.auth.me(),
@@ -140,12 +142,13 @@ export default function AddConsultantDialog({ isOpen, onClose }) {
       return;
     }
 
-    // Add architect_id and architect_email for multi-tenant filtering
+    // Add architect_id, architect_email, created_by (use auth context if query not yet loaded)
     const dataWithArchitect = {
       ...formData,
       architect_id: currentUser?.id || null,
-      architect_email: currentUser?.email || null,
-      approval_status: 'approved', // Auto-approve when created by architect
+      architect_email: currentUser?.email || authUser?.email || null,
+      created_by: currentUser?.email || authUser?.email || null,
+      approval_status: 'approved',
     };
 
     createConsultantMutation.mutate(dataWithArchitect);

@@ -61,6 +61,7 @@ export const UploadFile = async ({ file, bucket = 'documents' }) => {
   
   return {
     url: publicUrl,
+    file_url: publicUrl, // alias for consumers that expect file_url (e.g. transcribe flow)
     path: data.path,
     file_name: file.name,
     file_type: file.type,

@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { showSuccess, showError } from '../utils/notifications';
+import { useAuth } from '@/lib/AuthContext';
 
 // Validation patterns
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -38,8 +39,9 @@ const categoryOptions = [
 
 export default function AddSupplierDialog({ isOpen, onClose }) {
   const queryClient = useQueryClient();
+  const { user: authUser } = useAuth();
   
-  // Get current user to set architect_id
+  // Get current user to set architect_id (fallback: authUser from context)
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => archiflow.auth.me(),
@@ -130,10 +132,10 @@ export default function AddSupplierDialog({ isOpen, onClose }) {
       status: 'active',
       rating: 0,
       orders_completed: 0,
-      // Add architect_id and architect_email for multi-tenant filtering
       architect_id: currentUser?.id || null,
-      architect_email: currentUser?.email || null,
-      approval_status: 'approved', // Auto-approve when created by architect
+      architect_email: currentUser?.email || authUser?.email || null,
+      created_by: currentUser?.email || authUser?.email || null,
+      approval_status: 'approved',
     };
 
     createSupplierMutation.mutate(payload);

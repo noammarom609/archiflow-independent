@@ -344,8 +344,9 @@ function LayoutContent({ children, currentPageName }) {
   // ═══════════════════════════════════════════════════════════════════════════
   
   // Build dynamic portal children based on entity counts
-  // While loading, show all portals to prevent flickering. Once loaded, filter by count.
-  const showAllPortals = loadingPortalCounts || !portalCounts;
+  // Architects and above always see all portals; others see only portals with at least one entity.
+  const isArchitectOrAbove = user?.app_role && ['super_admin', 'admin', 'architect', 'project_manager'].includes(user.app_role);
+  const showAllPortals = loadingPortalCounts || !portalCounts || isArchitectOrAbove;
   
   const portalChildren = [
     { name: 'People', labelKey: 'nav.people', icon: Users }, // Always show People

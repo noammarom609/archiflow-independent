@@ -39,3 +39,22 @@ enable_confirmations = false
 # Google auth is configured via Clerk, not Supabase
 # [auth.external.google]
 # enabled = true
+
+# Edge Functions configuration
+# Disable JWT verification for functions that handle their own auth
+# These functions use userEmail from the request body instead of JWT
+
+[functions.user-google-calendar]
+verify_jwt = false
+
+[functions.check-user-by-email]
+verify_jwt = false
+
+[functions.get-public-proposal]
+verify_jwt = false
+
+[functions.submit-public-approval]
+verify_jwt = false
+
+[functions.invite-user-to-app]
+verify_jwt = false

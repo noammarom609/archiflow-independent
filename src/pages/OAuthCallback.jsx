@@ -1,45 +1,108 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { archiflow } from '@/api/archiflow';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function OAuthCallback() {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState('processing'); // 'processing' | 'success' | 'error'
   const [message, setMessage] = useState('מעבד את החיבור...');
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     const code = searchParams.get('code');
     const error = searchParams.get('error');
 
+    // Handle error case immediately
     if (error) {
       setStatus('error');
       setMessage('התחברות ל-Google בוטלה או נכשלה');
       
-      // Send error to opener and close
       if (window.opener) {
         window.opener.postMessage({ type: 'GOOGLE_OAUTH_ERROR', error }, window.location.origin);
+        setTimeout(() => window.close(), 2000);
+      } else {
+        setTimeout(() => navigate('/Calendar'), 2000);
       }
-      setTimeout(() => window.close(), 2000);
       return;
     }
 
-    if (code) {
-      setStatus('success');
-      setMessage('החיבור הצליח! החלון נסגר...');
-      
-      // Send code to opener
-      if (window.opener) {
-        window.opener.postMessage({ type: 'GOOGLE_OAUTH_SUCCESS', code }, window.location.origin);
-      }
-      
-      // Close window after short delay
-      setTimeout(() => window.close(), 1500);
-    } else {
+    // Handle no code case
+    if (!code) {
       setStatus('error');
       setMessage('לא התקבל קוד אימות');
-      setTimeout(() => window.close(), 2000);
+      if (window.opener) {
+        setTimeout(() => window.close(), 2000);
+      } else {
+        setTimeout(() => navigate('/Calendar'), 2000);
+      }
+      return;
     }
-  }, [searchParams]);
+
+    // If we have an opener (popup mode), send message and close
+    if (window.opener) {
+      setStatus('success');
+      setMessage('החיבור הצליח! החלון נסגר...');
+      window.opener.postMessage({ type: 'GOOGLE_OAUTH_SUCCESS', code }, window.location.origin);
+      setTimeout(() => window.close(), 1500);
+      return;
+    }
+
+    // No opener - we're in a regular tab, need to wait for user then exchange
+    // Don't do anything here - wait for user to be available in the next effect
+  }, [searchParams, navigate]);
+
+  // Separate effect to handle code exchange when user is available (for non-popup mode)
+  useEffect(() => {
+    const code = searchParams.get('code');
+    const error = searchParams.get('error');
+    
+    // Only run this if we have a code, no error, no opener, and user is loaded
+    if (!code || error || window.opener || !user?.email) {
+      return;
+    }
+
+    // Don't run again if we already processed
+    if (status === 'success' || status === 'error') {
+      return;
+    }
+
+    const exchangeCode = async () => {
+      setStatus('processing');
+      setMessage('מחבר את חשבון Google...');
+      
+      try {
+        console.log('[OAuthCallback] Exchanging code for user:', user.email);
+        const res = await archiflow.functions.invoke('userGoogleCalendar', {
+          action: 'exchangeCode',
+          code,
+          redirectUri: `${window.location.origin}/oauth/callback`,
+          userEmail: user.email
+        });
+        
+        console.log('[OAuthCallback] Exchange response:', res);
+        
+        if (res.data?.success) {
+          setStatus('success');
+          setMessage(`החיבור הצליח! (${res.data.google_email || 'חשבון Google'})`);
+          setTimeout(() => navigate('/Calendar'), 2000);
+        } else {
+          setStatus('error');
+          setMessage(res.data?.error || 'שגיאה בחיבור חשבון Google');
+          setTimeout(() => navigate('/Calendar'), 3000);
+        }
+      } catch (err) {
+        console.error('[OAuthCallback] Exchange error:', err);
+        setStatus('error');
+        setMessage('שגיאה בחיבור חשבון Google');
+        setTimeout(() => navigate('/Calendar'), 3000);
+      }
+    };
+
+    exchangeCode();
+  }, [searchParams, user, navigate, status]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">

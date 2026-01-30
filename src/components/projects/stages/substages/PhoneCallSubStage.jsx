@@ -38,12 +38,111 @@ import { downloadAudioFile, getAudioFilename } from '../../../utils/audioHelpers
 import { saveProjectAIInsights } from '../../../utils/aiInsightsManager';
 import ProjectMeetingSchedulerModal from '../../scheduling/ProjectMeetingSchedulerModal';
 import LargeAudioProcessor from '../../../audio/LargeAudioProcessor';
+import { useAuth } from '@/lib/AuthContext';
 
 const MAX_CHUNK_SIZE = 25 * 1024 * 1024; // 25MB
 const LARGE_FILE_THRESHOLD = 24 * 1024 * 1024; // 24MB - use FFmpeg for larger files
 
+/** Split markdown summary by ### / ## headers into sections for display */
+function parseAnalysisSummarySections(text) {
+  if (!text || typeof text !== 'string') return [{ title: 'סיכום מנהלים', content: '' }];
+  const trimmed = text.trim();
+  if (!trimmed) return [{ title: 'סיכום מנהלים', content: '' }];
+  const parts = trimmed.split(/(?:^|\n)\s*#{2,3}\s+/).map(p => p.trim()).filter(Boolean);
+  if (parts.length <= 1) return [{ title: 'סיכום מנהלים', content: trimmed }];
+  return parts.map((block, i) => {
+    const firstLineBreak = block.indexOf('\n');
+    let title = firstLineBreak >= 0 ? block.slice(0, firstLineBreak).trim() : block.trim();
+    const content = firstLineBreak >= 0 ? block.slice(firstLineBreak + 1).trim() : '';
+    title = title.replace(/^\d+\.\s*/, '').replace(/\s*\([^)]*\)\s*$/, '').trim() || `חלק ${i + 1}`;
+    return { title, content };
+  });
+}
+
+/** Get content from parsed sections by matching title (for designated cards when structured fields are empty) */
+function getSectionContent(sections, ...possibleTitleParts) {
+  if (!sections?.length || !possibleTitleParts.length) return '';
+  const lower = (s) => (s || '').toLowerCase();
+  const found = sections.find(({ title }) =>
+    possibleTitleParts.some(part => lower(title).includes(lower(part)))
+  );
+  return found?.content ?? '';
+}
+
+/** Title patterns that have a designated card below – exclude from "full analysis" to avoid duplication */
+const DESIGNATED_SECTION_PATTERNS = [
+  'צרכים', 'דרישות', 'ניתוח צרכים', 'needs',
+  'תקציב', 'פיננסי', 'budget',
+  'לוח זמנים', 'זמנים', 'timeline',
+  'המלצות אסטרטגיות', 'אסטרטגיות', 'strategic',
+  'פרופיל לקוח', 'פרופיל', 'client',
+  'ניתוח הפרויקט', 'הפרויקט', 'project',
+  'העדפות עיצוביות', 'עיצוביות', 'style',
+  'חששות', 'דגלים אדומים', 'concerns', 'red flag',
+  'סנטימנט', 'התרשמות', 'sentiment'
+];
+function isDesignatedSection(title) {
+  if (!title || typeof title !== 'string') return false;
+  const t = title.toLowerCase();
+  return DESIGNATED_SECTION_PATTERNS.some(part => t.includes(part.toLowerCase()));
+}
+
+/** Parse markdown "מיפוי סמנטי לצ'קליסט" / Stage 2 → checklist_analysis. Supports [ID: xxx] and ID: xxx (no brackets). */
+function parseChecklistAnalysisFromMarkdown(summaryText) {
+  if (!summaryText || typeof summaryText !== 'string') return [];
+  let text = summaryText;
+  const stage2Match = summaryText.match(/(?:מיפוי סמנטי|מיפוי לצ'קליסט|Stage 2|שלב 2|צ'קליסט)[\s\S]*?(?=###|##\s|סיכום מנהלים|$)/i);
+  if (stage2Match) text = stage2Match[0];
+  const lines = text.split(/\n/);
+  const result = [];
+  const seen = new Set();
+
+  function addIfValid(id, answer_summary) {
+    const val = (answer_summary || '').trim().replace(/^\s*[✓✔]\s*/, '');
+    if (!id || seen.has(id)) return;
+    if (!val || /answered\s*=\s*false/i.test(val)) return;
+    seen.add(id);
+    result.push({ id: id.trim(), answer_summary: val, answered: true, confidence: 80 });
+  }
+
+  for (const line of lines) {
+    // Format A (actual LLM output): "ID: project_type - ✓ שיפוץ" or "ID: intro - answered=false" (no brackets)
+    let m = line.match(/^\s*[\-\•\*\d.]*\s*ID:\s*([a-zA-Z0-9_]+)\s*[-–:]\s*(.+)$/);
+    if (m) {
+      addIfValid(m[1].trim(), m[2]);
+      continue;
+    }
+    // Format B: [ID: project_type]: ✓ שיפוץ
+    m = line.match(/\[ID:\s*([^\]\s]+)\].*?[✓✔]?\s*[:–-]?\s*(.+?)(?:\s*\.\d+)?\s*$/);
+    if (m) {
+      addIfValid(m[1], m[2]);
+      continue;
+    }
+    // Format C: ✓ שיפוץ :**[ID: project_type]**
+    m = line.match(/[✓✔]?\s*(.+?)\s*:\s*\*?\*?\[ID:\s*([^\]\s]+)\]/);
+    if (m) {
+      const id = (m[2] || '').trim();
+      if (id && !seen.has(id)) {
+        const val = (m[1] || '').trim().replace(/^\s*[✓✔]\s*/, '');
+        if (val && !/answered\s*=\s*false/i.test(val)) {
+          seen.add(id);
+          result.push({ id, answer_summary: val, answered: true, confidence: 80 });
+        }
+      }
+      continue;
+    }
+    // Format D: - [ID: project_type]: שיפוץ
+    m = line.match(/^[\s\-•*]*\[ID:\s*([^\]\s]+)\]\s*[:–-]?\s*(.+)$/);
+    if (m) {
+      addIfValid(m[1], m[2]);
+    }
+  }
+  return result;
+}
+
 export default function PhoneCallSubStage({ project, onComplete, onContinue, onUpdate }) {
   const queryClient = useQueryClient();
+  const { user: authUser } = useAuth();
   const fileInputRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
@@ -76,7 +175,11 @@ export default function PhoneCallSubStage({ project, onComplete, onContinue, onU
   // ✅ Phone call checklist state - load ONCE from project or defaults
   const [checklist, setChecklist] = useState([]);
   const checklistLoadedRef = useRef(false); // ✅ Use ref to prevent re-initialization
-  
+  const checklistRef = useRef([]); // ✅ Always-current list for async flow (avoids stale closure)
+  useEffect(() => {
+    checklistRef.current = checklist;
+  }, [checklist]);
+
   useEffect(() => {
     async function initChecklist() {
       if (!project) return;
@@ -449,7 +552,7 @@ export default function PhoneCallSubStage({ project, onComplete, onContinue, onU
       }));
       
       // Analyze with AI - TWO-STAGE DEEP ANALYSIS for accurate checklist mapping
-      const analysisResult = await archiflow.integrations.Core.InvokeLLM({
+      const rawLLM = await archiflow.integrations.Core.InvokeLLM({
         prompt: `אתה מומחה לניתוח שיחות מכירה ויועץ אסטרטגי עבור משרדי אדריכלות מובילים. 
 יש לך ניסיון עשיר בזיהוי דפוסים, הבנת פסיכולוגיה של לקוחות, וחילוץ תובנות עסקיות מתמלולי שיחות.
 ${learningsContext}
@@ -663,6 +766,42 @@ ${fullTranscription}
         }
       });
 
+      // Edge Function returns { response: string }; parse JSON for UI (summary, client_info, etc.)
+      let analysisResult;
+      try {
+        const content = rawLLM?.response ?? rawLLM;
+        if (typeof content === 'string') {
+          const trimmed = content.trim();
+          // If response looks like markdown (starts with #), use as summary only – no JSON parse
+          if (/^\s*#+\s/m.test(trimmed) || trimmed.startsWith('###')) {
+            analysisResult = { summary: trimmed };
+          } else {
+            const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+            const toParse = (jsonMatch ? jsonMatch[1] : trimmed).trim();
+            analysisResult = toParse ? JSON.parse(toParse) : { summary: trimmed };
+          }
+        } else if (content && typeof content === 'object' && (content.summary != null || content.client_info != null)) {
+          analysisResult = content;
+        } else {
+          analysisResult = content && typeof content === 'object' ? content : {};
+        }
+      } catch (e) {
+        console.error('Failed to parse LLM analysis response:', e);
+        const fallbackText = typeof rawLLM?.response === 'string' ? rawLLM.response : '';
+        analysisResult = { summary: fallbackText || 'לא ניתן לפרסר את תוצאת הניתוח.' };
+      }
+
+      // When response was markdown (only summary), try to extract checklist_analysis for auto-fill
+      if (analysisResult.summary && !analysisResult.checklist_analysis?.length) {
+        const parsed = parseChecklistAnalysisFromMarkdown(analysisResult.summary);
+        if (parsed.length > 0) {
+          analysisResult.checklist_analysis = parsed;
+          console.log('🤖 Checklist analysis parsed from markdown:', parsed.length, 'items', parsed);
+        } else {
+          console.log('🤖 No checklist items parsed from markdown (check for "[ID: xxx]" lines in summary)');
+        }
+      }
+
       setAnalysis(analysisResult);
       
       setProgressInfo({
@@ -677,21 +816,23 @@ ${fullTranscription}
       // Use the FIRST uploaded chunk URL as the primary audio URL
       const serverUrl = uploadedUrls && uploadedUrls.length > 0 ? uploadedUrls[0] : '';
       
-      // Save recording to database
+      // Save recording to database (architect_email required by RLS/constraint)
       const recording = await archiflow.entities.Recording.create({
         title: `שיחת טלפון - ${project?.name || 'פרויקט חדש'}`,
-        audio_url: serverUrl, // ✅ Use server URL, not blob URL!
+        audio_url: serverUrl,
         transcription: fullTranscription,
         analysis: analysisResult,
         status: 'analyzed',
         project_id: project?.id ? String(project.id) : undefined,
-        project_name: project?.name
+        project_name: project?.name,
+        architect_email: authUser?.email || null,
+        created_by: authUser?.email || null,
       });
 
       // Generate automatic tags
       const autoTags = getRecordingTags('phone_call', project, 'first_call');
 
-      // Also save as project document with link to recording
+      // Also save as project document with link to recording (architect_email required by documents NOT NULL)
       await archiflow.entities.Document.create({
         title: `הקלטת שיחת טלפון - ${new Date().toLocaleDateString('he-IL')}`,
         file_url: serverUrl, // ✅ Use server URL here too!
@@ -702,7 +843,9 @@ ${fullTranscription}
         recording_id: recording.id,
         status: 'active',
         tags: autoTags,
-        description: `הקלטת שיחת טלפון ראשונה עם הלקוח. משך: ${formatTime(recordingTime)}. תמלול ונותח אוטומטית.`
+        description: `הקלטת שיחת טלפון ראשונה עם הלקוח. משך: ${formatTime(recordingTime)}. תמלול ונותח אוטומטית.`,
+        architect_email: authUser?.email || null,
+        created_by: authUser?.email || null,
       });
       
       // ✅ NEW: Save AI insights using the centralized manager with source tracking
@@ -830,34 +973,32 @@ ${fullTranscription}
       if (analysisResult.checklist_analysis?.length > 0) {
         console.log('🤖 Raw Information Extracted:', analysisResult.raw_information_extracted);
         console.log('🤖 Checklist Analysis:', analysisResult.checklist_analysis);
-        
-        const updatedChecklist = checklist.map(item => {
+        // Use ref so we have the latest list (avoid stale closure); if still empty, load from project or defaults
+        let listToUpdate = checklistRef.current?.length > 0
+          ? checklistRef.current
+          : (project?.phone_call_checklist && Array.isArray(project.phone_call_checklist) && project.phone_call_checklist.length > 0)
+            ? project.phone_call_checklist
+            : await loadChecklist('phone_call_checklist');
+        if (!listToUpdate?.length) {
+          console.warn('🤖 Checklist empty – cannot apply AI auto-fill. Load checklist first.');
+        }
+        const updatedChecklist = (listToUpdate || []).map(item => {
           if (!item?.id) return item;
-          
-          // Find matching analysis for this checklist item
           const itemAnalysis = analysisResult.checklist_analysis.find(
-            analysis => analysis.id === item.id
+            a => a.id === item.id
           );
-          
-          if (itemAnalysis && itemAnalysis.answered && itemAnalysis.confidence >= 60) {
-            console.log(`✅ Item "${item.item}" answered with confidence ${itemAnalysis.confidence}%`);
-            console.log(`   Source: "${itemAnalysis.source_text}"`);
-            console.log(`   Answer: "${itemAnalysis.answer_summary}"`);
-            
-            return { 
-              ...item, 
-              checked: true, 
-              notes: itemAnalysis.answer_summary || '' 
+          if (itemAnalysis && itemAnalysis.answered !== false && (itemAnalysis.confidence ?? 80) >= 60) {
+            console.log(`✅ Item "${item.item}" answered: "${itemAnalysis.answer_summary || ''}"`);
+            return {
+              ...item,
+              checked: true,
+              notes: itemAnalysis.answer_summary || item.notes || ''
             };
           }
           return item;
         });
-        
-        // Update state
         setChecklist(updatedChecklist);
-        
-        // Save updated checklist to project
-        if (project?.id && onUpdate) {
+        if (project?.id && onUpdate && updatedChecklist.length > 0) {
           try {
             await onUpdate({ phone_call_checklist: updatedChecklist });
             console.log('✅ Checklist auto-saved after AI analysis');
@@ -1402,7 +1543,13 @@ ${fullTranscription}
       </Card>
 
       {/* Analysis Results */}
-      {processingState === 'done' && analysis && (
+      {processingState === 'done' && analysis && (() => {
+        const summarySections = parseAnalysisSummarySections(analysis.summary || '');
+        const needsContent = getSectionContent(summarySections, 'צרכים', 'ניתוח צרכים', 'Needs', 'דרישות');
+        const budgetContent = getSectionContent(summarySections, 'תקציב', 'פיננסי', 'Budget');
+        const timelineContent = getSectionContent(summarySections, 'לוח זמנים', 'זמנים', 'Timeline');
+        const strategicContent = getSectionContent(summarySections, 'המלצות אסטרטגיות', 'Strategic', 'אסטרטגיות');
+        return (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1419,14 +1566,16 @@ ${fullTranscription}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Summary */}
-              <div className="bg-white rounded-xl p-4 shadow-sm">
-                <h4 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-green-500 rounded-full" />
-                  סיכום מנהלים
-                </h4>
-                <p className="text-slate-700 leading-relaxed">{analysis.summary}</p>
-              </div>
+              {/* Summary – only sections that don't have a designated card below (avoid duplication) */}
+              {parseAnalysisSummarySections(analysis.summary || '').filter(s => !isDesignatedSection(s.title)).map((section, idx) => (
+                <div key={idx} className="bg-white rounded-xl p-4 shadow-sm">
+                  <h4 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-green-500 rounded-full" />
+                    {section.title}
+                  </h4>
+                  <div className="text-slate-700 leading-relaxed whitespace-pre-line">{section.content}</div>
+                </div>
+              ))}
 
               {/* Sentiment Meters */}
               {(analysis.excitement_level || analysis.seriousness_level || analysis.closing_probability) && (
@@ -1537,6 +1686,11 @@ ${fullTranscription}
                   </div>
                 </div>
               )}
+
+              {/* Fallback: content from parsed markdown section when no structured needs */}
+              {!analysis.explicit_needs?.length && !analysis.main_needs?.length && !analysis.implicit_needs?.length && !analysis.emotional_needs?.length && needsContent && (
+                <div className="text-slate-700 leading-relaxed whitespace-pre-line">{needsContent}</div>
+              )}
             </CardContent>
           </Card>
 
@@ -1564,6 +1718,9 @@ ${fullTranscription}
                     גמישות: {analysis.budget_flexibility === 'high' ? 'גבוהה' : analysis.budget_flexibility === 'medium' ? 'בינונית' : 'נמוכה'}
                   </Badge>
                 )}
+                {!analysis.estimated_budget && !analysis.budget_flexibility && budgetContent && (
+                  <div className="text-slate-700 leading-relaxed whitespace-pre-line">{budgetContent}</div>
+                )}
               </CardContent>
             </Card>
 
@@ -1588,6 +1745,9 @@ ${fullTranscription}
                   }>
                     דחיפות: {analysis.urgency_level === 'high' ? 'גבוהה' : analysis.urgency_level === 'medium' ? 'בינונית' : 'נמוכה'}
                   </Badge>
+                )}
+                {!analysis.timeline && !analysis.urgency_level && timelineContent && (
+                  <div className="text-slate-700 leading-relaxed whitespace-pre-line">{timelineContent}</div>
                 )}
               </CardContent>
             </Card>
@@ -1735,6 +1895,11 @@ ${fullTranscription}
                   </ul>
                 </div>
               )}
+
+              {/* Fallback: content from parsed markdown section when no structured strategic fields */}
+              {!analysis.meeting_approach && !analysis.leverage_points?.length && !analysis.points_to_avoid?.length && !analysis.next_steps?.length && strategicContent && (
+                <div className="text-slate-700 leading-relaxed whitespace-pre-line">{strategicContent}</div>
+              )}
             </CardContent>
           </Card>
 
@@ -1769,7 +1934,8 @@ ${fullTranscription}
             </Card>
           )}
         </motion.div>
-      )}
+        );
+      })()}
 
       {/* Meeting Scheduler Modal */}
       <ProjectMeetingSchedulerModal

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calendar, Loader2, CheckCircle2, AlertCircle, Link2, Unlink, RefreshCw } from 'lucide-react';
@@ -171,6 +171,9 @@ export default function GoogleCalendarSync({ isOpen, onClose }) {
             <Calendar className="w-5 h-5 text-indigo-600" />
             Google Calendar
           </DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            חבר את חשבון Google שלך כדי לסנכרן אירועים מהיומן האישי
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 mt-4">

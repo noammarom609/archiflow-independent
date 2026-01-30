@@ -66,13 +66,11 @@ const itemVariants = {
     opacity: 0, 
     y: 30, 
     scale: 0.95,
-    filter: "blur(5px)"
   },
   visible: {
     opacity: 1,
     y: 0,
     scale: 1,
-    filter: "blur(0px)",
     transition: {
       type: "spring",
       stiffness: 100,

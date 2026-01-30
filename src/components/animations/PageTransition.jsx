@@ -15,8 +15,9 @@ const pageTransitionVariants = {
     scale: 1,
     filter: "blur(0px)",
     transition: {
-      type: "spring",
-      stiffness: 80,
+      type: "tween",
+      duration: 0.4,
+      ease: [0.4, 0, 0.2, 1],
       damping: 20,
       staggerChildren: 0.1,
     },

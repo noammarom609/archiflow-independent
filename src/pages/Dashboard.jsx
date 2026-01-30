@@ -36,14 +36,12 @@ const itemVariants = {
     y: 60, 
     scale: 0.85,
     rotateX: -15,
-    filter: "blur(10px)"
   },
   visible: {
     opacity: 1,
     y: 0,
     scale: 1,
     rotateX: 0,
-    filter: "blur(0px)",
     transition: {
       type: "spring",
       stiffness: 80,

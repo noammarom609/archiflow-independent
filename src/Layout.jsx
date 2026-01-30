@@ -679,14 +679,13 @@ function LayoutContent({ children, currentPageName }) {
         <AnimatePresence mode="wait">
           <motion.div
             key={currentPageName}
-            initial={{ opacity: 0, y: 20, filter: "blur(10px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, y: -20, filter: "blur(10px)" }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
             transition={{ 
-              type: "spring", 
-              stiffness: 100, 
-              damping: 20,
-              duration: 0.4 
+              type: "tween", 
+              duration: 0.3,
+              ease: [0.4, 0, 0.2, 1]
             }}
           >
             {children}

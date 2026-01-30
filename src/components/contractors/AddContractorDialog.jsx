@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Plus, Loader2 } from 'lucide-react';
 import {
   Select,
@@ -146,6 +146,9 @@ export default function AddContractorDialog({ isOpen, onClose, initialType = 'co
             </div>
             {formData.type === 'partner' ? 'הוסף שותף חדש' : 'הוסף קבלן חדש'}
           </DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            {formData.type === 'partner' ? 'מלא את הפרטים להוספת שותף חדש למערכת' : 'מלא את הפרטים להוספת קבלן חדש למערכת'}
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">

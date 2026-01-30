@@ -30,12 +30,17 @@ export function BlurText({ children, delay = 0, duration = 0.6, className = '' }
     <motion.span
       ref={ref}
       className={className}
-      initial={{ filter: 'blur(10px)', opacity: 0 }}
-      animate={isVisible ? { filter: 'blur(0px)', opacity: 1 } : { filter: 'blur(10px)', opacity: 0 }}
+      initial={{ opacity: 0 }}
+      animate={isVisible ? { opacity: 1 } : { opacity: 0 }}
       transition={{
         delay,
         duration,
         ease: [0.4, 0, 0.2, 1],
+      }}
+      style={{
+        // Use CSS transition for blur to avoid Framer Motion spring overshoot
+        filter: isVisible ? 'blur(0px)' : 'blur(10px)',
+        transition: `filter ${duration}s ease-out ${delay}s`,
       }}
     >
       {children}

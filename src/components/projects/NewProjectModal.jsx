@@ -11,6 +11,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { PROJECT_TYPES, PROJECT_CATEGORIES } from '../utils/checklistLoader';
+import { useAuth } from '@/lib/AuthContext';
 
 const stockImages = [
   'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=800&q=80',
@@ -20,6 +21,9 @@ const stockImages = [
 ];
 
 export default function NewProjectModal({ isOpen, onClose, onCreateProject, preselectedClient = null, preselectedClientId = null }) {
+  const { user } = useAuth();
+  const userEmail = user?.email;
+  
   // Fetch existing clients for selection
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
@@ -128,20 +132,21 @@ export default function NewProjectModal({ isOpen, onClose, onCreateProject, pres
       : 'לא צוין';
 
     const newProject = {
-      id: Date.now(),
       name: formData.name,
-      client: formData.client,
       client_id: formData.client_id || null,
       client_email: formData.client_email || null,
       client_phone: formData.client_phone || null,
       location: formData.location || 'לא צוין',
       timeline,
-      budget: formData.budget ? `₪${parseInt(formData.budget).toLocaleString()}` : '₪0',
-      status: 'first_call',
+      budget: formData.budget ? parseInt(formData.budget) : 0,
+      status: 'active',
+      current_stage: 'first_call',
       image: formData.image,
-      project_type: formData.project_type, // New field for checklist selection
+      project_type: formData.project_type,
       start_date: formData.startDate || null,
       end_date: formData.endDate || null,
+      architect_email: userEmail,
+      created_by: userEmail,
     };
 
     // If a new client name was entered (no existing client selected), create a Client entity
@@ -152,7 +157,9 @@ export default function NewProjectModal({ isOpen, onClose, onCreateProject, pres
           email: formData.client_email || null,
           phone: formData.client_phone || null,
           address: formData.location || null,
-          status: 'potential',
+          status: 'lead',
+          architect_email: userEmail,
+          created_by: userEmail,
         });
         // Link the new client to the project
         newProject.client_id = newClient.id;

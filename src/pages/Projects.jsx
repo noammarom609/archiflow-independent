@@ -61,7 +61,7 @@ import { ArrowRight, Calendar, MapPin, Plus, Loader2, Trash2, DollarSign, Chevro
 import ProjectPermissionsSettings from '../components/projects/settings/ProjectPermissionsSettings';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getCurrentUser } from '@/utils/authHelpers';
+import { useAuth } from '@/lib/AuthContext';
 import { ProjectDataProvider } from '../components/projects/ProjectDataContext';
 import ProjectWorkflowStepper from '../components/projects/ProjectWorkflowStepper';
 import FirstCallStage from '../components/projects/stages/FirstCallStage';
@@ -223,14 +223,12 @@ export default function Projects() {
     }
   }, [location.search]);
 
-  // Fetch current user for multi-tenant filtering (with bypass support)
-  const { data: user } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => getCurrentUser(base44),
-  });
+  // Get current user from auth context
+  const { user } = useAuth();
 
   // Multi-tenant: Get architect ID for filtering
   const isSuperAdmin = user?.app_role === 'super_admin';
+  console.log('[Projects] User:', user?.email, 'app_role:', user?.app_role, 'isSuperAdmin:', isSuperAdmin);
   const myArchitectId = user?.app_role === 'architect' ? user?.id : user?.architect_id;
 
   // Fetch projects

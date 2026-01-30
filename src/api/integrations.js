@@ -1,9 +1,11 @@
 // Integrations - Supabase Edge Functions and Storage
-import { supabase } from '@/lib/supabase';
+import { supabase as defaultSupabase } from '@/lib/supabase';
+import { getClient } from './entities';
 
 // Invoke LLM via Edge Function (will call OpenAI)
 export const InvokeLLM = async (params) => {
-  const { data, error } = await supabase.functions.invoke('invoke-llm', {
+  const client = getClient();
+  const { data, error } = await client.functions.invoke('invoke-llm', {
     body: params
   });
   
@@ -13,7 +15,8 @@ export const InvokeLLM = async (params) => {
 
 // Send Email via Edge Function (will use Resend)
 export const SendEmail = async (params) => {
-  const { data, error } = await supabase.functions.invoke('send-email', {
+  const client = getClient();
+  const { data, error } = await client.functions.invoke('send-email', {
     body: params
   });
   
@@ -23,7 +26,8 @@ export const SendEmail = async (params) => {
 
 // Send SMS via Edge Function (placeholder - implement with Twilio if needed)
 export const SendSMS = async (params) => {
-  const { data, error } = await supabase.functions.invoke('send-sms', {
+  const client = getClient();
+  const { data, error } = await client.functions.invoke('send-sms', {
     body: params
   });
   
@@ -33,6 +37,7 @@ export const SendSMS = async (params) => {
 
 // Upload File to Supabase Storage
 export const UploadFile = async ({ file, bucket = 'documents' }) => {
+  const client = getClient();
   // Generate unique filename
   const timestamp = Date.now();
   const randomStr = Math.random().toString(36).substring(2, 8);
@@ -40,7 +45,7 @@ export const UploadFile = async ({ file, bucket = 'documents' }) => {
   const fileName = `${timestamp}-${randomStr}.${ext}`;
   
   // Upload to Supabase Storage
-  const { data, error } = await supabase.storage
+  const { data, error } = await client.storage
     .from(bucket)
     .upload(fileName, file, {
       cacheControl: '3600',
@@ -50,7 +55,7 @@ export const UploadFile = async ({ file, bucket = 'documents' }) => {
   if (error) throw error;
   
   // Get public URL
-  const { data: { publicUrl } } = supabase.storage
+  const { data: { publicUrl } } = client.storage
     .from(bucket)
     .getPublicUrl(data.path);
   
@@ -65,7 +70,8 @@ export const UploadFile = async ({ file, bucket = 'documents' }) => {
 
 // Generate Image via Edge Function (will call DALL-E or Stable Diffusion)
 export const GenerateImage = async (params) => {
-  const { data, error } = await supabase.functions.invoke('generate-image', {
+  const client = getClient();
+  const { data, error } = await client.functions.invoke('generate-image', {
     body: params
   });
   
@@ -75,7 +81,8 @@ export const GenerateImage = async (params) => {
 
 // Extract Data from Uploaded File via Edge Function
 export const ExtractDataFromUploadedFile = async (params) => {
-  const { data, error } = await supabase.functions.invoke('extract-file-data', {
+  const client = getClient();
+  const { data, error } = await client.functions.invoke('extract-file-data', {
     body: params
   });
   
@@ -95,7 +102,8 @@ export const Core = {
 
 // Helper to invoke any edge function
 export const invokeFunction = async (functionName, params = {}) => {
-  const { data, error } = await supabase.functions.invoke(functionName, {
+  const client = getClient();
+  const { data, error } = await client.functions.invoke(functionName, {
     body: params
   });
   
@@ -104,7 +112,7 @@ export const invokeFunction = async (functionName, params = {}) => {
 };
 
 // Export supabase for direct access
-export { supabase };
+export { defaultSupabase as supabase, getClient };
 
 
 

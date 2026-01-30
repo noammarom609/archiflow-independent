@@ -2,7 +2,21 @@
 // Database entity operations using Supabase
 // Part of Archiflow - an independent architecture project management system
 
-import { supabase } from '@/lib/supabase';
+import { supabase as defaultSupabase } from '@/lib/supabase';
+
+// Global authenticated client - will be set by AuthContext
+let authenticatedClient = null;
+
+// Function to set the authenticated client (called from AuthContext)
+export const setAuthenticatedClient = (client) => {
+  authenticatedClient = client;
+  console.log('[Entities] Authenticated client updated');
+};
+
+// Get the current supabase client (authenticated if available, otherwise default)
+const getClient = () => {
+  return authenticatedClient || defaultSupabase;
+};
 
 // Entity name to table name mapping (PascalCase -> snake_case)
 const tableNameMap = {
@@ -62,7 +76,9 @@ const createEntityHelper = (entityName) => {
   return {
     // List all records
     list: async (sortBy = null, limit = null) => {
-      let query = supabase.from(tableName).select('*');
+      const client = getClient();
+      console.log(`[Entities] Listing ${tableName} with sort: ${sortBy}`);
+      let query = client.from(tableName).select('*');
       
       const sort = parseSort(sortBy);
       if (sort) {
@@ -74,13 +90,18 @@ const createEntityHelper = (entityName) => {
       }
       
       const { data, error } = await query;
-      if (error) throw error;
+      console.log(`[Entities] ${tableName} result:`, { count: data?.length, error });
+      if (error) {
+        console.error(`[Entities] Error listing ${tableName}:`, error);
+        throw error;
+      }
       return data || [];
     },
 
     // Filter records
     filter: async (filters = {}, sortBy = null, limit = null) => {
-      let query = supabase.from(tableName).select('*');
+      const client = getClient();
+      let query = client.from(tableName).select('*');
       
       // Apply filters
       Object.entries(filters).forEach(([key, value]) => {
@@ -105,7 +126,8 @@ const createEntityHelper = (entityName) => {
 
     // Get single record by ID
     get: async (id) => {
-      const { data, error } = await supabase
+      const client = getClient();
+      const { data, error } = await client
         .from(tableName)
         .select('*')
         .eq('id', id)
@@ -117,7 +139,8 @@ const createEntityHelper = (entityName) => {
 
     // Create new record
     create: async (data) => {
-      const { data: created, error } = await supabase
+      const client = getClient();
+      const { data: created, error } = await client
         .from(tableName)
         .insert(data)
         .select()
@@ -129,7 +152,8 @@ const createEntityHelper = (entityName) => {
 
     // Update record
     update: async (id, data) => {
-      const { data: updated, error } = await supabase
+      const client = getClient();
+      const { data: updated, error } = await client
         .from(tableName)
         .update(data)
         .eq('id', id)
@@ -142,7 +166,8 @@ const createEntityHelper = (entityName) => {
 
     // Delete record
     delete: async (id) => {
-      const { error } = await supabase
+      const client = getClient();
+      const { error } = await client
         .from(tableName)
         .delete()
         .eq('id', id);
@@ -153,7 +178,8 @@ const createEntityHelper = (entityName) => {
 
     // Upsert record
     upsert: async (data, options = {}) => {
-      const { data: upserted, error } = await supabase
+      const client = getClient();
+      const { data: upserted, error } = await client
         .from(tableName)
         .upsert(data, options)
         .select()
@@ -203,9 +229,9 @@ export const User = createEntityHelper('User');
 
 // Query helper for more complex queries
 export const Query = {
-  from: (tableName) => supabase.from(tableName),
-  rpc: (fnName, params) => supabase.rpc(fnName, params),
+  from: (tableName) => getClient().from(tableName),
+  rpc: (fnName, params) => getClient().rpc(fnName, params),
 };
 
-// Export the raw supabase client for advanced usage
-export { supabase };
+// Export the getClient function for advanced usage
+export { getClient, defaultSupabase as supabase };

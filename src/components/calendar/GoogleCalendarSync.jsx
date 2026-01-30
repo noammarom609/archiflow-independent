@@ -84,13 +84,23 @@ export default function GoogleCalendarSync({ isOpen, onClose }) {
   const handleConnect = async () => {
     setConnecting(true);
     try {
+      console.log('[GoogleCalendarSync] Calling getAuthUrl with userEmail:', userEmail);
       const res = await base44.functions.invoke('userGoogleCalendar', {
         action: 'getAuthUrl',
         redirectUri: `${window.location.origin}/oauth/callback`,
         userEmail
       });
       
-      if (res.data.authUrl) {
+      console.log('[GoogleCalendarSync] Response:', res);
+      
+      if (res.data?.error) {
+        console.error('[GoogleCalendarSync] Server error:', res.data);
+        showError(`שגיאה: ${res.data.error}`);
+        setConnecting(false);
+        return;
+      }
+      
+      if (res.data?.authUrl) {
         // Open popup for OAuth
         const w = 500, h = 600;
         const left = window.screenX + (window.outerWidth - w) / 2;
@@ -109,6 +119,10 @@ export default function GoogleCalendarSync({ isOpen, onClose }) {
       }
     } catch (error) {
       console.error('Get auth URL error:', error);
+      // Try to get more details
+      if (error.context?.body) {
+        console.error('Error details:', error.context.body);
+      }
       showError('שגיאה בהתחלת תהליך החיבור');
       setConnecting(false);
     }

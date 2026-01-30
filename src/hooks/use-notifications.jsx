@@ -9,43 +9,54 @@ export function useNotifications() {
   
   /**
    * Send a push notification to a specific user
-   * @param {string} userId - The user ID to send notification to
+   * @param {string} userIdOrEmail - The user ID or email to send notification to
    * @param {Object} notification - Notification content
    * @param {string} notification.title - Notification title
    * @param {string} notification.body - Notification body
    * @param {string} notification.url - URL to open when clicked
    * @param {string} notification.type - Notification type for tracking
    */
-  const sendToUser = useCallback(async (userId, notification) => {
-    if (!userId) {
-      console.warn('[Notifications] No userId provided, skipping notification');
-      return { success: false, error: 'No userId' };
+  const sendToUser = useCallback(async (userIdOrEmail, notification) => {
+    if (!userIdOrEmail) {
+      console.warn('[Notifications] No userIdOrEmail provided, skipping notification');
+      return { success: false, error: 'No userIdOrEmail' };
     }
 
+    // Determine if it's an email or ID
+    const isEmail = typeof userIdOrEmail === 'string' && userIdOrEmail.includes('@');
+    
     try {
       // Create in-app notification record (non-blocking)
-      base44.entities.Notification.create({
-        user_id: userId,
+      const notificationData = {
         title: notification.title,
         message: notification.body,
-        type: notification.type || 'general',
+        notification_type: notification.type || 'general',
         link: notification.url,
-        is_read: false,
-        created_date: new Date().toISOString()
-      }).catch(err => console.warn('[Notifications] Failed to create in-app notification:', err));
+        is_read: false
+      };
+      
+      // Add the appropriate identifier
+      if (isEmail) {
+        notificationData.user_email = userIdOrEmail.toLowerCase();
+      } else {
+        notificationData.user_id = userIdOrEmail;
+      }
+      
+      base44.entities.Notification.create(notificationData)
+        .catch(err => console.warn('[Notifications] Failed to create in-app notification:', err));
 
       // Send push notification via server function
-      // This will be handled by the sendPushNotification function
+      // Edge function expects userEmail
       await base44.functions.invoke('sendPushNotification', {
-        userId,
+        userEmail: isEmail ? userIdOrEmail.toLowerCase() : null,
+        userId: !isEmail ? userIdOrEmail : null,
         title: notification.title,
         body: notification.body,
         url: notification.url || '/',
-        tag: notification.type || 'archiflow-notification',
-        data: notification.data || {}
+        tag: notification.type || 'archiflow-notification'
       });
 
-      console.log('[Notifications] Sent to user:', userId);
+      console.log('[Notifications] Sent to user:', userIdOrEmail);
       return { success: true };
     } catch (error) {
       console.error('[Notifications] Error sending to user:', error);

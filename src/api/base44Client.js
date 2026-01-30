@@ -5,6 +5,7 @@
 
 import { supabase } from '@/lib/supabase';
 import * as entities from './entities';
+import { getClient } from './entities';
 import * as integrations from './integrations';
 
 // Entity name mapping (for base44.entities.EntityName syntax)
@@ -51,12 +52,36 @@ const functionsWrapper = {
     // Convert camelCase to kebab-case for Supabase
     const kebabName = functionName.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '');
     
-    const { data, error } = await supabase.functions.invoke(kebabName, {
-      body: params
-    });
+    console.log(`[base44Client] Invoking function: ${kebabName}`);
     
-    if (error) throw error;
-    return { data };
+    try {
+      // Use authenticated client if available
+      const client = getClient();
+      const { data, error } = await client.functions.invoke(kebabName, {
+        body: params
+      });
+      
+      if (error) {
+        console.error(`[base44Client] Function error:`, error);
+        // Return error as data so caller can handle it
+        return { data: { error: error.message || error }, error };
+      }
+      return { data };
+    } catch (err) {
+      console.error(`[base44Client] Function exception:`, err);
+      // Try to parse error context if available
+      if (err.context?.body) {
+        try {
+          const bodyText = await err.context.body.text?.() || err.context.body;
+          const parsed = typeof bodyText === 'string' ? JSON.parse(bodyText) : bodyText;
+          console.log(`[base44Client] Error body:`, parsed);
+          return { data: parsed, error: err };
+        } catch (parseErr) {
+          console.log(`[base44Client] Could not parse error body`);
+        }
+      }
+      throw err;
+    }
   }
 };
 

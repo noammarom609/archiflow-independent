@@ -45,12 +45,45 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    const { userEmail, title, body, url, tag, icon } = await req.json()
+    const { userEmail, userId, title, body, url, tag, icon } = await req.json()
 
-    if (!userEmail || !title || !body) {
+    if (!title || !body) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: userEmail, title, body' }),
+        JSON.stringify({ error: 'Missing required fields: title, body' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (!userEmail && !userId) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required field: userEmail or userId' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // If we have userId but not email, look up the user's email
+    let targetEmail = userEmail?.toLowerCase()
+    if (!targetEmail && userId) {
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('email')
+        .eq('id', userId)
+        .single()
+      
+      if (userError || !userData) {
+        console.log('Could not find user by ID:', userId)
+        return new Response(
+          JSON.stringify({ success: true, sent: 0, message: 'User not found' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      targetEmail = userData.email?.toLowerCase()
+    }
+
+    if (!targetEmail) {
+      return new Response(
+        JSON.stringify({ success: true, sent: 0, message: 'No email found for user' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -58,7 +91,7 @@ Deno.serve(async (req) => {
     const { data: subscriptions, error: subError } = await supabase
       .from('push_subscriptions')
       .select('*')
-      .eq('user_email', userEmail.toLowerCase())
+      .eq('user_email', targetEmail)
 
     if (subError) {
       throw subError

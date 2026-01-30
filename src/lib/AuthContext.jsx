@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useUser, useAuth as useClerkAuth, useClerk } from '@clerk/clerk-react';
 import { supabase, createSupabaseClientWithToken } from '@/lib/supabase';
+import { setAuthenticatedClient } from '@/api/entities';
 
 const AuthContext = createContext();
 
@@ -65,6 +66,8 @@ export const AuthProvider = ({ children }) => {
             // Create Supabase client with Clerk token
             authenticatedClient = createSupabaseClientWithToken(token);
             setSupabaseClient(authenticatedClient);
+            // Update the global authenticated client for entities
+            setAuthenticatedClient(authenticatedClient);
           }
 
           const userEmail = clerkUser.primaryEmailAddress?.emailAddress?.toLowerCase();
@@ -154,6 +157,7 @@ export const AuthProvider = ({ children }) => {
       } else {
         setUser(null);
         setSupabaseClient(supabase); // Reset to anonymous client
+        setAuthenticatedClient(null); // Reset global authenticated client
       }
 
       setIsLoadingAuth(false);
@@ -172,6 +176,8 @@ export const AuthProvider = ({ children }) => {
         if (token) {
           const authenticatedClient = createSupabaseClientWithToken(token);
           setSupabaseClient(authenticatedClient);
+          // Update the global authenticated client for entities
+          setAuthenticatedClient(authenticatedClient);
         }
       } catch (error) {
         console.error('[AuthContext] Token refresh failed:', error);
@@ -188,6 +194,8 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setIsBypassMode(false);
     setSupabaseClient(supabase);
+    // Reset the global authenticated client
+    setAuthenticatedClient(null);
     
     // Clear admin bypass tokens
     localStorage.removeItem('adminBypassToken');

@@ -5,8 +5,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const GOOGLE_CLIENT_ID = Deno.env.get('GOOGLE_CLIENT_ID')
-const GOOGLE_CLIENT_SECRET = Deno.env.get('GOOGLE_CLIENT_SECRET')
 const SCOPES = [
   'https://www.googleapis.com/auth/calendar.readonly',
   'https://www.googleapis.com/auth/calendar.events',
@@ -19,6 +17,12 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
+
+  // Read secrets inside handler to get fresh values
+  const GOOGLE_CLIENT_ID = Deno.env.get('GOOGLE_CLIENT_ID')
+  const GOOGLE_CLIENT_SECRET = Deno.env.get('GOOGLE_CLIENT_SECRET')
+  
+  console.log('[user-google-calendar] Handler called. GOOGLE_CLIENT_ID exists:', !!GOOGLE_CLIENT_ID, 'GOOGLE_CLIENT_SECRET exists:', !!GOOGLE_CLIENT_SECRET)
 
   try {
     const supabase = createClient(
@@ -59,13 +63,13 @@ Deno.serve(async (req) => {
         return await getStatus(supabase, email, corsHeaders)
       
       case 'getAuthUrl':
-        return getAuthUrl(redirectUri, corsHeaders)
+        return getAuthUrl(redirectUri, corsHeaders, GOOGLE_CLIENT_ID)
       
       case 'exchangeCode':
-        return await exchangeCode(supabase, email, code, redirectUri, corsHeaders)
+        return await exchangeCode(supabase, email, code, redirectUri, corsHeaders, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET)
       
       case 'sync':
-        return await syncCalendar(supabase, email, corsHeaders)
+        return await syncCalendar(supabase, email, corsHeaders, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET)
       
       case 'disconnect':
         return await disconnect(supabase, email, corsHeaders)
@@ -112,11 +116,27 @@ async function getStatus(supabase: any, userEmail: string, corsHeaders: any) {
 }
 
 // Generate Google OAuth URL
-function getAuthUrl(redirectUri: string, corsHeaders: any) {
+function getAuthUrl(redirectUri: string, corsHeaders: any, GOOGLE_CLIENT_ID: string | undefined) {
+  console.log('[getAuthUrl] GOOGLE_CLIENT_ID set:', !!GOOGLE_CLIENT_ID, 'value length:', GOOGLE_CLIENT_ID?.length)
+  console.log('[getAuthUrl] redirectUri:', redirectUri)
+  
   if (!GOOGLE_CLIENT_ID) {
+    // Debug: List all available env vars (without values for security)
+    const envVars = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY']
+    const envStatus = envVars.map(v => `${v}: ${Deno.env.get(v) ? 'SET' : 'NOT SET'}`)
+    console.error('[getAuthUrl] Environment status:', envStatus.join(', '))
+    
+    // Return 200 with error info so client can read it
     return new Response(
-      JSON.stringify({ error: 'Google client ID not configured' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ 
+        authUrl: null,
+        error: 'Google client ID not configured',
+        debug: {
+          envStatus: envStatus,
+          note: 'GOOGLE_CLIENT_ID must be set in Supabase Edge Function secrets'
+        }
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 
@@ -137,7 +157,7 @@ function getAuthUrl(redirectUri: string, corsHeaders: any) {
 }
 
 // Exchange authorization code for tokens
-async function exchangeCode(supabase: any, userEmail: string, code: string, redirectUri: string, corsHeaders: any) {
+async function exchangeCode(supabase: any, userEmail: string, code: string, redirectUri: string, corsHeaders: any, GOOGLE_CLIENT_ID: string | undefined, GOOGLE_CLIENT_SECRET: string | undefined) {
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
     return new Response(
       JSON.stringify({ error: 'Google credentials not configured' }),
@@ -217,7 +237,7 @@ async function exchangeCode(supabase: any, userEmail: string, code: string, redi
 }
 
 // Refresh access token if expired
-async function refreshTokenIfNeeded(supabase: any, tokenRecord: any) {
+async function refreshTokenIfNeeded(supabase: any, tokenRecord: any, GOOGLE_CLIENT_ID: string, GOOGLE_CLIENT_SECRET: string) {
   const expiry = new Date(tokenRecord.token_expiry || tokenRecord.expires_at)
   const now = new Date()
 
@@ -262,7 +282,14 @@ async function refreshTokenIfNeeded(supabase: any, tokenRecord: any) {
 }
 
 // Sync events from Google Calendar
-async function syncCalendar(supabase: any, userEmail: string, corsHeaders: any) {
+async function syncCalendar(supabase: any, userEmail: string, corsHeaders: any, GOOGLE_CLIENT_ID: string | undefined, GOOGLE_CLIENT_SECRET: string | undefined) {
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+    return new Response(
+      JSON.stringify({ error: 'Google credentials not configured' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+
   const { data: tokens, error } = await supabase
     .from('user_google_tokens')
     .select('*')
@@ -279,7 +306,7 @@ async function syncCalendar(supabase: any, userEmail: string, corsHeaders: any) 
 
   let accessToken
   try {
-    accessToken = await refreshTokenIfNeeded(supabase, tokenRecord)
+    accessToken = await refreshTokenIfNeeded(supabase, tokenRecord, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET)
   } catch (error) {
     return new Response(
       JSON.stringify({ error: 'Token refresh failed. Please reconnect.' }),

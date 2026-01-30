@@ -6,11 +6,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { User, Phone, Mail, MapPin, Loader2, Plus, X, Users, Heart, Ruler, Home, Accessibility } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { showSuccess, showError } from '../utils/notifications';
+import { useAuth } from '@/lib/AuthContext';
 
 // Validation patterns
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -18,12 +19,7 @@ const PHONE_REGEX = /^[\d\-+().\s]{7,20}$/;
 
 export default function NewClientModal({ isOpen, onClose }) {
   const queryClient = useQueryClient();
-  
-  // Get current user to set architect_id
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-  });
+  const { user: currentUser } = useAuth();
   
   const [formData, setFormData] = useState({
     full_name: '',
@@ -144,7 +140,8 @@ export default function NewClientModal({ isOpen, onClose }) {
       first_contact_date: new Date().toISOString().split('T')[0],
       // Add architect_id and architect_email for multi-tenant filtering
       architect_id: currentUser?.id || null,
-      architect_email: currentUser?.email || null,
+      architect_email: currentUser?.email,
+      created_by: currentUser?.email,
       approval_status: 'approved', // Auto-approve when created by architect
       timeline: [{
         date: new Date().toISOString(),

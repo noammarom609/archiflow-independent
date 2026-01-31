@@ -23,7 +23,13 @@ export const AuthProvider = ({ children }) => {
     
     if (bypassToken && bypassUserStr && bypassToken.startsWith('admin_bypass_')) {
       try {
-        const bypassUser = JSON.parse(bypassUserStr);
+        const parsed = JSON.parse(bypassUserStr);
+        // Ensure all test/bypass users are always treated as approved and active
+        const bypassUser = {
+          ...parsed,
+          approval_status: parsed.approval_status || 'approved',
+          status: parsed.status || 'active',
+        };
         return { isValid: true, user: bypassUser };
       } catch (e) {
         localStorage.removeItem('adminBypassToken');

@@ -68,6 +68,7 @@ export default function LandingFooter() {
       };
       
       const bypassToken = `admin_bypass_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      // All E2E/test users are approved and active so tests don't fail on approval checks
       const bypassUser = {
         id: roleUUIDs[roleData.app_role] || '00000000-0000-4000-a000-000000000099',
         email: roleData.email,
@@ -75,6 +76,7 @@ export default function LandingFooter() {
         role: roleData.role,
         app_role: roleData.app_role,
         approval_status: 'approved',
+        status: 'active',
         architect_id: roleUUIDs[roleData.app_role] || '00000000-0000-4000-a000-000000000099',
         architect_email: roleData.email,
       };

@@ -15,6 +15,7 @@ import { test, expect, Page } from '@playwright/test';
  *
  * אופציונלי:
  *   QA_FAIL_FAST=0  – הרצה מלאה בלי עצירה על כשל ראשון (לסיכום בסוף).
+ *   E2E_SUPABASE_URL + E2E_SUPABASE_ANON_KEY (או VITE_*) – ניקוי אוטומטי של כל הנתונים שנוצרו בסוף הריצה (afterEach).
  */
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -96,6 +97,73 @@ function logRun(stepId: string, action: string, result: 'ok' | 'fail' | 'skip', 
 
 function getRunLog(): RunLogEntry[] {
   return [...runLog];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ניקוי אוטומטי – מחיקת כל הנתונים שנוצרו במהלך הבדיקה (דרך Supabase REST)
+// ═══════════════════════════════════════════════════════════════════════════
+const SUPABASE_URL = process.env.E2E_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = process.env.E2E_SUPABASE_ANON_KEY || process.env.E2E_SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+async function supabaseRest<T = unknown>(table: string, method: 'GET' | 'DELETE', filter?: { column: string; value: string }): Promise<T[]> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return [];
+  const q = filter ? `?${filter.column}=eq.${encodeURIComponent(filter.value)}` : '';
+  const url = `${SUPABASE_URL.replace(/\/$/, '')}/rest/v1/${table}${q}`;
+  const res = await fetch(url, {
+    method,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+    },
+  }).catch(() => null);
+  if (!res?.ok) return [];
+  const text = await res.text();
+  return text ? (JSON.parse(text) as T[]) : [];
+}
+
+async function cleanupCreatedData(): Promise<void> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    console.log('   ⚠️ ניקוי: לא הוגדרו E2E_SUPABASE_URL ו-E2E_SUPABASE_ANON_KEY – הנתונים לא נמחקו.');
+    return;
+  }
+  console.log('   🧹 מנקה נתונים שנוצרו במהלך הבדיקה...');
+  try {
+    type Row = { id: string };
+    const projectRows = await supabaseRest<Row>('projects', 'GET', { column: 'name', value: testData.projectName });
+    const projectId = projectRows?.[0]?.id;
+    if (projectId) {
+      await supabaseRest('time_entries', 'DELETE', { column: 'project_id', value: projectId });
+      await supabaseRest('proposals', 'DELETE', { column: 'project_id', value: projectId });
+      await supabaseRest('documents', 'DELETE', { column: 'project_id', value: projectId });
+      await supabaseRest('tasks', 'DELETE', { column: 'project_id', value: projectId });
+      await supabaseRest('projects', 'DELETE', { column: 'id', value: projectId });
+    }
+    const eventRows = await supabaseRest<Row>('calendar_events', 'GET', { column: 'title', value: testData.eventName });
+    for (const row of eventRows || []) {
+      await supabaseRest('calendar_events', 'DELETE', { column: 'id', value: row.id });
+    }
+    const clientRows = await supabaseRest<Row>('clients', 'GET', { column: 'full_name', value: testData.clientName });
+    for (const row of clientRows || []) {
+      await supabaseRest('clients', 'DELETE', { column: 'id', value: row.id });
+    }
+    const contractorRows = await supabaseRest<Row>('contractors', 'GET', { column: 'name', value: testData.contractorName });
+    for (const row of contractorRows || []) {
+      await supabaseRest('contractors', 'DELETE', { column: 'id', value: row.id });
+    }
+    const consultantRows = await supabaseRest<Row>('consultants', 'GET', { column: 'name', value: testData.consultantName });
+    for (const row of consultantRows || []) {
+      await supabaseRest('consultants', 'DELETE', { column: 'id', value: row.id });
+    }
+    const supplierRows = await supabaseRest<Row>('suppliers', 'GET', { column: 'name', value: testData.supplierName });
+    for (const row of supplierRows || []) {
+      await supabaseRest('suppliers', 'DELETE', { column: 'id', value: row.id });
+    }
+    console.log('   ✓ ניקוי הושלם.');
+  } catch (e) {
+    console.log('   ⚠️ ניקוי חלקי או נכשל:', (e as Error).message);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -331,6 +399,10 @@ async function fillByLabel(page: Page, labelText: string | RegExp, value: string
 // הבדיקה הרציפה
 // ═══════════════════════════════════════════════════════════════════════════
 test.describe('QA Full Journey – בדיקות פונקציונליות מלאות', () => {
+  test.afterEach(async () => {
+    await cleanupCreatedData();
+  });
+
   test('בדיקה רציפה מלאה עם יצירת ישויות', async ({ page }) => {
     test.setTimeout(1800000); // 30 דקות - כולל המתנת 61 שניות לטיימר ופונקציות AI
     
@@ -1026,28 +1098,31 @@ test.describe('QA Full Journey – בדיקות פונקציונליות מלא�
 
       // 14.1 פתיחת פרטי אירוע שנוצר
       let ok = await safeCheck(async () => {
-        // חיפוש האירוע שיצרנו (לפי הטקסט)
-        const eventCard = page.locator(`text=${testData.eventName}`).first();
-        if (await eventCard.isVisible({ timeout: 5000 }).catch(() => false)) {
-          await eventCard.click();
-          await delay(page);
-          
-          // בדיקה שנפתח דיאלוג פרטי אירוע
-          const detailsDialog = page.locator('[role="dialog"]').first();
-          const isDialogOpen = await detailsDialog.isVisible({ timeout: 3000 }).catch(() => false);
-          
-          if (isDialogOpen) {
-            // בדיקה שהכותרת מוצגת
-            const titleVisible = await page.getByText(testData.eventName).isVisible({ timeout: 2000 }).catch(() => false);
-            
-            // סגירת הדיאלוג
-            await page.keyboard.press('Escape');
-            await delay(page, SHORT_DELAY);
-            
-            return titleVisible;
-          }
+        // מעבר לתצוגת שבוע כדי שהאירועים יהיו נראים ולחיצים
+        const weekViewBtn = page.locator('button').filter({ has: page.locator('svg.lucide-columns-2, svg.lucide-columns') }).first();
+        if (await weekViewBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await weekViewBtn.click();
+          await waitAfterAction(page, 1000);
         }
-        return false;
+        // חיפוש האירוע שיצרנו (לפי טקסט – כולל חלקי)
+        const eventCard = page.getByText(testData.eventName, { exact: false }).first();
+        if (!(await eventCard.isVisible({ timeout: 8000 }).catch(() => false))) return false;
+        await eventCard.scrollIntoViewIfNeeded().catch(() => {});
+        await delay(page, 300);
+        await eventCard.click();
+        await waitAfterAction(page, 1500);
+        // בדיקה שנפתח דיאלוג פרטי אירוע או שפרטי האירוע מופיעים (כותרת בפאנל/דיאלוג)
+        const detailsDialog = page.locator('[role="dialog"]').first();
+        const isDialogOpen = await detailsDialog.isVisible({ timeout: 5000 }).catch(() => false);
+        if (isDialogOpen) {
+          const titleInDialog = await page.locator('[role="dialog"]').getByText(testData.eventName, { exact: false }).isVisible({ timeout: 2000 }).catch(() => false);
+          await page.keyboard.press('Escape');
+          await delay(page, SHORT_DELAY);
+          return titleInDialog;
+        }
+        // גיבוי: פאנל צד עם כותרת האירוע (תצוגת יום/שבוע)
+        const titleInPanel = await page.getByRole('heading').filter({ hasText: testData.eventName }).first().isVisible({ timeout: 2000 }).catch(() => false);
+        return titleInPanel;
       });
       logResult('14.1', 'צפייה בפרטי אירוע שנוצר', ok);
 
@@ -1094,46 +1169,43 @@ test.describe('QA Full Journey – בדיקות פונקציונליות מלא�
       await delay(page);
       await dismissPopups(page);
 
-      // 15.1 התחלת טיימר
+      // 15.1 התחלת טיימר – לחיצה על "טיימר" → פתיחת Select בתוך ה-popover → בחירת פרויקט → וידוא שהטיימר רץ
       let ok = await safeCheck(async () => {
         console.log('   🎬 מחפש כפתור טיימר...');
         const timerBtn = page.getByRole('button', { name: /טיימר/i }).first();
-        
-        if (!await timerBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+        if (!(await timerBtn.isVisible({ timeout: 5000 }).catch(() => false))) {
           console.log('   ❌ כפתור טיימר לא נמצא');
           return false;
         }
-        
         await timerBtn.click();
-        await delay(page);
+        await waitAfterAction(page, 800);
         console.log('   ✓ לחצתי על כפתור טיימר');
-        
-        // בחירת פרויקט אם נדרש (popover)
-        const projectPopover = page.locator('[role="dialog"], [data-radix-popper-content-wrapper]').first();
-        if (await projectPopover.isVisible({ timeout: 2000 }).catch(() => false)) {
-          console.log('   📋 נפתח popover בחירת פרויקט');
-          // לחיצה על הפרויקט הראשון
-          const firstProject = projectPopover.locator('button, [role="option"]').first();
-          if (await firstProject.isVisible({ timeout: 2000 }).catch(() => false)) {
-            await firstProject.click();
-            await delay(page, SHORT_DELAY);
-            console.log('   ✓ נבחר פרויקט');
-          }
+        // combobox בתוך ה-popover של הטיימר (ליד "בחר פרויקט להתחלה") – לא של פילטר הדף
+        const popoverText = page.getByText(/בחר פרויקט להתחלה|בחר פרויקט/i).first();
+        await popoverText.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
+        const combobox = popoverText.locator('..').getByRole('combobox').first();
+        if (!(await combobox.isVisible({ timeout: 3000 }).catch(() => false))) {
+          console.log('   ❌ combobox בחירת פרויקט לא נמצא ב-popover');
+          return false;
         }
-        
-        // בדיקה שהטיימר רץ (יש תצוגת זמן בפורמט HH:MM:SS עם font-mono class)
-        const timerDisplay = page.locator('.font-mono').filter({ hasText: /\d{2}:\d{2}:\d{2}/ }).first();
-        const isRunning = await timerDisplay.isVisible({ timeout: 5000 }).catch(() => false);
-        
-        // גיבוי: בדיקה אם יש Clock icon ירוק (מציין שהטיימר רץ)
-        if (!isRunning) {
-          const runningIcon = page.locator('.text-green-500.animate-pulse, svg.lucide-clock.text-green-500').first();
-          const hasRunningIcon = await runningIcon.isVisible({ timeout: 2000 }).catch(() => false);
-          console.log(`   ${hasRunningIcon ? '✓ טיימר רץ (זוהה לפי אייקון)!' : '❌ טיימר לא רץ'}`);
-          return hasRunningIcon;
+        await combobox.click();
+        await delay(page, 600);
+        const option = page.getByRole('option').first();
+        if (!(await option.isVisible({ timeout: 3000 }).catch(() => false))) {
+          console.log('   ❌ אין אפשרות פרויקט ב-Select');
+          return false;
         }
-        
-        console.log(`   ${isRunning ? '✓ טיימר רץ!' : '❌ טיימר לא רץ'}`);
+        await option.click();
+        await waitAfterAction(page, 1500);
+        console.log('   ✓ נבחר פרויקט');
+        // וידוא שהטיימר רץ: תצוגת 00:00:00 (font-mono), אייקון Clock ירוק, או כפתור Pause
+        const timerDisplay = page.locator('.font-mono').filter({ hasText: /\d{1,2}:\d{2}:\d{2}/ }).first();
+        const runningIcon = page.locator('[class*="green-500"][class*="animate-pulse"], .text-green-500.animate-pulse').first();
+        const pauseBtn = page.getByRole('button', { name: /השהה|pause|Pause/i }).first();
+        const isRunning = await timerDisplay.isVisible({ timeout: 6000 }).catch(() => false)
+          || await runningIcon.isVisible({ timeout: 4000 }).catch(() => false)
+          || await pauseBtn.isVisible({ timeout: 4000 }).catch(() => false);
+        console.log(isRunning ? '   ✓ טיימר רץ' : '   ❌ טיימר לא רץ');
         return isRunning;
       });
       logResult('15.1', 'התחלת טיימר', ok);
@@ -1830,7 +1902,7 @@ test.describe('QA Full Journey – בדיקות פונקציונליות מלא�
       console.log('                      📊 דוח סיכום QA                            ');
       console.log('═══════════════════════════════════════════════════════════════\n');
 
-      console.log('📦 ישויות שנוצרו (נשארות לבדיקה ידנית):');
+      console.log('📦 ישויות שנוצרו במהלך הבדיקה (ניקוי אוטומטי רץ ב-afterEach אם הוגדרו E2E_SUPABASE_*):');
       console.log(`   • לקוח: ${testData.clientName}`);
       console.log(`   • פרויקט: ${testData.projectName}`);
       console.log(`   • אירוע: ${testData.eventName}`);

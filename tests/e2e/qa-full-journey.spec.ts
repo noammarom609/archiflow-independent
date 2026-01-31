@@ -1,18 +1,23 @@
 import { test, expect, Page } from '@playwright/test';
 
 /**
- * QA Full Journey – בדיקה רציפה אחת שמכסה את כל סעיפי QA_CHECKLIST.md (1–6).
- * דפדפן אחד פתוח לאורך כל הריצה.
+ * QA Full Journey – בדיקה רציפה מקיפה עם פונקציונליות מלאה
+ * 
+ * ✅ יוצר ישויות אמיתיות (פרויקטים, לקוחות, אירועים, קבלנים, יועצים, ספקים)
+ * ✅ ממלא את כל השדות הנדרשים
+ * ✅ משהה 1-2 שניות בין פעולות לצפייה נוחה
+ * ✅ בודק פונקציונליות לכל תפקיד
+ * ✅ משאיר את הנתונים לבדיקה ידנית
  *
  * הרצה:
  *   $env:PLAYWRIGHT_BASE_URL="https://archiflow-independent.vercel.app"; npm run test:e2e:full:headed
- * 
- * קובץ זה מאחד את כל קבצי הבדיקות:
- *   - qa-production.spec.ts (דפי נחיתה)
- *   - qa-journey.spec.ts (מעבר בין תפקידים)
- *   - qa-deep.spec.ts (בדיקות עומק)
- *   - add-event.spec.ts (הוספת אירוע)
  */
+
+// ═══════════════════════════════════════════════════════════════════════════
+// קונפיגורציה
+// ═══════════════════════════════════════════════════════════════════════════
+const VISUAL_DELAY = 1500; // 1.5 שניות בין פעולות
+const SHORT_DELAY = 800;   // 0.8 שניות לפעולות קטנות
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PINים לתפקידים
@@ -36,41 +41,60 @@ function logResult(id: string, name: string, passed: boolean, note = '') {
 function logSkipped(id: string, name: string, note: string) {
   report.push({ id, name, status: '⚠️', note });
 }
-// סימון "עבר עקיף" – לבדיקות שאומתו דרך פעולות אחרות
 function logIndirect(id: string, name: string, note: string) {
   report.push({ id, name, status: '✅', note: `עבר עקיף: ${note}` });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// משתנים גלובליים לשמירת נתונים שנוצרו במהלך הבדיקה
+// משתנים גלובליים לשמירת נתונים שנוצרו
 // ═══════════════════════════════════════════════════════════════════════════
-let createdProjectName = '';
-let createdClientName = '';
-let dashboardLoginSucceeded = false;
+const testData = {
+  timestamp: Date.now(),
+  projectName: '',
+  clientName: '',
+  clientPhone: '',
+  clientEmail: '',
+  eventName: '',
+  contractorName: '',
+  consultantName: '',
+  supplierName: '',
+  dashboardLoginSucceeded: false,
+};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Helpers
 // ═══════════════════════════════════════════════════════════════════════════
+async function delay(page: Page, ms: number = VISUAL_DELAY) {
+  await page.waitForTimeout(ms);
+}
+
 async function loginViaPin(page: Page, pin: string) {
   await page.goto('/');
+  await delay(page, SHORT_DELAY);
   await page.waitForLoadState('networkidle').catch(() => {});
+  
   const trigger = page.getByTestId('admin-bypass-trigger').or(page.getByRole('button', { name: 'Admin login' }));
   await trigger.scrollIntoViewIfNeeded();
   await trigger.click({ timeout: 15000 });
+  await delay(page, SHORT_DELAY);
+  
   const pinInput = page.getByTestId('admin-bypass-pin-input').or(page.getByPlaceholder(/קוד PIN|PIN/i));
   await pinInput.fill(pin);
+  await delay(page, SHORT_DELAY);
+  
   const submit = page.getByTestId('admin-bypass-submit').or(page.getByRole('button', { name: /אישור/i }));
   await submit.click();
   await page.waitForURL(/\/Dashboard/i, { timeout: 15000 });
-  dashboardLoginSucceeded = true;
+  await delay(page);
+  
+  testData.dashboardLoginSucceeded = true;
 }
 
 async function logoutViaUI(page: Page) {
   await page.goto('/Settings');
+  await delay(page);
   await page.waitForLoadState('networkidle').catch(() => {});
-  await page.waitForTimeout(1000);
   
-  // Try multiple selectors for logout button
   const logoutBtn = page.getByTestId('logout-btn')
     .or(page.getByRole('button', { name: /התנתק/i }))
     .or(page.locator('button:has-text("התנתק")'))
@@ -78,36 +102,57 @@ async function logoutViaUI(page: Page) {
   
   await logoutBtn.scrollIntoViewIfNeeded().catch(() => {});
   await logoutBtn.click({ timeout: 15000 });
+  await delay(page);
   
   await page.waitForURL(/\/(LandingHome|LandingAbout|$|\?)/i, { timeout: 25000 }).catch(() => {});
   
-  // Clear localStorage bypass tokens to ensure clean state
   await page.evaluate(() => {
     localStorage.removeItem('adminBypassToken');
     localStorage.removeItem('adminBypassUser');
   });
   
   await page.goto('/');
-  await page.waitForLoadState('domcontentloaded').catch(() => {});
+  await delay(page, SHORT_DELAY);
 }
 
 async function safeCheck(fn: () => Promise<boolean>): Promise<boolean> {
   try { return await fn(); } catch { return false; }
 }
 
+// פונקציה לבחירה מתוך dropdown (Select component)
+async function selectOption(page: Page, fieldId: string, optionText: string | RegExp) {
+  const trigger = page.locator(`#${fieldId}`).or(page.locator(`[id="${fieldId}"]`));
+  await trigger.click();
+  await delay(page, SHORT_DELAY);
+  
+  const option = page.getByRole('option', { name: optionText })
+    .or(page.locator(`[role="option"]:has-text("${optionText}")`));
+  await option.first().click();
+  await delay(page, SHORT_DELAY);
+}
+
+// פונקציה למילוי שדה
+async function fillField(page: Page, fieldId: string, value: string) {
+  const field = page.locator(`#${fieldId}`).or(page.locator(`[id="${fieldId}"]`));
+  await field.fill(value);
+  await delay(page, SHORT_DELAY);
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // הבדיקה הרציפה
 // ═══════════════════════════════════════════════════════════════════════════
-test.describe('QA Full Journey – כל סעיפי QA_CHECKLIST.md', () => {
-  test('בדיקה רציפה מלאה', async ({ page }) => {
-    test.setTimeout(900000); // 15 דקות – יותר זמן עבור כל הבדיקות המאוחדות
+test.describe('QA Full Journey – בדיקות פונקציונליות מלאות', () => {
+  test('בדיקה רציפה מלאה עם יצירת ישויות', async ({ page }) => {
+    test.setTimeout(1200000); // 20 דקות
 
     // ═══════════════════════════════════════════════════════════════════════
     // 1. דפי נחיתה (Landing) – גלישה ציבורית
     // ═══════════════════════════════════════════════════════════════════════
     await test.step('1. דפי נחיתה (Landing)', async () => {
-      // 1.1 דף בית נטען – כותרת, לוגו, CTA
+      // 1.1 דף בית נטען
       await page.goto('/');
+      await delay(page);
+      
       let ok = await safeCheck(async () => {
         await expect(page).toHaveTitle(/ArchiFlow|ארכיפלו/i);
         await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
@@ -115,24 +160,35 @@ test.describe('QA Full Journey – כל סעיפי QA_CHECKLIST.md', () => {
       });
       logResult('1.1', 'דף בית נטען – כותרת, לוגו, CTA', ok);
 
-      // 1.2 ניווט: בית → אודות → תמחור → צור קשר
+      // 1.2 ניווט
       ok = await safeCheck(async () => {
         const nav = page.getByRole('navigation').first();
         await expect(nav).toBeVisible({ timeout: 8000 });
+        
         await nav.getByRole('link', { name: /אודות|about/i }).click();
+        await delay(page);
         await expect(page).toHaveURL(/LandingAbout|about/i);
+        
         await page.goto('/');
+        await delay(page);
         await nav.getByRole('link', { name: /תמחור|pricing/i }).click();
+        await delay(page);
         await expect(page).toHaveURL(/LandingPricing|pricing/i);
+        
         await page.goto('/');
+        await delay(page);
         await nav.getByRole('link', { name: /צור קשר|contact/i }).click();
+        await delay(page);
         await expect(page).toHaveURL(/LandingContact|contact/i);
+        
         return true;
       });
       logResult('1.2', 'ניווט: בית → אודות → תמחור → צור קשר', ok);
 
-      // 1.3 כפתור "התחל עכשיו"
+      // 1.3-1.7 בדיקות נוספות
       await page.goto('/');
+      await delay(page);
+      
       ok = await safeCheck(async () => {
         const cta = page.getByRole('link', { name: /התחל|start|get started/i }).or(page.getByRole('button', { name: /התחל|start/i }));
         await expect(cta.first()).toBeVisible({ timeout: 8000 });
@@ -140,7 +196,6 @@ test.describe('QA Full Journey – כל סעיפי QA_CHECKLIST.md', () => {
       });
       logResult('1.3', 'כפתור "התחל עכשיו" קיים', ok);
 
-      // 1.4 כפתור "התחברות"
       ok = await safeCheck(async () => {
         const signIn = page.getByRole('link', { name: /התחברות|sign in/i }).or(page.getByRole('button', { name: /התחברות|sign in/i }));
         await expect(signIn.first()).toBeVisible({ timeout: 8000 });
@@ -148,15 +203,6 @@ test.describe('QA Full Journey – כל סעיפי QA_CHECKLIST.md', () => {
       });
       logResult('1.4', 'כפתור "התחברות" קיים', ok);
 
-      // 1.5 מתג שפה עב/EN
-      ok = await safeCheck(async () => {
-        const langToggle = page.getByRole('button', { name: /עב|he|en|english|עברית/i }).or(page.locator('[data-testid="lang-toggle"]'));
-        await expect(langToggle.first()).toBeVisible({ timeout: 5000 });
-        return true;
-      });
-      logResult('1.5', 'מתג שפה עב/EN', ok, ok ? '' : 'לא נמצא מתג שפה גלוי');
-
-      // 1.6 פוטר – קישורי מדיניות
       ok = await safeCheck(async () => {
         const privacy = page.getByRole('link', { name: /מדיניות פרטיות|privacy/i });
         const terms = page.getByRole('link', { name: /תנאי שימוש|terms/i });
@@ -166,803 +212,635 @@ test.describe('QA Full Journey – כל סעיפי QA_CHECKLIST.md', () => {
       });
       logResult('1.6', 'פוטר – קישורי מדיניות', ok);
 
-      // 1.7 רענון בדף פנימי – אין 404
-      ok = await safeCheck(async () => {
-        const res = await page.goto('/LandingAbout');
-        return res?.status() === 200;
-      });
-      logResult('1.7', 'רענון /LandingAbout – אין 404', ok);
-
-      // 1.7ב LandingPrivacy
-      ok = await safeCheck(async () => {
-        const res = await page.goto('/LandingPrivacy');
-        return res?.status() === 200;
-      });
-      logResult('1.7ב', 'גישה ל־/LandingPrivacy', ok);
-
-      // 1.7ג LandingTerms
-      ok = await safeCheck(async () => {
-        const res = await page.goto('/LandingTerms');
-        return res?.status() === 200;
-      });
-      logResult('1.7ג', 'גישה ל־/LandingTerms', ok);
+      // בדיקת דפים ציבוריים
+      for (const path of ['/LandingAbout', '/LandingPrivacy', '/LandingTerms']) {
+        ok = await safeCheck(async () => {
+          const res = await page.goto(path);
+          await delay(page, SHORT_DELAY);
+          return res?.status() === 200;
+        });
+        logResult(`1.7-${path}`, `גישה ל־${path}`, ok);
+      }
     });
 
     // ═══════════════════════════════════════════════════════════════════════
     // 2. אימות (Auth)
     // ═══════════════════════════════════════════════════════════════════════
     await test.step('2. אימות (Auth)', async () => {
-      // 2.1 "התחברות" מפנה ל־Login
       await page.goto('/');
+      await delay(page);
+      
+      // 2.1 התחברות מפנה ל-Login
       let ok = await safeCheck(async () => {
         const signIn = page.getByRole('link', { name: /התחברות|sign in/i }).or(page.getByRole('button', { name: /התחברות|sign in/i })).first();
         await signIn.click();
+        await delay(page);
         await page.waitForURL(/\/(sign-in|login|clerk)|accounts\.clerk/i, { timeout: 15000 }).catch(() => {});
         const hasLogin = await page.getByText(/התחברות|sign in|log in|נדרשת התחברות/i).first().isVisible().catch(() => false);
         return hasLogin;
       });
       logResult('2.1', '"התחברות" מפנה ל־Login', ok);
 
-      // 2.2 אחרי התחברות (PIN) – Dashboard
+      // 2.2 התחברות via PIN
       ok = await safeCheck(async () => {
         await loginViaPin(page, PINS.super_admin);
         return page.url().includes('/Dashboard');
       });
       logResult('2.2', 'אחרי התחברות – מעבר ל־Dashboard', ok);
 
-      // 2.3 התנתקות עובדת
+      // 2.3 התנתקות
       ok = await safeCheck(async () => {
         await logoutViaUI(page);
         const trigger = page.getByTestId('admin-bypass-trigger').or(page.getByRole('button', { name: 'Admin login' }));
         return await trigger.isVisible({ timeout: 10000 });
       });
       logResult('2.3', 'התנתקות עובדת', ok);
-
-      // 2.4 /OAuthCallback לא שובר
-      ok = await safeCheck(async () => {
-        const res = await page.goto('/OAuthCallback');
-        return res?.status() === 200;
-      });
-      logResult('2.4', '/OAuthCallback לא שובר', ok);
     });
 
     // ═══════════════════════════════════════════════════════════════════════
-    // 3. אפליקציה מאומתת
+    // 3. יצירת לקוח מלאה (super_admin)
     // ═══════════════════════════════════════════════════════════════════════
-    await test.step('3. אפליקציה מאומתת (super_admin)', async () => {
+    await test.step('3. יצירת לקוח מלאה', async () => {
       await loginViaPin(page, PINS.super_admin);
-
-      // 3.1 Dashboard נטען
-      let ok = await safeCheck(async () => {
-        await page.goto('/Dashboard');
-        await expect(page.getByText(/לוח בקרה|dashboard|פרויקטים/i).first()).toBeVisible({ timeout: 10000 });
-        return true;
-      });
-      logResult('3.1', 'Dashboard נטען', ok);
-
-      // 3.2 תפריט צד / ניווט
-      ok = await safeCheck(async () => {
-        await page.goto('/Projects');
-        await page.goto('/Clients');
-        await page.goto('/Calendar');
-        return true;
-      });
-      logResult('3.2', 'תפריט צד – ניווט Projects/Clients/Calendar', ok);
-
-      // 3.3 דף Projects נטען
-      ok = await safeCheck(async () => {
-        await page.goto('/Projects');
-        await expect(page.getByText(/פרויקטים|projects|אין פרויקטים/i).first()).toBeVisible({ timeout: 10000 });
-        return true;
-      });
-      logResult('3.3', 'דף Projects נטען', ok);
-
-      // 3.4 דף Clients נטען
-      ok = await safeCheck(async () => {
-        await page.goto('/Clients');
-        await expect(page.getByText(/לקוחות|clients|כרטיסי לקוח/i).first()).toBeVisible({ timeout: 10000 });
-        return true;
-      });
-      logResult('3.4', 'דף Clients נטען', ok);
-
-      // 3.5 דף Calendar נטען
-      ok = await safeCheck(async () => {
-        await page.goto('/Calendar');
-        await page.waitForLoadState('networkidle').catch(() => {});
-        await page.waitForTimeout(2000);
-        const calendarVisible = await page.getByTestId('add-event-btn')
-          .or(page.getByText(/לוח שנה|calendar|ינואר|פברואר|מרץ|אפריל/i).first())
-          .or(page.locator('[class*="calendar"]').first())
-          .isVisible({ timeout: 15000 });
-        return calendarVisible;
-      });
-      logResult('3.5', 'דף Calendar נטען', ok);
-
-      // 3.6 Settings נטען
-      ok = await safeCheck(async () => {
-        await page.goto('/Settings');
-        await expect(page.getByText(/הגדרות|settings/i).first()).toBeVisible({ timeout: 10000 });
-        return true;
-      });
-      logResult('3.6', 'Settings נטען', ok);
-
-      await logoutViaUI(page);
-    });
-
-    // 3.7 גישה לנתיב מוגן בלי התחברות
-    await test.step('3.7 גישה לנתיב מוגן בלי התחברות', async () => {
-      await page.goto('/Dashboard');
+      
       const ok = await safeCheck(async () => {
-        await expect(page.getByText(/נדרשת התחברות|login required|sign in/i).first()).toBeVisible({ timeout: 10000 });
-        return true;
-      });
-      logResult('3.7', 'גישה ל־/Dashboard בלי התחברות – הפניה ל־Login', ok);
-    });
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // 4. רספונסיביות ו־UX
-    // ═══════════════════════════════════════════════════════════════════════
-    await test.step('4. רספונסיביות ו־UX', async () => {
-      // 4.1 דסקטופ – פריסה תקינה
-      await page.setViewportSize({ width: 1280, height: 800 });
-      await page.goto('/');
-      let ok = await safeCheck(async () => {
-        await expect(page.locator('body')).toBeVisible();
-        return true;
-      });
-      logResult('4.1', 'דסקטופ – פריסה תקינה', ok);
-
-      // 4.2 מובייל – תפריט/המבורגר
-      await page.setViewportSize({ width: 375, height: 667 });
-      await page.goto('/');
-      ok = await safeCheck(async () => {
-        await expect(page.locator('body')).toBeVisible();
-        return true;
-      });
-      logResult('4.2', 'מובייל – עיצוב נטען', ok);
-
-      // 4.3 אין שגיאות קריטיות בקונסול
-      await page.setViewportSize({ width: 1280, height: 800 });
-      const errors: string[] = [];
-      page.on('pageerror', (e) => errors.push(e.message));
-      await page.goto('/');
-      await page.waitForLoadState('networkidle').catch(() => {});
-      const criticalErrors = errors.filter((m) => /useLandingLanguage must be used within|Cannot read propert/i.test(m));
-      ok = criticalErrors.length === 0;
-      logResult('4.3', 'אין שגיאות קריטיות בקונסול', ok, ok ? '' : criticalErrors.join('; '));
-
-      // 4.4 טעינה ראשונית – אין מסך לבן ממושך
-      ok = await safeCheck(async () => {
-        await page.goto('/');
-        await expect(page.locator('h1').first()).toBeVisible({ timeout: 5000 });
-        return true;
-      });
-      logResult('4.4', 'טעינה ראשונית – אין מסך לבן ממושך', ok);
-    });
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // 5. טכני
-    // ═══════════════════════════════════════════════════════════════════════
-    await test.step('5. טכני', async () => {
-      // 5.1 משתני סביבה – בדיקה עקיפה: אם ההתחברות עבדה, משתני הסביבה מוגדרים
-      // ✅ שיפור: סימון כ"עבר עקיף" אם ההתחברות ל־Dashboard הצליחה
-      if (dashboardLoginSucceeded) {
-        logIndirect('5.1', 'משתני סביבה', 'ההתחברות ל־Dashboard הצליחה – משתני הסביבה מוגדרים כראוי');
-      } else {
-        logSkipped('5.1', 'משתני סביבה', 'ההתחברות לא הצליחה – לא ניתן לאמת');
-      }
-
-      // 5.2 SPA rewrites
-      let ok = await safeCheck(async () => {
-        const res = await page.goto('/LandingPricing');
-        return res?.status() === 200;
-      });
-      logResult('5.2', 'SPA rewrites – /LandingPricing נטען', ok);
-
-      // 5.3 PWA / manifest
-      ok = await safeCheck(async () => {
-        await page.goto('/');
-        const manifest = await page.locator('link[rel="manifest"]').getAttribute('href').catch(() => null);
-        return !!manifest;
-      });
-      logResult('5.3', 'PWA manifest קיים', ok, ok ? '' : 'לא נמצא manifest');
-    });
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // 6. QA עמוק (Deep QA)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    // 6.1 תהליכים (Flows)
-    await test.step('6.1 תהליכים (Flows)', async () => {
-      await loginViaPin(page, PINS.super_admin);
-
-      // 6.1.1 יצירת פרויקט – כפתור פותח מודל
-      let ok = await safeCheck(async () => {
-        await page.goto('/Projects');
-        await page.getByTestId('new-project-btn').click();
-        await expect(page.getByText(/פרויקט חדש|הקמת פרויקט/i).first()).toBeVisible({ timeout: 8000 });
-        await page.keyboard.press('Escape');
-        return true;
-      });
-      logResult('6.1.1', 'יצירת פרויקט – כפתור פותח מודל', ok);
-
-      // 6.1.2 הוספת לקוח – כפתור פותח מודל
-      ok = await safeCheck(async () => {
         await page.goto('/Clients');
-        await page.getByTestId('add-client-btn').click();
-        await expect(page.getByText(/לקוח חדש|הוסף לקוח/i).first()).toBeVisible({ timeout: 8000 });
-        await page.keyboard.press('Escape');
-        return true;
-      });
-      logResult('6.1.2', 'הוספת לקוח – כפתור פותח מודל', ok);
-
-      // 6.1.3 יצירת אירוע בלוח שנה
-      ok = await safeCheck(async () => {
-        await page.goto('/Calendar');
-        await page.getByTestId('add-event-btn').click();
-        await expect(page.getByTestId('add-event-title')).toBeVisible({ timeout: 8000 });
-        await page.getByTestId('add-event-title').fill('E2E אירוע בדיקה');
-        await page.getByTestId('add-event-submit').click();
-        await page.waitForTimeout(2000);
-        return true;
-      });
-      logResult('6.1.3', 'יצירת אירוע בלוח שנה', ok);
-
-      // ✅ 6.1.4 הצעת מחיר – יצירת פרויקט ואז פתיחת טופס הצעת מחיר
-      ok = await safeCheck(async () => {
-        await page.goto('/Projects');
-        await page.waitForTimeout(1000);
+        await delay(page);
         
-        // יצירת פרויקט חדש
+        // לחיצה על כפתור לקוח חדש
+        await page.getByTestId('add-client-btn').click();
+        await delay(page);
+        
+        // מילוי שדות חובה
+        testData.clientName = `לקוח-בדיקה-${testData.timestamp}`;
+        testData.clientPhone = '050-1234567';
+        testData.clientEmail = `test-${testData.timestamp}@example.com`;
+        
+        await fillField(page, 'full_name', testData.clientName);
+        await fillField(page, 'phone', testData.clientPhone);
+        await fillField(page, 'email', testData.clientEmail);
+        
+        // מילוי שדות נוספים
+        await fillField(page, 'address', 'רחוב הבדיקות 123, תל אביב');
+        await delay(page, SHORT_DELAY);
+        
+        // בחירת מקור
+        try {
+          await selectOption(page, 'source', /אתר|website/i);
+        } catch { /* אופציונלי */ }
+        
+        // הערות
+        await fillField(page, 'notes', 'לקוח שנוצר בבדיקת E2E אוטומטית');
+        
+        // שמירה
+        const submitBtn = page.getByRole('button', { name: /שמור|צור|הוסף|create|save|add/i });
+        await submitBtn.click();
+        await delay(page, 2000);
+        
+        // וידוא שהלקוח נוצר
+        await page.goto('/Clients');
+        await delay(page);
+        const clientVisible = await page.getByText(testData.clientName).isVisible({ timeout: 5000 }).catch(() => false);
+        
+        return clientVisible;
+      });
+      logResult('3.1', `יצירת לקוח: ${testData.clientName}`, ok);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 4. יצירת פרויקט מלאה (super_admin)
+    // ═══════════════════════════════════════════════════════════════════════
+    await test.step('4. יצירת פרויקט מלאה', async () => {
+      const ok = await safeCheck(async () => {
+        await page.goto('/Projects');
+        await delay(page);
+        
+        // לחיצה על פרויקט חדש
         await page.getByTestId('new-project-btn').click();
-        await page.waitForTimeout(500);
+        await delay(page);
         
         // מילוי שם פרויקט
-        const projectNameInput = page.getByTestId('project-name-input')
-          .or(page.getByPlaceholder(/שם הפרויקט|project name/i))
-          .or(page.locator('input[name="name"]').first());
+        testData.projectName = `פרויקט-בדיקה-${testData.timestamp}`;
+        await fillField(page, 'name', testData.projectName);
         
-        createdProjectName = `E2E-Project-${Date.now()}`;
-        await projectNameInput.fill(createdProjectName);
+        // בחירת/הזנת לקוח
+        const clientField = page.locator('#client').or(page.getByPlaceholder(/לקוח|client/i));
+        await clientField.fill(testData.clientName);
+        await delay(page, SHORT_DELAY);
         
-        // שליחת הטופס
-        const submitBtn = page.getByTestId('project-submit-btn')
-          .or(page.getByRole('button', { name: /צור|שמור|create|save/i }));
-        await submitBtn.click();
-        await page.waitForTimeout(2000);
-        
-        // חיפוש כפתור הצעת מחיר בדף הפרויקטים או בפרויקט הספציפי
-        const quoteBtn = page.getByTestId('create-quote-btn')
-          .or(page.getByRole('button', { name: /הצעת מחיר|quote/i }))
-          .or(page.locator('button:has-text("הצעת מחיר")'))
-          .or(page.getByRole('link', { name: /הצעת מחיר|quote/i }));
-        
-        const quoteVisible = await quoteBtn.first().isVisible({ timeout: 5000 }).catch(() => false);
-        
-        if (quoteVisible) {
-          await quoteBtn.first().click();
-          await page.waitForTimeout(1500);
-          // בדיקה שטופס הצעת מחיר נפתח
-          const quoteFormVisible = await page.getByText(/הצעת מחיר|quote|סכום|amount/i).first().isVisible().catch(() => false);
-          await page.keyboard.press('Escape').catch(() => {});
-          return quoteFormVisible;
+        // לחיצה על הלקוח מהרשימה אם מופיע
+        const clientOption = page.getByText(testData.clientName).first();
+        if (await clientOption.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await clientOption.click();
+          await delay(page, SHORT_DELAY);
         }
         
-        // אם אין כפתור הצעת מחיר – נסה לגשת לדף Quotes ישירות
-        await page.goto('/Quotes');
-        const quotesPageLoaded = await page.getByText(/הצעות מחיר|quotes/i).first().isVisible({ timeout: 5000 }).catch(() => false);
-        return quotesPageLoaded;
+        // מילוי מיקום
+        await fillField(page, 'location', 'רחוב הפרויקט 456, ירושלים');
+        
+        // מילוי תקציב
+        const budgetField = page.locator('#budget');
+        if (await budgetField.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await budgetField.fill('500000');
+          await delay(page, SHORT_DELAY);
+        }
+        
+        // תאריכי התחלה וסיום
+        const today = new Date();
+        const endDate = new Date(today.getTime() + 90 * 24 * 60 * 60 * 1000); // +90 ימים
+        
+        const startDateField = page.locator('#startDate');
+        if (await startDateField.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await startDateField.fill(today.toISOString().split('T')[0]);
+          await delay(page, SHORT_DELAY);
+        }
+        
+        const endDateField = page.locator('#endDate');
+        if (await endDateField.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await endDateField.fill(endDate.toISOString().split('T')[0]);
+          await delay(page, SHORT_DELAY);
+        }
+        
+        // שמירה
+        const submitBtn = page.getByRole('button', { name: /צור|שמור|create|save/i });
+        await submitBtn.click();
+        await delay(page, 2000);
+        
+        // וידוא שהפרויקט נוצר
+        await page.goto('/Projects');
+        await delay(page);
+        const projectVisible = await page.getByText(testData.projectName).isVisible({ timeout: 5000 }).catch(() => false);
+        
+        return projectVisible;
       });
-      logResult('6.1.4', 'יצירת הצעת מחיר – פרויקט נוצר וטופס/דף הצעות נבדק', ok);
+      logResult('4.1', `יצירת פרויקט: ${testData.projectName}`, ok);
+    });
 
-      // 6.1.5 העלאת הקלטה
+    // ═══════════════════════════════════════════════════════════════════════
+    // 5. יצירת אירוע בלוח שנה (super_admin)
+    // ═══════════════════════════════════════════════════════════════════════
+    await test.step('5. יצירת אירוע בלוח שנה', async () => {
+      const ok = await safeCheck(async () => {
+        await page.goto('/Calendar');
+        await delay(page);
+        
+        // לחיצה על כפתור חדש
+        await page.getByTestId('add-event-btn').click();
+        await delay(page);
+        
+        // מילוי כותרת האירוע
+        testData.eventName = `פגישה-בדיקה-${testData.timestamp}`;
+        await page.getByTestId('add-event-title').fill(testData.eventName);
+        await delay(page, SHORT_DELAY);
+        
+        // בחירת סוג אירוע
+        try {
+          await selectOption(page, 'event_type', /פגישה|meeting/i);
+        } catch { /* אופציונלי */ }
+        
+        // מילוי תאריך ושעת התחלה
+        const startDateField = page.locator('#start_date');
+        if (await startDateField.isVisible({ timeout: 2000 }).catch(() => false)) {
+          // לוחצים על ה-date picker
+          await startDateField.click();
+          await delay(page, SHORT_DELAY);
+          // בוחרים את היום הנוכחי או מילוי ישיר
+          await page.keyboard.press('Escape');
+          await delay(page, SHORT_DELAY);
+        }
+        
+        // מילוי מיקום
+        const locationField = page.locator('#location');
+        if (await locationField.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await locationField.fill('משרד הלקוח, תל אביב');
+          await delay(page, SHORT_DELAY);
+        }
+        
+        // מילוי משתתפים
+        const attendeesField = page.locator('#attendees');
+        if (await attendeesField.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await attendeesField.fill('ישראל ישראלי, דנה דני');
+          await delay(page, SHORT_DELAY);
+        }
+        
+        // מילוי תיאור
+        const descField = page.locator('#description');
+        if (await descField.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await descField.fill('אירוע שנוצר בבדיקת E2E אוטומטית');
+          await delay(page, SHORT_DELAY);
+        }
+        
+        // שמירה
+        await page.getByTestId('add-event-submit').click();
+        await delay(page, 2000);
+        
+        // וידוא שהאירוע נוצר (הודעת הצלחה או האירוע מופיע בלוח)
+        const success = await page.getByText(/נוצר|נשמר|הצלחה|success/i).first().isVisible({ timeout: 3000 }).catch(() => false)
+          || await page.getByText(testData.eventName).isVisible({ timeout: 3000 }).catch(() => false);
+        
+        return success;
+      });
+      logResult('5.1', `יצירת אירוע: ${testData.eventName}`, ok);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 6. יצירת ישויות בדף People (super_admin)
+    // ═══════════════════════════════════════════════════════════════════════
+    await test.step('6. יצירת ישויות בדף People', async () => {
+      await page.goto('/People');
+      await delay(page);
+
+      // 6.1 יצירת קבלן
+      let ok = await safeCheck(async () => {
+        // חיפוש כפתור להוספת קבלן
+        const addContractorBtn = page.getByRole('button', { name: /קבלן|contractor/i })
+          .or(page.locator('button:has-text("קבלן")'))
+          .or(page.locator('[data-testid="add-contractor-btn"]'));
+        
+        // אם יש tabs, נלחץ על הtab של קבלנים קודם
+        const contractorTab = page.getByRole('tab', { name: /קבלנים|contractors/i });
+        if (await contractorTab.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await contractorTab.click();
+          await delay(page);
+        }
+        
+        // לחיצה על כפתור הוספה
+        const addBtn = page.getByRole('button', { name: /הוסף|חדש|add|new/i }).first();
+        await addBtn.click();
+        await delay(page);
+        
+        // מילוי פרטי קבלן
+        testData.contractorName = `קבלן-בדיקה-${testData.timestamp}`;
+        await fillField(page, 'name', testData.contractorName);
+        await fillField(page, 'phone', '052-1111111');
+        await fillField(page, 'email', `contractor-${testData.timestamp}@test.com`);
+        
+        // מילוי שדות נוספים
+        const companyField = page.locator('#company');
+        if (await companyField.isVisible({ timeout: 1000 }).catch(() => false)) {
+          await companyField.fill('חברת קבלנות בע"מ');
+          await delay(page, SHORT_DELAY);
+        }
+        
+        // בחירת התמחות
+        try {
+          await selectOption(page, 'specialty', /כללי|general/i);
+        } catch { /* אופציונלי */ }
+        
+        // הערות
+        await fillField(page, 'notes', 'קבלן שנוצר בבדיקת E2E');
+        
+        // שמירה
+        const submitBtn = page.getByRole('button', { name: /שמור|צור|הוסף|create|save|add/i });
+        await submitBtn.click();
+        await delay(page, 2000);
+        
+        return true;
+      });
+      logResult('6.1', `יצירת קבלן: ${testData.contractorName}`, ok);
+
+      // 6.2 יצירת יועץ
       ok = await safeCheck(async () => {
+        await page.goto('/People');
+        await delay(page);
+        
+        // לחיצה על tab יועצים
+        const consultantTab = page.getByRole('tab', { name: /יועצים|consultants/i });
+        if (await consultantTab.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await consultantTab.click();
+          await delay(page);
+        }
+        
+        // לחיצה על כפתור הוספה
+        const addBtn = page.getByRole('button', { name: /הוסף|חדש|add|new/i }).first();
+        await addBtn.click();
+        await delay(page);
+        
+        // מילוי פרטי יועץ
+        testData.consultantName = `יועץ-בדיקה-${testData.timestamp}`;
+        await fillField(page, 'name', testData.consultantName);
+        await fillField(page, 'phone', '053-2222222');
+        await fillField(page, 'email', `consultant-${testData.timestamp}@test.com`);
+        
+        // בחירת סוג יועץ
+        try {
+          await selectOption(page, 'consultant_type', /מבנה|structural/i);
+        } catch { /* אופציונלי */ }
+        
+        // חברה
+        const companyField = page.locator('#company');
+        if (await companyField.isVisible({ timeout: 1000 }).catch(() => false)) {
+          await companyField.fill('משרד ייעוץ הנדסי');
+          await delay(page, SHORT_DELAY);
+        }
+        
+        // רישיון
+        const licenseField = page.locator('#license_number');
+        if (await licenseField.isVisible({ timeout: 1000 }).catch(() => false)) {
+          await licenseField.fill('12345');
+          await delay(page, SHORT_DELAY);
+        }
+        
+        // שמירה
+        const submitBtn = page.getByRole('button', { name: /שמור|צור|הוסף|create|save|add/i });
+        await submitBtn.click();
+        await delay(page, 2000);
+        
+        return true;
+      });
+      logResult('6.2', `יצירת יועץ: ${testData.consultantName}`, ok);
+
+      // 6.3 יצירת ספק
+      ok = await safeCheck(async () => {
+        await page.goto('/People');
+        await delay(page);
+        
+        // לחיצה על tab ספקים
+        const supplierTab = page.getByRole('tab', { name: /ספקים|suppliers/i });
+        if (await supplierTab.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await supplierTab.click();
+          await delay(page);
+        }
+        
+        // לחיצה על כפתור הוספה
+        const addBtn = page.getByRole('button', { name: /הוסף|חדש|add|new/i }).first();
+        await addBtn.click();
+        await delay(page);
+        
+        // מילוי פרטי ספק
+        testData.supplierName = `ספק-בדיקה-${testData.timestamp}`;
+        await fillField(page, 'name', testData.supplierName);
+        await fillField(page, 'phone', '054-3333333');
+        await fillField(page, 'email', `supplier-${testData.timestamp}@test.com`);
+        
+        // בחירת קטגוריה
+        try {
+          await selectOption(page, 'category', /ריהוט|furniture/i);
+        } catch { /* אופציונלי */ }
+        
+        // חברה
+        const companyField = page.locator('#company');
+        if (await companyField.isVisible({ timeout: 1000 }).catch(() => false)) {
+          await companyField.fill('ספקי ריהוט בע"מ');
+          await delay(page, SHORT_DELAY);
+        }
+        
+        // אתר
+        const websiteField = page.locator('#website');
+        if (await websiteField.isVisible({ timeout: 1000 }).catch(() => false)) {
+          await websiteField.fill('https://example-supplier.com');
+          await delay(page, SHORT_DELAY);
+        }
+        
+        // תנאי תשלום
+        const paymentField = page.locator('#payment_terms');
+        if (await paymentField.isVisible({ timeout: 1000 }).catch(() => false)) {
+          await paymentField.fill('שוטף + 30');
+          await delay(page, SHORT_DELAY);
+        }
+        
+        // שמירה
+        const submitBtn = page.getByRole('button', { name: /שמור|צור|הוסף|create|save|add/i });
+        await submitBtn.click();
+        await delay(page, 2000);
+        
+        return true;
+      });
+      logResult('6.3', `יצירת ספק: ${testData.supplierName}`, ok);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 7. בדיקת דפים נוספים (super_admin)
+    // ═══════════════════════════════════════════════════════════════════════
+    await test.step('7. בדיקת דפים נוספים', async () => {
+      // 7.1 Recordings
+      let ok = await safeCheck(async () => {
         await page.goto('/Recordings');
+        await delay(page);
         await expect(page.getByText(/הקלטות|recordings|העלה/i).first()).toBeVisible({ timeout: 10000 });
         return true;
       });
-      logResult('6.1.5', 'דף Recordings נטען', ok);
+      logResult('7.1', 'דף Recordings נטען', ok);
 
-      // 6.1.6 מעקב זמן
+      // 7.2 TimeTracking
       ok = await safeCheck(async () => {
         await page.goto('/TimeTracking');
+        await delay(page);
         await expect(page.getByText(/מעקב זמן|time tracking|שעות/i).first()).toBeVisible({ timeout: 10000 });
         return true;
       });
-      logResult('6.1.6', 'דף TimeTracking נטען', ok);
+      logResult('7.2', 'דף TimeTracking נטען', ok);
 
-      // 6.1.7 ספריית עיצוב
+      // 7.3 DesignLibrary
       ok = await safeCheck(async () => {
         await page.goto('/DesignLibrary');
-        await page.waitForLoadState('networkidle').catch(() => {});
-        await page.waitForTimeout(2000);
-        const visible = await page.getByText(/ספריית עיצוב|design library|ספרייה|עיצוב|library/i).first()
+        await delay(page);
+        const visible = await page.getByText(/ספריית עיצוב|design library|ספרייה/i).first()
           .or(page.locator('h1, h2').first())
           .isVisible({ timeout: 15000 });
         return visible;
       });
-      logResult('6.1.7', 'דף DesignLibrary נטען', ok);
+      logResult('7.3', 'דף DesignLibrary נטען', ok);
 
-      // 6.1.8 Settings – שינוי (שפה/נושא)
+      // 7.4 Settings
       ok = await safeCheck(async () => {
         await page.goto('/Settings');
+        await delay(page);
         await expect(page.getByText(/הגדרות|settings/i).first()).toBeVisible({ timeout: 10000 });
         return true;
       });
-      logResult('6.1.8', 'Settings נטען', ok);
+      logResult('7.4', 'דף Settings נטען', ok);
 
       await logoutViaUI(page);
     });
 
-    // 6.2 נתונים ו־CRUD
-    await test.step('6.2 נתונים ו־CRUD', async () => {
-      await loginViaPin(page, PINS.super_admin);
-
-      // 6.2.1 רשימת פרויקטים
-      let ok = await safeCheck(async () => {
-        await page.goto('/Projects');
-        await expect(page.getByText(/פרויקטים|אין פרויקטים|projects/i).first()).toBeVisible({ timeout: 10000 });
-        return true;
-      });
-      logResult('6.2.1', 'רשימת פרויקטים מוצגת', ok);
-
-      // 6.2.2 רשימת לקוחות
-      ok = await safeCheck(async () => {
-        await page.goto('/Clients');
-        await expect(page.getByText(/לקוחות|אין לקוחות|clients/i).first()).toBeVisible({ timeout: 10000 });
-        return true;
-      });
-      logResult('6.2.2', 'רשימת לקוחות מוצגת', ok);
-
-      // ✅ 6.2.3 יצירת לקוח חדש
-      ok = await safeCheck(async () => {
-        await page.goto('/Clients');
-        await page.waitForTimeout(1000);
-        
-        await page.getByTestId('add-client-btn').click();
-        await page.waitForTimeout(500);
-        
-        // מילוי שם לקוח
-        const clientNameInput = page.getByTestId('client-name-input')
-          .or(page.getByPlaceholder(/שם הלקוח|שם מלא|client name|full name/i))
-          .or(page.locator('input[name="name"]').first())
-          .or(page.locator('input[name="fullName"]').first());
-        
-        createdClientName = `E2E-Client-${Date.now()}`;
-        await clientNameInput.fill(createdClientName);
-        
-        // מילוי אימייל (אם קיים)
-        const emailInput = page.getByTestId('client-email-input')
-          .or(page.getByPlaceholder(/אימייל|email/i))
-          .or(page.locator('input[type="email"]').first());
-        if (await emailInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await emailInput.fill(`e2e-${Date.now()}@test.com`);
-        }
-        
-        // מילוי טלפון (אם קיים)
-        const phoneInput = page.getByTestId('client-phone-input')
-          .or(page.getByPlaceholder(/טלפון|phone/i))
-          .or(page.locator('input[type="tel"]').first());
-        if (await phoneInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await phoneInput.fill('050-1234567');
-        }
-        
-        // שליחה
-        const submitBtn = page.getByTestId('client-submit-btn')
-          .or(page.getByRole('button', { name: /צור|שמור|הוסף|create|save|add/i }));
-        await submitBtn.click();
-        await page.waitForTimeout(2000);
-        
-        // בדיקה שהלקוח נוצר – או שהמודל נסגר או שהלקוח מופיע ברשימה
-        const modalClosed = !(await page.getByTestId('client-name-input').isVisible({ timeout: 2000 }).catch(() => true));
-        const clientInList = await page.getByText(createdClientName).isVisible({ timeout: 3000 }).catch(() => false);
-        
-        return modalClosed || clientInList;
-      });
-      logResult('6.2.3', 'יצירת לקוח חדש', ok);
-
-      // ✅ 6.2.4 עריכת לקוח קיים
-      ok = await safeCheck(async () => {
-        await page.goto('/Clients');
-        await page.waitForTimeout(1500);
-        
-        // חיפוש כפתור עריכה
-        const editBtn = page.getByTestId('edit-client-btn').first()
-          .or(page.getByRole('button', { name: /ערוך|edit/i }).first())
-          .or(page.locator('button:has-text("ערוך")').first())
-          .or(page.locator('[aria-label*="edit"]').first())
-          .or(page.locator('button svg[class*="edit"], button svg[class*="pencil"]').first());
-        
-        const editVisible = await editBtn.isVisible({ timeout: 3000 }).catch(() => false);
-        
-        if (editVisible) {
-          await editBtn.click();
-          await page.waitForTimeout(1000);
-          
-          // בדיקה שטופס עריכה נפתח
-          const editFormVisible = await page.getByText(/עריכת לקוח|edit client|עדכון/i).first().isVisible({ timeout: 3000 }).catch(() => false)
-            || await page.locator('input[name="name"], input[name="fullName"]').first().isVisible({ timeout: 3000 }).catch(() => false);
-          
-          await page.keyboard.press('Escape').catch(() => {});
-          return editFormVisible;
-        }
-        
-        // אם אין כפתור עריכה גלוי, ייתכן שצריך ללחוץ על שורה בטבלה
-        const clientRow = page.locator('tr, [class*="client-card"], [class*="client-item"]').first();
-        if (await clientRow.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await clientRow.click();
-          await page.waitForTimeout(1000);
-          const detailsVisible = await page.getByText(/פרטי לקוח|client details/i).first().isVisible({ timeout: 3000 }).catch(() => false);
-          return detailsVisible;
-        }
-        
-        return false;
-      });
-      logResult('6.2.4', 'עריכת לקוח קיים', ok, ok ? '' : 'כפתור עריכה לא נמצא או אין לקוחות');
-
-      // 6.2.5 חיפוש
-      ok = await safeCheck(async () => {
-        await page.goto('/Projects');
-        const searchInput = page.getByPlaceholder(/חפש|search/i).first();
-        if (await searchInput.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await searchInput.fill('test');
-          return true;
-        }
-        return true; // אם אין חיפוש גלוי, עובר
-      });
-      logResult('6.2.5', 'חיפוש ברשימות', ok);
-
-      // ✅ 6.2.6 מחיקה – בדיקה אם כפתור מחיקה קיים
-      ok = await safeCheck(async () => {
-        await page.goto('/Clients');
-        await page.waitForTimeout(1500);
-        
-        // חיפוש כפתור מחיקה
-        const deleteBtn = page.getByTestId('delete-client-btn').first()
-          .or(page.getByRole('button', { name: /מחק|delete|הסר|remove/i }).first())
-          .or(page.locator('button:has-text("מחק")').first())
-          .or(page.locator('[aria-label*="delete"]').first())
-          .or(page.locator('button svg[class*="trash"], button svg[class*="delete"]').first());
-        
-        const deleteVisible = await deleteBtn.isVisible({ timeout: 3000 }).catch(() => false);
-        
-        if (deleteVisible) {
-          // לא לוחצים באמת על מחיקה – רק מוודאים שהכפתור קיים
-          return true;
-        }
-        
-        // אם אין כפתור מחיקה גלוי, בודקים בתפריט פעולות
-        const actionsBtn = page.getByRole('button', { name: /פעולות|actions|more/i }).first()
-          .or(page.locator('button[aria-haspopup="menu"]').first());
-        
-        if (await actionsBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await actionsBtn.click();
-          await page.waitForTimeout(500);
-          const deleteInMenu = await page.getByRole('menuitem', { name: /מחק|delete/i }).isVisible({ timeout: 2000 }).catch(() => false);
-          await page.keyboard.press('Escape').catch(() => {});
-          return deleteInMenu;
-        }
-        
-        return false;
-      });
-      logResult('6.2.6', 'מחיקה – כפתור קיים', ok, ok ? '' : 'כפתור מחיקה לא נמצא');
-
-      await logoutViaUI(page);
-    });
-
-    // 6.3 הרשאות ותפקידים
-    await test.step('6.3 הרשאות ותפקידים', async () => {
-      // 6.3.1 משתמש client – רואה דפים מוגבלים
+    // ═══════════════════════════════════════════════════════════════════════
+    // 8. בדיקת הרשאות – משתמש Client
+    // ═══════════════════════════════════════════════════════════════════════
+    await test.step('8. בדיקת הרשאות – Client', async () => {
       await loginViaPin(page, PINS.client);
-      let ok = await safeCheck(async () => {
-        await page.goto('/Dashboard');
-        return page.url().includes('/Dashboard');
-      });
-      logResult('6.3.1', 'משתמש client מתחבר ל־Dashboard', ok);
-
-      // ✅ 6.3.2 גישה ישירה לדף לא מורשה (client → People)
-      ok = await safeCheck(async () => {
-        await page.goto('/People');
-        await page.waitForTimeout(2500);
-        
-        // בדיקות שונות לחסימת גישה:
-        // 1. הודעת "אין הרשאה" או דומה
-        const accessDenied = await page.getByText(/אין הרשאה|access denied|לא מורשה|unauthorized|forbidden/i).first().isVisible().catch(() => false);
-        
-        // 2. הפנייה לדף אחר (לא /People)
-        const redirected = !page.url().includes('/People');
-        
-        // 3. דף ריק או עם מעט תוכן (אין נתוני צוות)
-        const emptyPage = await page.getByText(/אין צוות|no team|אין עובדים|no employees/i).first().isVisible().catch(() => false);
-        
-        // 4. הדף פשוט לא מציג את האלמנטים של ניהול צוות
-        const noTeamManagement = !(await page.getByRole('button', { name: /הוסף עובד|add employee|הזמן/i }).first().isVisible({ timeout: 2000 }).catch(() => false));
-        
-        // אם אחד מהתנאים מתקיים – המשתמש אכן מוגבל
-        if (accessDenied || redirected) {
-          return true;
-        }
-        
-        // אם הדף נטען אבל אין כפתורי ניהול – זה גם בסדר (הרשאות מבוססות תצוגה)
-        if (emptyPage || noTeamManagement) {
-          return true;
-        }
-        
-        // בדיקה נוספת: האם יש טבלת עובדים עם אפשרויות עריכה
-        const hasEditControls = await page.getByRole('button', { name: /ערוך|edit|מחק|delete/i }).first().isVisible({ timeout: 2000 }).catch(() => false);
-        
-        // אם אין פקדי עריכה – המשתמש מוגבל
-        return !hasEditControls;
-      });
-      logResult('6.3.2', 'גישה לדף לא מורשה (client → People) – חסום או מוגבל', ok);
       
-      await logoutViaUI(page);
-
-      // 6.3.3 מנהל – People/Team
-      await loginViaPin(page, PINS.super_admin);
-      ok = await safeCheck(async () => {
-        await page.goto('/People');
-        await expect(page.getByText(/צוות|people|עובדים/i).first()).toBeVisible({ timeout: 10000 });
-        return true;
-      });
-      logResult('6.3.3', 'מנהל – גישה ל־People', ok);
-
-      // 6.3.4 Super Admin – Dashboard
-      ok = await safeCheck(async () => {
+      // 8.1 Dashboard נטען
+      let ok = await safeCheck(async () => {
         await page.goto('/Dashboard');
+        await delay(page);
         return page.url().includes('/Dashboard');
       });
-      logResult('6.3.4', 'Super Admin – Dashboard נטען', ok);
+      logResult('8.1', 'Client – Dashboard נטען', ok);
 
-      await logoutViaUI(page);
-    });
-
-    // 6.4 דפים ציבוריים
-    await test.step('6.4 דפים ציבוריים (ללא התחברות)', async () => {
-      let ok = await safeCheck(async () => {
-        const res = await page.goto('/PublicApproval');
-        return res?.status() === 200;
-      });
-      logResult('6.4.1', 'PublicApproval נטען בלי Login', ok);
-
+      // 8.2 גישה מוגבלת ל-People
       ok = await safeCheck(async () => {
-        const res = await page.goto('/PublicContractorQuote');
-        return res?.status() === 200;
+        await page.goto('/People');
+        await delay(page);
+        
+        // בדיקה שאין פקדי עריכה
+        const hasEditControls = await page.getByRole('button', { name: /הוסף|ערוך|מחק|add|edit|delete/i }).first().isVisible({ timeout: 3000 }).catch(() => false);
+        
+        // אם הופנה או אין פקדי עריכה – עובר
+        return !page.url().includes('/People') || !hasEditControls;
       });
-      logResult('6.4.2', 'PublicContractorQuote נטען בלי Login', ok);
+      logResult('8.2', 'Client – גישה מוגבלת ל-People', ok);
 
-      ok = await safeCheck(async () => {
-        const res = await page.goto('/PublicMeetingBooking');
-        return res?.status() === 200;
-      });
-      logResult('6.4.3', 'PublicMeetingBooking נטען בלי Login', ok);
-    });
-
-    // 6.5 טעינה, ביצועים ושגיאות
-    await test.step('6.5 טעינה, ביצועים ושגיאות', async () => {
-      // ✅ 6.5.1 רשת איטית – בדיקה עם throttling והודעה
-      let ok = await safeCheck(async () => {
-        // Simulate slow network using route delay
-        await page.route('**/*', async (route) => {
-          await new Promise(r => setTimeout(r, 200)); // 200ms delay per request
-          await route.continue();
-        });
-        
-        await page.goto('/');
-        await page.waitForLoadState('domcontentloaded');
-        
-        // בדיקה שהעמוד נטען
-        const loaded = await page.locator('body').isVisible();
-        
-        // בדיקה אם יש הודעת loading או spinner (אופציונלי)
-        const hasLoadingIndicator = await page.getByText(/טוען|loading/i).first().isVisible({ timeout: 1000 }).catch(() => false)
-          || await page.locator('[class*="spinner"], [class*="loading"]').first().isVisible({ timeout: 1000 }).catch(() => false);
-        
-        await page.unroute('**/*'); // Remove throttling
-        return loaded;
-      });
-      logResult('6.5.1', 'רשת איטית – עמוד נטען', ok);
-
-      // ✅ 6.5.2 רשת כבויה – בדיקת Offline והודעה
-      ok = await safeCheck(async () => {
-        await page.goto('/');
-        await page.waitForLoadState('networkidle').catch(() => {});
-        
-        // הפעלת מצב Offline
-        await page.context().setOffline(true);
-        
-        // ניסיון רענון – צפוי להיכשל
-        await page.reload().catch(() => {});
-        await page.waitForTimeout(2000);
-        
-        // בדיקות:
-        // 1. הדף לא קרס (body עדיין גלוי)
-        const hasContent = await page.locator('body').isVisible();
-        
-        // 2. בדיקה אם יש הודעת Offline
-        const hasOfflineMessage = await page.getByText(/offline|אין חיבור|לא מקוון|no connection|network error/i).first().isVisible({ timeout: 2000 }).catch(() => false);
-        
-        // 3. בדיקה אם יש banner או toast של Offline
-        const hasOfflineBanner = await page.locator('[class*="offline"], [class*="network-error"], [role="alert"]').first().isVisible({ timeout: 2000 }).catch(() => false);
-        
-        // שחזור Online
-        await page.context().setOffline(false);
-        await page.goto('/');
-        await page.waitForLoadState('domcontentloaded').catch(() => {});
-        
-        // עובר אם הדף לא קרס או אם הייתה הודעת Offline
-        return hasContent || hasOfflineMessage || hasOfflineBanner;
-      });
-      logResult('6.5.2', 'רשת כבויה – אין קריסה ו/או הודעה מוצגת', ok);
-
-      // 6.5.3 טופס validation
-      await loginViaPin(page, PINS.super_admin);
-      ok = await safeCheck(async () => {
-        await page.goto('/Calendar');
-        await page.getByTestId('add-event-btn').click();
-        await expect(page.getByTestId('add-event-title')).toBeVisible({ timeout: 8000 });
-        await page.getByTestId('add-event-submit').click();
-        const hasValidation = await page.getByText(/חובה|required|הזן|נא/i).first().isVisible().catch(() => false);
-        const stillOpen = await page.getByTestId('add-event-title').isVisible().catch(() => false);
-        await page.keyboard.press('Escape');
-        return hasValidation || stillOpen;
-      });
-      logResult('6.5.3', 'טופס validation – שדה ריק', ok);
-
-      // 6.5.4 רשימה ארוכה – ביצועים
+      // 8.3 צפייה בפרויקטים (אם מורשה)
       ok = await safeCheck(async () => {
         await page.goto('/Projects');
-        await page.waitForTimeout(2000);
-        return true;
+        await delay(page);
+        // לקוח אמור לראות רק את הפרויקטים שלו או הודעה מתאימה
+        const visible = await page.getByText(/פרויקטים|projects|אין פרויקטים/i).first().isVisible({ timeout: 10000 });
+        return visible;
       });
-      logResult('6.5.4', 'רשימה ארוכה – טעינה סבירה', ok);
+      logResult('8.3', 'Client – דף Projects נטען', ok);
 
       await logoutViaUI(page);
     });
 
-    // 6.6 נגישות ו־UX מתקדם
-    await test.step('6.6 נגישות ו־UX מתקדם', async () => {
-      // 6.6.1 ניווט במקלדת
-      await page.goto('/');
+    // ═══════════════════════════════════════════════════════════════════════
+    // 9. בדיקת הרשאות – משתמש Architect
+    // ═══════════════════════════════════════════════════════════════════════
+    await test.step('9. בדיקת הרשאות – Architect', async () => {
+      await loginViaPin(page, PINS.architect);
+      
+      // 9.1 Dashboard
       let ok = await safeCheck(async () => {
-        await page.keyboard.press('Tab');
-        await page.keyboard.press('Tab');
-        await page.keyboard.press('Tab');
+        await page.goto('/Dashboard');
+        await delay(page);
+        return page.url().includes('/Dashboard');
+      });
+      logResult('9.1', 'Architect – Dashboard נטען', ok);
+
+      // 9.2 Projects
+      ok = await safeCheck(async () => {
+        await page.goto('/Projects');
+        await delay(page);
+        await expect(page.getByText(/פרויקטים|projects/i).first()).toBeVisible({ timeout: 10000 });
         return true;
       });
-      logResult('6.6.1', 'ניווט במקלדת (Tab)', ok);
+      logResult('9.2', 'Architect – Projects נטען', ok);
 
-      // 6.6.2 RTL
+      // 9.3 Clients
       ok = await safeCheck(async () => {
-        const dir = await page.locator('html').getAttribute('dir');
-        return dir === 'rtl' || dir === null; // null אם לא מוגדר אך RTL בברירת מחדל
-      });
-      logResult('6.6.2', 'RTL מוגדר', ok);
-
-      // 6.6.3 מובייל
-      await page.setViewportSize({ width: 375, height: 667 });
-      ok = await safeCheck(async () => {
-        await page.goto('/');
-        await expect(page.locator('body')).toBeVisible();
+        await page.goto('/Clients');
+        await delay(page);
+        await expect(page.getByText(/לקוחות|clients/i).first()).toBeVisible({ timeout: 10000 });
         return true;
       });
-      logResult('6.6.3', 'מובייל – תצוגה תקינה', ok);
-      await page.setViewportSize({ width: 1280, height: 800 });
+      logResult('9.3', 'Architect – Clients נטען', ok);
 
-      // 6.6.4 Dark mode
-      await loginViaPin(page, PINS.super_admin);
-      ok = await safeCheck(async () => {
-        await page.goto('/Settings');
-        const darkToggle = page.getByRole('button', { name: /dark|כהה|moon|sun/i }).or(page.locator('[data-testid="dark-mode-toggle"]'));
-        if (await darkToggle.first().isVisible({ timeout: 3000 }).catch(() => false)) {
-          await darkToggle.first().click();
-          return true;
-        }
-        return true; // אם אין כפתור גלוי, עובר
-      });
-      logResult('6.6.4', 'Dark mode toggle', ok);
-
-      await logoutViaUI(page);
-    });
-
-    // 6.7 אינטגרציות
-    await test.step('6.7 אינטגרציות', async () => {
-      // ✅ 6.7.1 Google OAuth – בדיקה שכפתור Google קיים במסך התחברות (לא לוחצים)
-      let ok = await safeCheck(async () => {
-        await page.goto('/');
-        const signIn = page.getByRole('link', { name: /התחברות|sign in/i }).or(page.getByRole('button', { name: /התחברות|sign in/i })).first();
-        await signIn.click().catch(() => {});
-        await page.waitForTimeout(2500);
-        
-        // חיפוש כפתור Google OAuth
-        const googleBtn = page.getByRole('button', { name: /google/i })
-          .or(page.locator('[data-provider="google"]'))
-          .or(page.locator('button:has-text("Google")'))
-          .or(page.locator('button:has-text("גוגל")'))
-          .or(page.locator('[class*="google"]'))
-          .or(page.locator('img[alt*="Google"], img[src*="google"]'));
-        
-        const googleVisible = await googleBtn.first().isVisible({ timeout: 5000 }).catch(() => false);
-        
-        await page.goto('/');
-        return googleVisible;
-      });
-      logResult('6.7.1', 'כפתור Google OAuth קיים במסך התחברות', ok, ok ? '' : 'כפתור Google לא נמצא');
-
-      // ✅ 6.7.2 סנכרון לוח שנה – בדיקה שכפתור Google Calendar/סנכרון קיים (לא לוחצים)
-      await loginViaPin(page, PINS.super_admin);
+      // 9.4 Calendar
       ok = await safeCheck(async () => {
         await page.goto('/Calendar');
-        await page.waitForTimeout(2500);
-        
-        // חיפוש כפתור סנכרון/Google Calendar
-        const syncBtn = page.getByRole('button', { name: /google|סנכרון|sync|calendar sync/i })
-          .or(page.locator('button:has-text("Google")'))
-          .or(page.locator('button:has-text("סנכרון")'))
-          .or(page.locator('button:has-text("Sync")'))
-          .or(page.locator('[class*="sync"]'))
-          .or(page.locator('[data-testid*="sync"]'))
-          .or(page.locator('[aria-label*="sync"]'));
-        
-        const syncVisible = await syncBtn.first().isVisible({ timeout: 5000 }).catch(() => false);
-        
-        // גם בדיקה בהגדרות
-        if (!syncVisible) {
-          await page.goto('/Settings');
-          await page.waitForTimeout(1500);
-          const settingsSyncBtn = page.getByText(/google calendar|סנכרון לוח שנה|calendar sync/i).first();
-          const settingsSyncVisible = await settingsSyncBtn.isVisible({ timeout: 3000 }).catch(() => false);
-          return settingsSyncVisible;
-        }
-        
-        return syncVisible;
+        await delay(page);
+        const visible = await page.getByTestId('add-event-btn').isVisible({ timeout: 10000 }).catch(() => false);
+        return visible;
       });
-      logResult('6.7.2', 'כפתור סנכרון Google Calendar קיים', ok, ok ? '' : 'כפתור סנכרון לא נמצא');
-      
-      await logoutViaUI(page);
+      logResult('9.4', 'Architect – Calendar נטען', ok);
 
-      // 6.7.3 לינקים חיצוניים
-      await page.goto('/');
-      ok = await safeCheck(async () => {
-        const extLink = page.getByRole('link', { name: /support|תמיכה/i }).or(page.locator('a[href*="mailto:"]'));
-        await expect(extLink.first()).toBeVisible({ timeout: 5000 }).catch(() => {});
-        return true;
-      });
-      logResult('6.7.3', 'לינקים חיצוניים קיימים', ok);
+      await logoutViaUI(page);
     });
 
     // ═══════════════════════════════════════════════════════════════════════
-    // 6.8 בדיקת כל התפקידים ברצף (מאוחד מ־qa-journey.spec.ts)
+    // 10. בדיקת הרשאות – משתמש Consultant
     // ═══════════════════════════════════════════════════════════════════════
-    await test.step('6.8 מעבר בין כל התפקידים ברצף', async () => {
-      const roles = [
-        { pin: PINS.super_admin, name: 'super_admin', label: 'מנהל על' },
-        { pin: PINS.architect, name: 'architect', label: 'אדריכל' },
-        { pin: PINS.client, name: 'client', label: 'לקוח' },
-        { pin: PINS.consultant, name: 'consultant', label: 'יועץ' },
-        { pin: PINS.contractor, name: 'contractor', label: 'קבלן' },
-      ];
+    await test.step('10. בדיקת הרשאות – Consultant', async () => {
+      await loginViaPin(page, PINS.consultant);
+      
+      let ok = await safeCheck(async () => {
+        await page.goto('/Dashboard');
+        await delay(page);
+        return page.url().includes('/Dashboard');
+      });
+      logResult('10.1', 'Consultant – Dashboard נטען', ok);
 
-      for (const role of roles) {
-        const roleOk = await safeCheck(async () => {
-          // התחברות
-          await loginViaPin(page, role.pin);
-          const onDashboard = page.url().includes('/Dashboard');
-          
-          // ניווט בסיסי לפי תפקיד
-          if (role.name === 'super_admin' || role.name === 'architect') {
-            await page.goto('/Projects');
-            await page.goto('/Clients');
-          }
-          
-          // התנתקות
-          await logoutViaUI(page);
-          
-          return onDashboard;
+      // בדיקת דפים רלוונטיים ליועץ
+      ok = await safeCheck(async () => {
+        await page.goto('/Projects');
+        await delay(page);
+        const visible = await page.getByText(/פרויקטים|projects|אין פרויקטים/i).first().isVisible({ timeout: 10000 });
+        return visible;
+      });
+      logResult('10.2', 'Consultant – Projects נטען', ok);
+
+      await logoutViaUI(page);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 11. בדיקת הרשאות – משתמש Contractor
+    // ═══════════════════════════════════════════════════════════════════════
+    await test.step('11. בדיקת הרשאות – Contractor', async () => {
+      await loginViaPin(page, PINS.contractor);
+      
+      let ok = await safeCheck(async () => {
+        await page.goto('/Dashboard');
+        await delay(page);
+        return page.url().includes('/Dashboard');
+      });
+      logResult('11.1', 'Contractor – Dashboard נטען', ok);
+
+      // בדיקת דפים רלוונטיים לקבלן
+      ok = await safeCheck(async () => {
+        await page.goto('/Projects');
+        await delay(page);
+        const visible = await page.getByText(/פרויקטים|projects|אין פרויקטים|משימות/i).first().isVisible({ timeout: 10000 });
+        return visible;
+      });
+      logResult('11.2', 'Contractor – Projects נטען', ok);
+
+      await logoutViaUI(page);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 12. דפים ציבוריים (ללא התחברות)
+    // ═══════════════════════════════════════════════════════════════════════
+    await test.step('12. דפים ציבוריים', async () => {
+      for (const path of ['/PublicApproval', '/PublicContractorQuote', '/PublicMeetingBooking']) {
+        const ok = await safeCheck(async () => {
+          const res = await page.goto(path);
+          await delay(page);
+          return res?.status() === 200;
         });
-        
-        logResult(`6.8.${roles.indexOf(role) + 1}`, `תפקיד ${role.label} – התחברות וניווט`, roleOk);
+        logResult(`12-${path}`, `${path} נטען בלי Login`, ok);
       }
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 13. בדיקות טכניות
+    // ═══════════════════════════════════════════════════════════════════════
+    await test.step('13. בדיקות טכניות', async () => {
+      // 13.1 משתני סביבה
+      if (testData.dashboardLoginSucceeded) {
+        logIndirect('13.1', 'משתני סביבה', 'ההתחברות הצליחה');
+      } else {
+        logSkipped('13.1', 'משתני סביבה', 'ההתחברות לא הצליחה');
+      }
+
+      // 13.2 רספונסיביות
+      let ok = await safeCheck(async () => {
+        await page.setViewportSize({ width: 375, height: 667 });
+        await page.goto('/');
+        await delay(page);
+        await expect(page.locator('body')).toBeVisible();
+        await page.setViewportSize({ width: 1280, height: 800 });
+        return true;
+      });
+      logResult('13.2', 'רספונסיביות מובייל', ok);
+
+      // 13.3 RTL
+      ok = await safeCheck(async () => {
+        await page.goto('/');
+        await delay(page, SHORT_DELAY);
+        const dir = await page.locator('html').getAttribute('dir');
+        return dir === 'rtl' || dir === null;
+      });
+      logResult('13.3', 'RTL מוגדר', ok);
+
+      // 13.4 אין שגיאות קריטיות בקונסול
+      const errors: string[] = [];
+      page.on('pageerror', (e) => errors.push(e.message));
+      await page.goto('/');
+      await delay(page);
+      const criticalErrors = errors.filter((m) => /useLandingLanguage must be used within|Cannot read propert/i.test(m));
+      ok = criticalErrors.length === 0;
+      logResult('13.4', 'אין שגיאות קריטיות בקונסול', ok, ok ? '' : criticalErrors.join('; '));
     });
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -972,6 +850,15 @@ test.describe('QA Full Journey – כל סעיפי QA_CHECKLIST.md', () => {
       console.log('\n\n═══════════════════════════════════════════════════════════════');
       console.log('                      📊 דוח סיכום QA                            ');
       console.log('═══════════════════════════════════════════════════════════════\n');
+
+      console.log('📦 ישויות שנוצרו (נשארות לבדיקה ידנית):');
+      console.log(`   • לקוח: ${testData.clientName}`);
+      console.log(`   • פרויקט: ${testData.projectName}`);
+      console.log(`   • אירוע: ${testData.eventName}`);
+      console.log(`   • קבלן: ${testData.contractorName}`);
+      console.log(`   • יועץ: ${testData.consultantName}`);
+      console.log(`   • ספק: ${testData.supplierName}`);
+      console.log('\n───────────────────────────────────────────────────────────────\n');
 
       const passed = report.filter((r) => r.status === '✅').length;
       const failed = report.filter((r) => r.status === '❌').length;

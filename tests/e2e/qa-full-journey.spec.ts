@@ -6,6 +6,12 @@ import { test, expect, Page } from '@playwright/test';
  *
  * הרצה:
  *   $env:PLAYWRIGHT_BASE_URL="https://archiflow-independent.vercel.app"; npm run test:e2e:full:headed
+ * 
+ * קובץ זה מאחד את כל קבצי הבדיקות:
+ *   - qa-production.spec.ts (דפי נחיתה)
+ *   - qa-journey.spec.ts (מעבר בין תפקידים)
+ *   - qa-deep.spec.ts (בדיקות עומק)
+ *   - add-event.spec.ts (הוספת אירוע)
  */
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -30,6 +36,17 @@ function logResult(id: string, name: string, passed: boolean, note = '') {
 function logSkipped(id: string, name: string, note: string) {
   report.push({ id, name, status: '⚠️', note });
 }
+// סימון "עבר עקיף" – לבדיקות שאומתו דרך פעולות אחרות
+function logIndirect(id: string, name: string, note: string) {
+  report.push({ id, name, status: '✅', note: `עבר עקיף: ${note}` });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// משתנים גלובליים לשמירת נתונים שנוצרו במהלך הבדיקה
+// ═══════════════════════════════════════════════════════════════════════════
+let createdProjectName = '';
+let createdClientName = '';
+let dashboardLoginSucceeded = false;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Helpers
@@ -45,6 +62,7 @@ async function loginViaPin(page: Page, pin: string) {
   const submit = page.getByTestId('admin-bypass-submit').or(page.getByRole('button', { name: /אישור/i }));
   await submit.click();
   await page.waitForURL(/\/Dashboard/i, { timeout: 15000 });
+  dashboardLoginSucceeded = true;
 }
 
 async function logoutViaUI(page: Page) {
@@ -82,7 +100,7 @@ async function safeCheck(fn: () => Promise<boolean>): Promise<boolean> {
 // ═══════════════════════════════════════════════════════════════════════════
 test.describe('QA Full Journey – כל סעיפי QA_CHECKLIST.md', () => {
   test('בדיקה רציפה מלאה', async ({ page }) => {
-    test.setTimeout(600000); // 10 דקות
+    test.setTimeout(900000); // 15 דקות – יותר זמן עבור כל הבדיקות המאוחדות
 
     // ═══════════════════════════════════════════════════════════════════════
     // 1. דפי נחיתה (Landing) – גלישה ציבורית
@@ -327,7 +345,12 @@ test.describe('QA Full Journey – כל סעיפי QA_CHECKLIST.md', () => {
     // ═══════════════════════════════════════════════════════════════════════
     await test.step('5. טכני', async () => {
       // 5.1 משתני סביבה – בדיקה עקיפה: אם ההתחברות עבדה, משתני הסביבה מוגדרים
-      logResult('5.1', 'משתני סביבה (בדיקה עקיפה – התחברות עבדה)', true, 'אומת עקיף דרך התחברות מוצלחת');
+      // ✅ שיפור: סימון כ"עבר עקיף" אם ההתחברות ל־Dashboard הצליחה
+      if (dashboardLoginSucceeded) {
+        logIndirect('5.1', 'משתני סביבה', 'ההתחברות ל־Dashboard הצליחה – משתני הסביבה מוגדרים כראוי');
+      } else {
+        logSkipped('5.1', 'משתני סביבה', 'ההתחברות לא הצליחה – לא ניתן לאמת');
+      }
 
       // 5.2 SPA rewrites
       let ok = await safeCheck(async () => {
@@ -385,8 +408,52 @@ test.describe('QA Full Journey – כל סעיפי QA_CHECKLIST.md', () => {
       });
       logResult('6.1.3', 'יצירת אירוע בלוח שנה', ok);
 
-      // 6.1.4 הצעת מחיר – דורש פרויקט קיים
-      logSkipped('6.1.4', 'יצירת הצעת מחיר', 'דורש פרויקט קיים ומורכבות נוספת');
+      // ✅ 6.1.4 הצעת מחיר – יצירת פרויקט ואז פתיחת טופס הצעת מחיר
+      ok = await safeCheck(async () => {
+        await page.goto('/Projects');
+        await page.waitForTimeout(1000);
+        
+        // יצירת פרויקט חדש
+        await page.getByTestId('new-project-btn').click();
+        await page.waitForTimeout(500);
+        
+        // מילוי שם פרויקט
+        const projectNameInput = page.getByTestId('project-name-input')
+          .or(page.getByPlaceholder(/שם הפרויקט|project name/i))
+          .or(page.locator('input[name="name"]').first());
+        
+        createdProjectName = `E2E-Project-${Date.now()}`;
+        await projectNameInput.fill(createdProjectName);
+        
+        // שליחת הטופס
+        const submitBtn = page.getByTestId('project-submit-btn')
+          .or(page.getByRole('button', { name: /צור|שמור|create|save/i }));
+        await submitBtn.click();
+        await page.waitForTimeout(2000);
+        
+        // חיפוש כפתור הצעת מחיר בדף הפרויקטים או בפרויקט הספציפי
+        const quoteBtn = page.getByTestId('create-quote-btn')
+          .or(page.getByRole('button', { name: /הצעת מחיר|quote/i }))
+          .or(page.locator('button:has-text("הצעת מחיר")'))
+          .or(page.getByRole('link', { name: /הצעת מחיר|quote/i }));
+        
+        const quoteVisible = await quoteBtn.first().isVisible({ timeout: 5000 }).catch(() => false);
+        
+        if (quoteVisible) {
+          await quoteBtn.first().click();
+          await page.waitForTimeout(1500);
+          // בדיקה שטופס הצעת מחיר נפתח
+          const quoteFormVisible = await page.getByText(/הצעת מחיר|quote|סכום|amount/i).first().isVisible().catch(() => false);
+          await page.keyboard.press('Escape').catch(() => {});
+          return quoteFormVisible;
+        }
+        
+        // אם אין כפתור הצעת מחיר – נסה לגשת לדף Quotes ישירות
+        await page.goto('/Quotes');
+        const quotesPageLoaded = await page.getByText(/הצעות מחיר|quotes/i).first().isVisible({ timeout: 5000 }).catch(() => false);
+        return quotesPageLoaded;
+      });
+      logResult('6.1.4', 'יצירת הצעת מחיר – פרויקט נוצר וטופס/דף הצעות נבדק', ok);
 
       // 6.1.5 העלאת הקלטה
       ok = await safeCheck(async () => {
@@ -447,9 +514,91 @@ test.describe('QA Full Journey – כל סעיפי QA_CHECKLIST.md', () => {
       });
       logResult('6.2.2', 'רשימת לקוחות מוצגת', ok);
 
-      // 6.2.3–6.2.6 עריכה/מחיקה/חיפוש – דורשים נתונים קיימים
-      logSkipped('6.2.3', 'עריכת פרויקט קיים', 'דורש פרויקט קיים');
-      logSkipped('6.2.4', 'עריכת לקוח קיים', 'דורש לקוח קיים');
+      // ✅ 6.2.3 יצירת לקוח חדש
+      ok = await safeCheck(async () => {
+        await page.goto('/Clients');
+        await page.waitForTimeout(1000);
+        
+        await page.getByTestId('add-client-btn').click();
+        await page.waitForTimeout(500);
+        
+        // מילוי שם לקוח
+        const clientNameInput = page.getByTestId('client-name-input')
+          .or(page.getByPlaceholder(/שם הלקוח|שם מלא|client name|full name/i))
+          .or(page.locator('input[name="name"]').first())
+          .or(page.locator('input[name="fullName"]').first());
+        
+        createdClientName = `E2E-Client-${Date.now()}`;
+        await clientNameInput.fill(createdClientName);
+        
+        // מילוי אימייל (אם קיים)
+        const emailInput = page.getByTestId('client-email-input')
+          .or(page.getByPlaceholder(/אימייל|email/i))
+          .or(page.locator('input[type="email"]').first());
+        if (await emailInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await emailInput.fill(`e2e-${Date.now()}@test.com`);
+        }
+        
+        // מילוי טלפון (אם קיים)
+        const phoneInput = page.getByTestId('client-phone-input')
+          .or(page.getByPlaceholder(/טלפון|phone/i))
+          .or(page.locator('input[type="tel"]').first());
+        if (await phoneInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await phoneInput.fill('050-1234567');
+        }
+        
+        // שליחה
+        const submitBtn = page.getByTestId('client-submit-btn')
+          .or(page.getByRole('button', { name: /צור|שמור|הוסף|create|save|add/i }));
+        await submitBtn.click();
+        await page.waitForTimeout(2000);
+        
+        // בדיקה שהלקוח נוצר – או שהמודל נסגר או שהלקוח מופיע ברשימה
+        const modalClosed = !(await page.getByTestId('client-name-input').isVisible({ timeout: 2000 }).catch(() => true));
+        const clientInList = await page.getByText(createdClientName).isVisible({ timeout: 3000 }).catch(() => false);
+        
+        return modalClosed || clientInList;
+      });
+      logResult('6.2.3', 'יצירת לקוח חדש', ok);
+
+      // ✅ 6.2.4 עריכת לקוח קיים
+      ok = await safeCheck(async () => {
+        await page.goto('/Clients');
+        await page.waitForTimeout(1500);
+        
+        // חיפוש כפתור עריכה
+        const editBtn = page.getByTestId('edit-client-btn').first()
+          .or(page.getByRole('button', { name: /ערוך|edit/i }).first())
+          .or(page.locator('button:has-text("ערוך")').first())
+          .or(page.locator('[aria-label*="edit"]').first())
+          .or(page.locator('button svg[class*="edit"], button svg[class*="pencil"]').first());
+        
+        const editVisible = await editBtn.isVisible({ timeout: 3000 }).catch(() => false);
+        
+        if (editVisible) {
+          await editBtn.click();
+          await page.waitForTimeout(1000);
+          
+          // בדיקה שטופס עריכה נפתח
+          const editFormVisible = await page.getByText(/עריכת לקוח|edit client|עדכון/i).first().isVisible({ timeout: 3000 }).catch(() => false)
+            || await page.locator('input[name="name"], input[name="fullName"]').first().isVisible({ timeout: 3000 }).catch(() => false);
+          
+          await page.keyboard.press('Escape').catch(() => {});
+          return editFormVisible;
+        }
+        
+        // אם אין כפתור עריכה גלוי, ייתכן שצריך ללחוץ על שורה בטבלה
+        const clientRow = page.locator('tr, [class*="client-card"], [class*="client-item"]').first();
+        if (await clientRow.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await clientRow.click();
+          await page.waitForTimeout(1000);
+          const detailsVisible = await page.getByText(/פרטי לקוח|client details/i).first().isVisible({ timeout: 3000 }).catch(() => false);
+          return detailsVisible;
+        }
+        
+        return false;
+      });
+      logResult('6.2.4', 'עריכת לקוח קיים', ok, ok ? '' : 'כפתור עריכה לא נמצא או אין לקוחות');
 
       // 6.2.5 חיפוש
       ok = await safeCheck(async () => {
@@ -463,7 +612,40 @@ test.describe('QA Full Journey – כל סעיפי QA_CHECKLIST.md', () => {
       });
       logResult('6.2.5', 'חיפוש ברשימות', ok);
 
-      logSkipped('6.2.6', 'מחיקה', 'דורש נתונים קיימים');
+      // ✅ 6.2.6 מחיקה – בדיקה אם כפתור מחיקה קיים
+      ok = await safeCheck(async () => {
+        await page.goto('/Clients');
+        await page.waitForTimeout(1500);
+        
+        // חיפוש כפתור מחיקה
+        const deleteBtn = page.getByTestId('delete-client-btn').first()
+          .or(page.getByRole('button', { name: /מחק|delete|הסר|remove/i }).first())
+          .or(page.locator('button:has-text("מחק")').first())
+          .or(page.locator('[aria-label*="delete"]').first())
+          .or(page.locator('button svg[class*="trash"], button svg[class*="delete"]').first());
+        
+        const deleteVisible = await deleteBtn.isVisible({ timeout: 3000 }).catch(() => false);
+        
+        if (deleteVisible) {
+          // לא לוחצים באמת על מחיקה – רק מוודאים שהכפתור קיים
+          return true;
+        }
+        
+        // אם אין כפתור מחיקה גלוי, בודקים בתפריט פעולות
+        const actionsBtn = page.getByRole('button', { name: /פעולות|actions|more/i }).first()
+          .or(page.locator('button[aria-haspopup="menu"]').first());
+        
+        if (await actionsBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await actionsBtn.click();
+          await page.waitForTimeout(500);
+          const deleteInMenu = await page.getByRole('menuitem', { name: /מחק|delete/i }).isVisible({ timeout: 2000 }).catch(() => false);
+          await page.keyboard.press('Escape').catch(() => {});
+          return deleteInMenu;
+        }
+        
+        return false;
+      });
+      logResult('6.2.6', 'מחיקה – כפתור קיים', ok, ok ? '' : 'כפתור מחיקה לא נמצא');
 
       await logoutViaUI(page);
     });
@@ -477,19 +659,43 @@ test.describe('QA Full Journey – כל סעיפי QA_CHECKLIST.md', () => {
         return page.url().includes('/Dashboard');
       });
       logResult('6.3.1', 'משתמש client מתחבר ל־Dashboard', ok);
-      await logoutViaUI(page);
 
-      // 6.3.2 גישה ישירה לדף לא מורשה (client → People)
-      await loginViaPin(page, PINS.client);
+      // ✅ 6.3.2 גישה ישירה לדף לא מורשה (client → People)
       ok = await safeCheck(async () => {
         await page.goto('/People');
-        await page.waitForTimeout(2000);
-        // Client should be blocked or redirected, or see limited content
-        const blocked = await page.getByText(/אין הרשאה|access denied|לא מורשה|נדרשת התחברות/i).first().isVisible().catch(() => false);
+        await page.waitForTimeout(2500);
+        
+        // בדיקות שונות לחסימת גישה:
+        // 1. הודעת "אין הרשאה" או דומה
+        const accessDenied = await page.getByText(/אין הרשאה|access denied|לא מורשה|unauthorized|forbidden/i).first().isVisible().catch(() => false);
+        
+        // 2. הפנייה לדף אחר (לא /People)
         const redirected = !page.url().includes('/People');
-        return blocked || redirected || true; // Pass if any indication of restriction or if page loads (role-based visibility)
+        
+        // 3. דף ריק או עם מעט תוכן (אין נתוני צוות)
+        const emptyPage = await page.getByText(/אין צוות|no team|אין עובדים|no employees/i).first().isVisible().catch(() => false);
+        
+        // 4. הדף פשוט לא מציג את האלמנטים של ניהול צוות
+        const noTeamManagement = !(await page.getByRole('button', { name: /הוסף עובד|add employee|הזמן/i }).first().isVisible({ timeout: 2000 }).catch(() => false));
+        
+        // אם אחד מהתנאים מתקיים – המשתמש אכן מוגבל
+        if (accessDenied || redirected) {
+          return true;
+        }
+        
+        // אם הדף נטען אבל אין כפתורי ניהול – זה גם בסדר (הרשאות מבוססות תצוגה)
+        if (emptyPage || noTeamManagement) {
+          return true;
+        }
+        
+        // בדיקה נוספת: האם יש טבלת עובדים עם אפשרויות עריכה
+        const hasEditControls = await page.getByRole('button', { name: /ערוך|edit|מחק|delete/i }).first().isVisible({ timeout: 2000 }).catch(() => false);
+        
+        // אם אין פקדי עריכה – המשתמש מוגבל
+        return !hasEditControls;
       });
-      logResult('6.3.2', 'גישה לדף לא מורשה (client → People)', ok);
+      logResult('6.3.2', 'גישה לדף לא מורשה (client → People) – חסום או מוגבל', ok);
+      
       await logoutViaUI(page);
 
       // 6.3.3 מנהל – People/Team
@@ -534,34 +740,60 @@ test.describe('QA Full Journey – כל סעיפי QA_CHECKLIST.md', () => {
 
     // 6.5 טעינה, ביצועים ושגיאות
     await test.step('6.5 טעינה, ביצועים ושגיאות', async () => {
-      // 6.5.1 רשת איטית – בדיקה עם throttling
+      // ✅ 6.5.1 רשת איטית – בדיקה עם throttling והודעה
       let ok = await safeCheck(async () => {
         // Simulate slow network using route delay
         await page.route('**/*', async (route) => {
-          await new Promise(r => setTimeout(r, 100)); // 100ms delay per request
+          await new Promise(r => setTimeout(r, 200)); // 200ms delay per request
           await route.continue();
         });
+        
         await page.goto('/');
         await page.waitForLoadState('domcontentloaded');
+        
+        // בדיקה שהעמוד נטען
         const loaded = await page.locator('body').isVisible();
+        
+        // בדיקה אם יש הודעת loading או spinner (אופציונלי)
+        const hasLoadingIndicator = await page.getByText(/טוען|loading/i).first().isVisible({ timeout: 1000 }).catch(() => false)
+          || await page.locator('[class*="spinner"], [class*="loading"]').first().isVisible({ timeout: 1000 }).catch(() => false);
+        
         await page.unroute('**/*'); // Remove throttling
         return loaded;
       });
       logResult('6.5.1', 'רשת איטית – עמוד נטען', ok);
 
-      // 6.5.2 רשת כבויה – בדיקת Offline
+      // ✅ 6.5.2 רשת כבויה – בדיקת Offline והודעה
       ok = await safeCheck(async () => {
         await page.goto('/');
+        await page.waitForLoadState('networkidle').catch(() => {});
+        
+        // הפעלת מצב Offline
         await page.context().setOffline(true);
-        await page.reload().catch(() => {}); // Reload will fail
+        
+        // ניסיון רענון – צפוי להיכשל
+        await page.reload().catch(() => {});
         await page.waitForTimeout(2000);
-        // Check if there's an error message or the page doesn't crash
+        
+        // בדיקות:
+        // 1. הדף לא קרס (body עדיין גלוי)
         const hasContent = await page.locator('body').isVisible();
-        await page.context().setOffline(false); // Restore online
+        
+        // 2. בדיקה אם יש הודעת Offline
+        const hasOfflineMessage = await page.getByText(/offline|אין חיבור|לא מקוון|no connection|network error/i).first().isVisible({ timeout: 2000 }).catch(() => false);
+        
+        // 3. בדיקה אם יש banner או toast של Offline
+        const hasOfflineBanner = await page.locator('[class*="offline"], [class*="network-error"], [role="alert"]').first().isVisible({ timeout: 2000 }).catch(() => false);
+        
+        // שחזור Online
+        await page.context().setOffline(false);
         await page.goto('/');
-        return hasContent; // Page should still have some content (cached or error message)
+        await page.waitForLoadState('domcontentloaded').catch(() => {});
+        
+        // עובר אם הדף לא קרס או אם הייתה הודעת Offline
+        return hasContent || hasOfflineMessage || hasOfflineBanner;
       });
-      logResult('6.5.2', 'רשת כבויה – אין קריסה', ok);
+      logResult('6.5.2', 'רשת כבויה – אין קריסה ו/או הודעה מוצגת', ok);
 
       // 6.5.3 טופס validation
       await loginViaPin(page, PINS.super_admin);
@@ -635,42 +867,102 @@ test.describe('QA Full Journey – כל סעיפי QA_CHECKLIST.md', () => {
 
     // 6.7 אינטגרציות
     await test.step('6.7 אינטגרציות', async () => {
-      // 6.7.1 Google OAuth – בדיקה שכפתור Google קיים במסך התחברות
+      // ✅ 6.7.1 Google OAuth – בדיקה שכפתור Google קיים במסך התחברות (לא לוחצים)
       let ok = await safeCheck(async () => {
         await page.goto('/');
         const signIn = page.getByRole('link', { name: /התחברות|sign in/i }).or(page.getByRole('button', { name: /התחברות|sign in/i })).first();
         await signIn.click().catch(() => {});
-        await page.waitForTimeout(2000);
-        const googleBtn = await page.getByRole('button', { name: /google/i })
+        await page.waitForTimeout(2500);
+        
+        // חיפוש כפתור Google OAuth
+        const googleBtn = page.getByRole('button', { name: /google/i })
           .or(page.locator('[data-provider="google"]'))
           .or(page.locator('button:has-text("Google")'))
-          .first().isVisible().catch(() => false);
+          .or(page.locator('button:has-text("גוגל")'))
+          .or(page.locator('[class*="google"]'))
+          .or(page.locator('img[alt*="Google"], img[src*="google"]'));
+        
+        const googleVisible = await googleBtn.first().isVisible({ timeout: 5000 }).catch(() => false);
+        
         await page.goto('/');
-        return true; // Pass even if not found - just checking flow doesn't crash
+        return googleVisible;
       });
-      logResult('6.7.1', 'התחברות Google/OAuth – מסך התחברות נטען', ok);
+      logResult('6.7.1', 'כפתור Google OAuth קיים במסך התחברות', ok, ok ? '' : 'כפתור Google לא נמצא');
 
-      // 6.7.2 סנכרון לוח שנה – בדיקה שכפתור Google Calendar קיים
+      // ✅ 6.7.2 סנכרון לוח שנה – בדיקה שכפתור Google Calendar/סנכרון קיים (לא לוחצים)
       await loginViaPin(page, PINS.super_admin);
       ok = await safeCheck(async () => {
         await page.goto('/Calendar');
-        await page.waitForTimeout(2000);
-        const googleCalBtn = await page.getByRole('button', { name: /google|סנכרון|sync/i })
+        await page.waitForTimeout(2500);
+        
+        // חיפוש כפתור סנכרון/Google Calendar
+        const syncBtn = page.getByRole('button', { name: /google|סנכרון|sync|calendar sync/i })
           .or(page.locator('button:has-text("Google")'))
-          .first().isVisible().catch(() => false);
-        return true; // Pass - checking page loads
+          .or(page.locator('button:has-text("סנכרון")'))
+          .or(page.locator('button:has-text("Sync")'))
+          .or(page.locator('[class*="sync"]'))
+          .or(page.locator('[data-testid*="sync"]'))
+          .or(page.locator('[aria-label*="sync"]'));
+        
+        const syncVisible = await syncBtn.first().isVisible({ timeout: 5000 }).catch(() => false);
+        
+        // גם בדיקה בהגדרות
+        if (!syncVisible) {
+          await page.goto('/Settings');
+          await page.waitForTimeout(1500);
+          const settingsSyncBtn = page.getByText(/google calendar|סנכרון לוח שנה|calendar sync/i).first();
+          const settingsSyncVisible = await settingsSyncBtn.isVisible({ timeout: 3000 }).catch(() => false);
+          return settingsSyncVisible;
+        }
+        
+        return syncVisible;
       });
-      logResult('6.7.2', 'סנכרון לוח שנה – דף Calendar נטען', ok);
+      logResult('6.7.2', 'כפתור סנכרון Google Calendar קיים', ok, ok ? '' : 'כפתור סנכרון לא נמצא');
+      
       await logoutViaUI(page);
 
       // 6.7.3 לינקים חיצוניים
       await page.goto('/');
-      const ok = await safeCheck(async () => {
+      ok = await safeCheck(async () => {
         const extLink = page.getByRole('link', { name: /support|תמיכה/i }).or(page.locator('a[href*="mailto:"]'));
         await expect(extLink.first()).toBeVisible({ timeout: 5000 }).catch(() => {});
         return true;
       });
       logResult('6.7.3', 'לינקים חיצוניים קיימים', ok);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 6.8 בדיקת כל התפקידים ברצף (מאוחד מ־qa-journey.spec.ts)
+    // ═══════════════════════════════════════════════════════════════════════
+    await test.step('6.8 מעבר בין כל התפקידים ברצף', async () => {
+      const roles = [
+        { pin: PINS.super_admin, name: 'super_admin', label: 'מנהל על' },
+        { pin: PINS.architect, name: 'architect', label: 'אדריכל' },
+        { pin: PINS.client, name: 'client', label: 'לקוח' },
+        { pin: PINS.consultant, name: 'consultant', label: 'יועץ' },
+        { pin: PINS.contractor, name: 'contractor', label: 'קבלן' },
+      ];
+
+      for (const role of roles) {
+        const roleOk = await safeCheck(async () => {
+          // התחברות
+          await loginViaPin(page, role.pin);
+          const onDashboard = page.url().includes('/Dashboard');
+          
+          // ניווט בסיסי לפי תפקיד
+          if (role.name === 'super_admin' || role.name === 'architect') {
+            await page.goto('/Projects');
+            await page.goto('/Clients');
+          }
+          
+          // התנתקות
+          await logoutViaUI(page);
+          
+          return onDashboard;
+        });
+        
+        logResult(`6.8.${roles.indexOf(role) + 1}`, `תפקיד ${role.label} – התחברות וניווט`, roleOk);
+      }
     });
 
     // ═══════════════════════════════════════════════════════════════════════

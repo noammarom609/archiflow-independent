@@ -6,6 +6,7 @@
 -- This causes 400 Bad Request when trying to create time entries.
 -- 
 -- Solution: Add 'user' to the allowed roles list for time_entries operations.
+-- Note: time_entries table uses user_email and architect_email, NOT created_by
 -- =============================================================================
 
 -- Drop and recreate the time_entries RLS policies with 'user' role included
@@ -16,6 +17,7 @@ DROP POLICY IF EXISTS "Update time entries" ON public.time_entries;
 DROP POLICY IF EXISTS "Delete time entries" ON public.time_entries;
 
 -- Recreate with 'user' role added to all operations
+-- Using user_email and architect_email (the actual columns in time_entries)
 
 CREATE POLICY "Read time entries"
   ON public.time_entries FOR SELECT
@@ -23,7 +25,7 @@ CREATE POLICY "Read time entries"
   USING (
     public.is_architect_or_higher()
     OR user_email = public.jwt_email()
-    OR created_by = public.jwt_email()
+    OR architect_email = public.jwt_email()
   );
 
 -- INSERT: Allow 'user' role as well
@@ -40,7 +42,7 @@ CREATE POLICY "Update time entries"
   USING (
     public.is_admin_user()
     OR user_email = public.jwt_email()
-    OR created_by = public.jwt_email()
+    OR architect_email = public.jwt_email()
   );
 
 CREATE POLICY "Delete time entries"
@@ -48,7 +50,7 @@ CREATE POLICY "Delete time entries"
   TO authenticated
   USING (
     public.is_admin_user()
-    OR created_by = public.jwt_email()
+    OR user_email = public.jwt_email()
   );
 
 -- =============================================================================

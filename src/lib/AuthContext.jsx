@@ -101,6 +101,25 @@ export const AuthProvider = ({ children }) => {
             console.log('[AuthContext] Exception looking up user:', e.message);
           }
 
+          // If user exists but clerk_id is missing, update it
+          if (supabaseUser && !supabaseUser.clerk_id && clerkUser.id) {
+            try {
+              const { error: updateError } = await supabase
+                .from('users')
+                .update({ clerk_id: clerkUser.id })
+                .eq('id', supabaseUser.id);
+              
+              if (!updateError) {
+                supabaseUser.clerk_id = clerkUser.id;
+                console.log('[AuthContext] Updated clerk_id for existing user');
+              } else {
+                console.warn('[AuthContext] Failed to update clerk_id:', updateError.message);
+              }
+            } catch (e) {
+              console.warn('[AuthContext] Exception updating clerk_id:', e.message);
+            }
+          }
+
           // If user doesn't exist in Supabase, create them with pending status
           if (!supabaseUser && userEmail) {
             try {

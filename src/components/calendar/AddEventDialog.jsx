@@ -200,6 +200,7 @@ export default function AddEventDialog({ isOpen, onClose, selectedDate, prefille
             <Label htmlFor="title">כותרת האירוע *</Label>
             <Input
               id="title"
+              data-testid="add-event-title"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="לדוגמה: פגישה עם משפחת כהן"
@@ -355,6 +356,7 @@ export default function AddEventDialog({ isOpen, onClose, selectedDate, prefille
             </Button>
             <Button
               type="submit"
+              data-testid="add-event-submit"
               className="flex-1 bg-indigo-600 hover:bg-indigo-700"
               disabled={createEventMutation.isPending}
             >

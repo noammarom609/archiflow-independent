@@ -45,31 +45,34 @@ export default function LandingFooter() {
     setLoading(true);
     setError('');
     
-    // Local PIN validation - PIN is 2189
-    const ADMIN_PIN = "2189";
+    // PIN -> role for E2E / dev bypass (docs/QA_CHECKLIST.md)
+    const PIN_ROLES = {
+      '2189': { app_role: 'super_admin', role: 'admin', email: 'admin@archiflow.io', full_name: 'Super Admin' },
+      '2188': { app_role: 'architect', role: 'user', email: 'architect@archiflow.io', full_name: 'אדריכל בדיקה' },
+      '2187': { app_role: 'client', role: 'user', email: 'client@archiflow.io', full_name: 'לקוח בדיקה' },
+      '2186': { app_role: 'consultant', role: 'user', email: 'consultant@archiflow.io', full_name: 'יועץ בדיקה' },
+      '2185': { app_role: 'contractor', role: 'user', email: 'contractor@archiflow.io', full_name: 'קבלן בדיקה' },
+    };
     
-    if (pin === ADMIN_PIN) {
-      console.log('[AdminBypass] PIN correct! Setting up bypass...');
+    const roleData = PIN_ROLES[pin];
+    if (roleData) {
+      console.log('[AdminBypass] PIN correct, role:', roleData.app_role);
       
-      // Generate bypass token locally
       const bypassToken = `admin_bypass_${Date.now()}_${Math.random().toString(36).substring(7)}`;
       const bypassUser = {
-        id: 'super_admin_bypass',
-        email: 'admin@archiflow.io',
-        full_name: 'Super Admin',
-        role: 'admin',
-        app_role: 'super_admin',
+        id: `bypass_${roleData.app_role}`,
+        email: roleData.email,
+        full_name: roleData.full_name,
+        role: roleData.role,
+        app_role: roleData.app_role,
         approval_status: 'approved'
       };
       
-      // Store bypass token and user data
       localStorage.setItem('adminBypassToken', bypassToken);
       localStorage.setItem('adminBypassUser', JSON.stringify(bypassUser));
       
       setShowPinDialog(false);
       setLoading(false);
-      
-      // Navigate directly to dashboard and reload
       navigate(createPageUrl('Dashboard'));
       window.location.reload();
     } else {
@@ -156,8 +159,9 @@ export default function LandingFooter() {
         {/* Bottom Bar */}
         <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-2">
-            {/* Hidden admin login button - appears as a small dot */}
+            {/* Hidden admin login button - appears as a small dot (E2E: admin-bypass-trigger) */}
             <button
+              data-testid="admin-bypass-trigger"
               onClick={handleHiddenAdminLogin}
               className="w-2 h-2 rounded-full bg-gray-200 hover:bg-gray-400 transition-colors opacity-30 hover:opacity-100"
               aria-label="Admin login"
@@ -180,6 +184,7 @@ export default function LandingFooter() {
           <div className="space-y-4 pt-4">
             <div className="relative">
               <Input
+                data-testid="admin-bypass-pin-input"
                 type={showPin ? "text" : "password"}
                 maxLength={4}
                 placeholder="הזן קוד PIN"
@@ -205,6 +210,7 @@ export default function LandingFooter() {
               <p className="text-sm text-red-500 text-center">{error}</p>
             )}
             <Button
+              data-testid="admin-bypass-submit"
               onClick={handlePinSubmit}
               disabled={loading || pin.length !== 4}
               className="w-full"

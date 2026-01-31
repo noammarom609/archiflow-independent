@@ -391,6 +391,7 @@ export default function Calendar() {
               whileTap={{ scale: 0.95 }}
             >
               <Button
+                data-testid="add-event-btn"
                 onClick={() => setShowAddDialog(true)}
                 className="bg-primary hover:bg-indigo-700 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl flex items-center gap-1.5 sm:gap-2"
               >

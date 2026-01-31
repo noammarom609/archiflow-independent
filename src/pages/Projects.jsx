@@ -560,6 +560,7 @@ export default function Projects() {
                     whileTap={{ scale: 0.95 }}
                   >
                     <Button 
+                      data-testid="new-project-btn"
                       onClick={() => setShowNewProjectModal(true)}
                       className="bg-primary hover:bg-primary/90 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-shadow w-full sm:w-auto"
                     >

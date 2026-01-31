@@ -124,6 +124,7 @@ export default function Clients() {
             <p className="text-lg text-slate-600">ניהול לקוחות ומעקב אחר פרויקטים</p>
           </div>
           <Button 
+            data-testid="add-client-btn"
             className="bg-indigo-600 hover:bg-indigo-700"
             onClick={() => setShowNewClientModal(true)}
           >

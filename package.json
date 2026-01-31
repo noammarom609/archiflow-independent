@@ -21,7 +21,14 @@
     "ios:run": "npx cap run ios",
     "ios:build": "npm run build && npx cap sync ios",
     "mobile:build": "npm run build && npx cap sync",
-    "mobile:sync": "npm run build && npx cap copy"
+    "mobile:sync": "npm run build && npx cap copy",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:prod": "playwright test tests/e2e/qa-production.spec.ts",
+    "test:e2e:headed:one": "playwright test --headed --workers=1",
+    "test:e2e:deep": "playwright test tests/e2e/qa-deep.spec.ts",
+    "test:e2e:deep:headed": "playwright test tests/e2e/qa-deep.spec.ts --headed --workers=1"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.1",
@@ -110,6 +117,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
+    "@playwright/test": "^1.58.1",
     "@types/node": "^22.13.5",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",

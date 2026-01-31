@@ -47,7 +47,7 @@ import {
 } from './utils/roleHelpers';
 
 // Landing pages that should not show the sidebar and don't require authentication
-const LANDING_PAGES = ['LandingHome', 'LandingAbout', 'LandingPricing', 'LandingBlog', 'LandingContact'];
+const LANDING_PAGES = ['LandingHome', 'LandingAbout', 'LandingPricing', 'LandingBlog', 'LandingContact', 'LandingPrivacy', 'LandingTerms'];
 
 // Public pages that don't require authentication
 const PUBLIC_PAGES = [...LANDING_PAGES, 'PublicApproval', 'PublicContractorQuote', 'PublicMeetingBooking', 'PublicContent'];

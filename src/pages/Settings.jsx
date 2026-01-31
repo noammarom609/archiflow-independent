@@ -278,6 +278,7 @@ export default function Settings() {
             </AnimatePresence>
           </div>
           <Button 
+            data-testid="logout-btn"
             variant="outline" 
             className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
             onClick={() => logout()}

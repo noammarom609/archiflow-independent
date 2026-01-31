@@ -60,6 +60,14 @@ $env:PLAYWRIGHT_BASE_URL="https://archiflow-independent.vercel.app"; npm run tes
 - `2186` – יועץ (consultant)
 - `2185` – קבלן (contractor)
 
+## בדיקה רציפה אחת (QA Journey)
+
+בדיקה **אחת** שמריצה דפדפן **פתוח לאורך כל הריצה**: מתחברת לכל תפקיד (super_admin → architect → client → consultant → contractor), מבצעת משימות לפי תפקיד, מתנתקת ועוברת לתפקיד הבא – **בלי לסגור את הדפדפן**.
+
+```powershell
+$env:PLAYWRIGHT_BASE_URL="https://archiflow-independent.vercel.app"; npm run test:e2e:journey:headed
+```
+
 ## דרישות
 
 1. **שרת רץ** – `npm run dev` ב־localhost:5173 (או הגדר `PLAYWRIGHT_BASE_URL`).
@@ -83,6 +91,7 @@ $env:PLAYWRIGHT_BASE_URL="https://archiflow-independent.vercel.app"; npm run tes
 - `admin-bypass-submit` – כפתור "אישור" בדיאלוג PIN
 - `new-project-btn` – כפתור "פרויקט חדש" בדף Projects
 - `add-client-btn` – כפתור "לקוח חדש" בדף Clients
+- `logout-btn` – כפתור "התנתק" בדף Settings
 
 כדי להוסיף בדיקות – הוסף `data-testid` לקומפוננטות והשתמש ב־`page.getByTestId('...')`.
 

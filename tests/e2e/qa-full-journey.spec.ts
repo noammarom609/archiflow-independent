@@ -71,21 +71,41 @@ async function delay(page: Page, ms: number = VISUAL_DELAY) {
 // Helper לסגירת popups חוסמים (התראות, מודלים וכו')
 async function dismissPopups(page: Page) {
   try {
-    // סגירת popup התראות "הישאר מעודכן"
-    const notificationPopup = page.locator('text=/הישאר מעודכן|אחר כך|later|dismiss/i');
-    if (await notificationPopup.isVisible({ timeout: 1000 }).catch(() => false)) {
-      const dismissBtn = page.getByRole('button', { name: /אחר כך|later|dismiss|סגור|close/i }).first();
-      if (await dismissBtn.isVisible({ timeout: 500 }).catch(() => false)) {
-        await dismissBtn.click();
+    // ספציפית: popup התראות "הישאר מעודכן"
+    const stayUpdatedPopup = page.locator('h3:has-text("הישאר מעודכן")');
+    if (await stayUpdatedPopup.isVisible({ timeout: 1500 }).catch(() => false)) {
+      console.log('   🔔 מוצא popup התראות - מנסה לסגור...');
+      // הכפתור "אחר כך" ספציפית
+      const laterBtn = page.getByRole('button', { name: 'אחר כך' });
+      if (await laterBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await laterBtn.click();
+        await page.waitForTimeout(500);
+        console.log('   ✓ נסגר popup התראות');
+        return;
+      }
+      // גיבוי - לחיצה על כפתור X
+      const closeX = page.locator('button:has(svg), button[class*="close"]').first();
+      if (await closeX.isVisible({ timeout: 500 }).catch(() => false)) {
+        await closeX.click().catch(() => {});
         await page.waitForTimeout(300);
+        console.log('   ✓ נסגר popup עם X');
+        return;
       }
     }
     
-    // סגירת כפתור X בפופאפים
-    const closeBtn = page.locator('button[class*="close"], button:has(svg.lucide-x)').first();
-    if (await closeBtn.isVisible({ timeout: 500 }).catch(() => false)) {
-      await closeBtn.click().catch(() => {});
-      await page.waitForTimeout(300);
+    // כללי: כפתור סגירה או dismiss
+    const dismissBtns = [
+      page.getByRole('button', { name: /אחר כך|later|dismiss|סגור|close/i }).first(),
+      page.locator('button:has-text("אחר כך")').first(),
+      page.locator('[data-dismiss]').first(),
+    ];
+    
+    for (const btn of dismissBtns) {
+      if (await btn.isVisible({ timeout: 500 }).catch(() => false)) {
+        await btn.click().catch(() => {});
+        await page.waitForTimeout(300);
+        break;
+      }
     }
     
     // לחיצה על Escape לסגירת מודלים
@@ -1002,24 +1022,36 @@ test.describe('QA Full Journey – בדיקות פונקציונליות מלא�
 
       // 15.1 התחלת טיימר
       let ok = await safeCheck(async () => {
+        console.log('   🎬 מחפש כפתור טיימר...');
         const timerBtn = page.getByRole('button', { name: /טיימר/i }).first();
+        
+        if (!await timerBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+          console.log('   ❌ כפתור טיימר לא נמצא');
+          return false;
+        }
+        
         await timerBtn.click();
         await delay(page);
+        console.log('   ✓ לחצתי על כפתור טיימר');
         
         // בחירת פרויקט אם נדרש (popover)
         const projectPopover = page.locator('[role="dialog"], [data-radix-popper-content-wrapper]').first();
         if (await projectPopover.isVisible({ timeout: 2000 }).catch(() => false)) {
+          console.log('   📋 נפתח popover בחירת פרויקט');
           // לחיצה על הפרויקט הראשון
           const firstProject = projectPopover.locator('button, [role="option"]').first();
           if (await firstProject.isVisible({ timeout: 2000 }).catch(() => false)) {
             await firstProject.click();
             await delay(page, SHORT_DELAY);
+            console.log('   ✓ נבחר פרויקט');
           }
         }
         
         // בדיקה שהטיימר רץ (יש תצוגת זמן)
         const timerDisplay = page.locator('text=/\\d{2}:\\d{2}:\\d{2}/').first();
-        return await timerDisplay.isVisible({ timeout: 5000 }).catch(() => false);
+        const isRunning = await timerDisplay.isVisible({ timeout: 5000 }).catch(() => false);
+        console.log(`   ${isRunning ? '✓ טיימר רץ!' : '❌ טיימר לא רץ'}`);
+        return isRunning;
       });
       logResult('15.1', 'התחלת טיימר', ok);
 
@@ -1030,7 +1062,9 @@ test.describe('QA Full Journey – בדיקות פונקציונליות מלא�
         // ניווט ל-Projects
         await page.goto('/Projects');
         await delay(page);
+        await dismissPopups(page);
         const projectsLoaded = await page.getByText(/פרויקטים|projects/i).first().isVisible({ timeout: 5000 }).catch(() => false);
+        console.log('   ⏱️ Projects loaded, waiting 20s...');
         
         // המתנה של 20 שניות
         await page.waitForTimeout(20000);
@@ -1038,7 +1072,9 @@ test.describe('QA Full Journey – בדיקות פונקציונליות מלא�
         // ניווט ל-Dashboard
         await page.goto('/Dashboard');
         await delay(page);
+        await dismissPopups(page);
         const dashboardLoaded = page.url().includes('/Dashboard');
+        console.log('   ⏱️ Dashboard loaded, waiting 20s...');
         
         // המתנה של 20 שניות נוספות
         await page.waitForTimeout(20000);
@@ -1046,11 +1082,14 @@ test.describe('QA Full Journey – בדיקות פונקציונליות מלא�
         // ניווט ל-Clients
         await page.goto('/Clients');
         await delay(page);
+        await dismissPopups(page);
         const clientsLoaded = await page.getByText(/לקוחות|clients/i).first().isVisible({ timeout: 5000 }).catch(() => false);
+        console.log('   ⏱️ Clients loaded, waiting 21s...');
         
         // המתנה של 21 שניות אחרונות
         await page.waitForTimeout(21000);
         
+        console.log('   ⏱️ 61 seconds complete!');
         return projectsLoaded && dashboardLoaded && clientsLoaded;
       });
       logResult('15.2', 'ניווט בין דפים בזמן שטיימר רץ (61 שניות)', ok);
@@ -1242,19 +1281,33 @@ test.describe('QA Full Journey – בדיקות פונקציונליות מלא�
 
       // 17.1 כניסה לקטגוריה
       let ok = await safeCheck(async () => {
-        // לחיצה על קטגוריית "תוכן" או כל קטגוריה אחרת
-        const contentCategory = page.getByText(/תוכן|content/i).first();
-        const moodboardCategory = page.getByText(/לוחות השראה|moodboards/i).first();
+        // סגירה נוספת של popup במידה ועדיין נמצא
+        await dismissPopups(page);
+        await page.waitForTimeout(500);
+        await dismissPopups(page);
         
-        if (await contentCategory.isVisible({ timeout: 3000 }).catch(() => false)) {
+        // לחיצה על קטגוריית "רהיטים" שיש בה פריטים (60)
+        const furnitureCategory = page.locator('h3:has-text("רהיטים")').first();
+        const referenceCategory = page.locator('h3:has-text("תמונות רפרנס")').first();
+        const contentCategory = page.locator('h3:has-text("תוכן")').first();
+        
+        if (await furnitureCategory.isVisible({ timeout: 3000 }).catch(() => false)) {
+          console.log('   📂 נכנס לקטגוריית רהיטים');
+          await furnitureCategory.click();
+          await delay(page);
+          return true;
+        } else if (await referenceCategory.isVisible({ timeout: 2000 }).catch(() => false)) {
+          console.log('   📂 נכנס לקטגוריית תמונות רפרנס');
+          await referenceCategory.click();
+          await delay(page);
+          return true;
+        } else if (await contentCategory.isVisible({ timeout: 2000 }).catch(() => false)) {
+          console.log('   📂 נכנס לקטגוריית תוכן');
           await contentCategory.click();
           await delay(page);
           return true;
-        } else if (await moodboardCategory.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await moodboardCategory.click();
-          await delay(page);
-          return true;
         }
+        console.log('   ❌ לא נמצאה קטגוריה');
         return false;
       });
       logResult('17.1', 'כניסה לקטגוריה בספרייה', ok);

@@ -222,9 +222,13 @@ export const AuthProvider = ({ children }) => {
   }, [signOut]);
 
   const navigateToLogin = useCallback(() => {
+    const currentPath = window.location.pathname || '/';
+    const landingPaths = ['/', '/LandingHome', '/LandingAbout', '/LandingPricing', '/LandingBlog', '/LandingContact', '/LandingPrivacy', '/LandingTerms'];
+    const isOnLanding = landingPaths.some((p) => p === currentPath || currentPath.startsWith(p + '/'));
+    const returnUrl = isOnLanding ? `${window.location.origin}/Dashboard` : window.location.href;
     openSignIn({
-      afterSignInUrl: window.location.href,
-      afterSignUpUrl: window.location.href,
+      afterSignInUrl: returnUrl,
+      afterSignUpUrl: returnUrl,
     });
   }, [openSignIn]);
 

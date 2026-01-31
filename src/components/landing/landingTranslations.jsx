@@ -713,6 +713,54 @@ export const landingTranslations = {
   },
 
   // ==========================================
+  // LEGAL (Privacy & Terms pages)
+  // ==========================================
+  legal: {
+    he: {
+      lastUpdated: 'עדכון אחרון:',
+      privacy: {
+        intro: 'ArchiFlow מכבדת את פרטיותך. במדיניות זו נפרט אילו נתונים אנו אוספים, כיצד אנו משתמשים בהם וכיצד אתה יכול לשלוט במידע שלך.',
+        sections: [
+          { title: 'איסוף מידע', text: 'אנו אוספים מידע שהתקבל בעת הרשמה, שימוש בשירותים ותקשורת עם התמיכה. נתונים אלה משמשים להפעלת השירות, שיפור החוויה והתאמת התוכן.' },
+          { title: 'שימוש במידע', text: 'המידע משמש לאספקת השירות, אבטחה, תמיכה ולחשיפת עדכונים רלוונטיים. אנו לא מוכרים את הנתונים האישיים שלך לצדדים שלישיים.' },
+          { title: 'עוגיות וטכנולוגיות', text: 'אנו משתמשים בעוגיות וטכנולוגיות דומות כדי לאפשר כניסה, לזכור העדפות ולשפר את הביצועים. ניתן לנהל עוגיות בהגדרות הדפדפן.' },
+          { title: 'צור קשר', text: 'לשאלות בנושא פרטיות: support@archiflow.io.' },
+        ],
+      },
+      terms: {
+        intro: 'שימוש בשירותי ArchiFlow כפוף לתנאים המפורטים להלן. גישה לשירות או שימוש בו מהווים הסכמה לתנאים אלה.',
+        sections: [
+          { title: 'קבלת השירות', text: 'השירות ניתן "כמות שהוא". אנו שואפים לזמינות גבוהה אך לא מתחייבים לזמינות רציפה או חסינת תקלות.' },
+          { title: 'שימוש מותר', text: 'מותר להשתמש בשירות למטרות לגיטימיות ולפי ההנחיות שלנו. אסור להפר את התנאים, להפריע לשירות או לנסות לגשת למערכות ללא הרשאה.' },
+          { title: 'קניין רוחני', text: 'כל הזכויות בחומרים, בעיצוב ובשירות שייכות ל-ArchiFlow או לבעלי הרישיון. אסור להעתיק או לעשות שימוש מסחרי ללא אישור.' },
+          { title: 'צור קשר', text: 'לשאלות בנושא תנאי שימוש: support@archiflow.io.' },
+        ],
+      },
+    },
+    en: {
+      lastUpdated: 'Last updated:',
+      privacy: {
+        intro: 'ArchiFlow respects your privacy. This policy describes what data we collect, how we use it, and how you can control your information.',
+        sections: [
+          { title: 'Information we collect', text: 'We collect information provided when you sign up, use our services, and contact support. This data is used to operate the service, improve experience, and personalize content.' },
+          { title: 'How we use it', text: 'Information is used to deliver the service, security, support, and relevant updates. We do not sell your personal data to third parties.' },
+          { title: 'Cookies and technologies', text: 'We use cookies and similar technologies to enable sign-in, remember preferences, and improve performance. You can manage cookies in your browser settings.' },
+          { title: 'Contact', text: 'For privacy questions: support@archiflow.io.' },
+        ],
+      },
+      terms: {
+        intro: 'Use of ArchiFlow services is subject to the terms below. Accessing or using the service constitutes acceptance of these terms.',
+        sections: [
+          { title: 'Acceptance of service', text: 'The service is provided "as is". We aim for high availability but do not guarantee uninterrupted or fault-free service.' },
+          { title: 'Acceptable use', text: 'You may use the service for legitimate purposes and in accordance with our guidelines. You may not violate terms, disrupt the service, or attempt unauthorized access.' },
+          { title: 'Intellectual property', text: 'All rights in materials, design, and service belong to ArchiFlow or its licensors. You may not copy or use for commercial purposes without permission.' },
+          { title: 'Contact', text: 'For terms-related questions: support@archiflow.io.' },
+        ],
+      },
+    },
+  },
+
+  // ==========================================
   // FOOTER
   // ==========================================
   footer: {

@@ -64,6 +64,8 @@ import LandingBlog from './pages/LandingBlog';
 import LandingContact from './pages/LandingContact';
 import LandingHome from './pages/LandingHome';
 import LandingPricing from './pages/LandingPricing';
+import LandingPrivacy from './pages/LandingPrivacy';
+import LandingTerms from './pages/LandingTerms';
 import MeetingSummaries from './pages/MeetingSummaries';
 import OAuthCallback from './pages/OAuthCallback';
 import People from './pages/People';
@@ -105,6 +107,8 @@ export const PAGES = {
     "LandingContact": LandingContact,
     "LandingHome": LandingHome,
     "LandingPricing": LandingPricing,
+    "LandingPrivacy": LandingPrivacy,
+    "LandingTerms": LandingTerms,
     "MeetingSummaries": MeetingSummaries,
     "OAuthCallback": OAuthCallback,
     "People": People,

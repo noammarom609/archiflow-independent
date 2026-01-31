@@ -10,12 +10,14 @@ import { Calendar, Clock, MapPin, Users, Plus, Loader2, CheckCircle, Upload } fr
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
 import { showSuccess, showError } from '../utils/notifications';
 import { format } from 'date-fns';
 import { useNotifications } from '@/hooks/use-notifications';
 
 export default function AddEventDialog({ isOpen, onClose, selectedDate, prefilledData }) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const { sendTemplate } = useNotifications();
   const [formData, setFormData] = useState({
     title: '',
@@ -70,10 +72,27 @@ export default function AddEventDialog({ isOpen, onClose, selectedDate, prefille
 
   const createEventMutation = useMutation({
     mutationFn: async (data) => {
-      const { exportToGoogle, ...eventData } = data;
-      
-      // Create event in our database
-      const event = await archiflow.entities.CalendarEvent.create(eventData);
+      const { exportToGoogle, reminder, reminder_minutes, color, requires_approval, ...rest } = data;
+      const userEmail = user?.email || '';
+      // Build payload for calendar_events: only DB columns, attendees as comma-separated string
+      const attendeesStr = Array.isArray(rest.attendees)
+        ? rest.attendees.filter(Boolean).join(', ')
+        : (typeof rest.attendees === 'string' ? rest.attendees : '');
+      const insertPayload = {
+        title: rest.title,
+        description: rest.description ?? '',
+        event_type: rest.event_type ?? 'meeting',
+        start_date: rest.start_date,
+        end_date: rest.end_date ?? rest.start_date,
+        all_day: rest.all_day ?? false,
+        location: rest.location ?? '',
+        status: rest.status ?? 'approved',
+        created_by: userEmail,
+        owner_email: userEmail,
+        attendees: attendeesStr,
+        ...(rest.project_id ? { project_id: rest.project_id } : {}),
+      };
+      const event = await archiflow.entities.CalendarEvent.create(insertPayload);
       
       // Export to Google Calendar if requested
       if (exportToGoogle) {

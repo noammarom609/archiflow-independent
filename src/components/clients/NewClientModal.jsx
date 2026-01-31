@@ -138,10 +138,10 @@ export default function NewClientModal({ isOpen, onClose }) {
       ...formData,
       status: 'lead',
       first_contact_date: new Date().toISOString().split('T')[0],
-      // Add architect_id and architect_email for multi-tenant filtering
-      architect_id: currentUser?.id || null,
-      architect_email: currentUser?.email,
-      created_by: currentUser?.email,
+      // Add architect_id and architect_email for multi-tenant filtering (supports bypass auth)
+      architect_id: currentUser?.id || currentUser?.architect_id || null,
+      architect_email: currentUser?.email || currentUser?.architect_email || null,
+      created_by: currentUser?.email || null,
       approval_status: 'approved', // Auto-approve when created by architect
       timeline: [{
         date: new Date().toISOString(),

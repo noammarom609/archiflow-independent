@@ -130,8 +130,8 @@ export default function AddContractorDialog({ isOpen, onClose, initialType = 'co
       projects_completed: 0,
       hourly_rate: formData.hourly_rate ? Number(formData.hourly_rate) : undefined,
       // Add architect_id, architect_email, created_by for multi-tenant (use auth context if query not yet loaded)
-      architect_id: currentUser?.id || null,
-      architect_email: currentUser?.email || authUser?.email || null,
+      architect_id: currentUser?.id || authUser?.id || authUser?.architect_id || null,
+      architect_email: currentUser?.email || authUser?.email || authUser?.architect_email || null,
       created_by: currentUser?.email || authUser?.email || null,
       approval_status: 'approved', // Auto-approve when created by architect
     };

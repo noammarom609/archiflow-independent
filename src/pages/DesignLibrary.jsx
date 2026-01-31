@@ -1084,7 +1084,7 @@ export default function DesignLibrary() {
   const { data: dbMoodboards = [] } = useQuery({
     queryKey: ['moodboards', user?.email],
     queryFn: async () => {
-      const all = await archiflow.entities.Moodboard.list('-updated_date');
+      const all = await archiflow.entities.Moodboard.list('-updated_at');
       
       if (user?.app_role === 'super_admin') return all;
       return all.filter(mb => mb.created_by === user?.email);
@@ -1113,7 +1113,7 @@ export default function DesignLibrary() {
         name: m.name,
         type: 'moodboard',
         size: 'KB', 
-        date: new Date(m.updated_date || m.created_date).toLocaleDateString('he-IL'),
+        date: new Date(m.updated_at || m.created_at).toLocaleDateString('he-IL'),
         url: m.thumbnail_url || 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=600&q=80', 
         tags: [],
         details: m.settings || {},

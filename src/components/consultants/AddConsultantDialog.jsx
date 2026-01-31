@@ -145,8 +145,8 @@ export default function AddConsultantDialog({ isOpen, onClose }) {
     // Add architect_id, architect_email, created_by (use auth context if query not yet loaded)
     const dataWithArchitect = {
       ...formData,
-      architect_id: currentUser?.id || null,
-      architect_email: currentUser?.email || authUser?.email || null,
+      architect_id: currentUser?.id || authUser?.id || authUser?.architect_id || null,
+      architect_email: currentUser?.email || authUser?.email || authUser?.architect_email || null,
       created_by: currentUser?.email || authUser?.email || null,
       approval_status: 'approved',
     };

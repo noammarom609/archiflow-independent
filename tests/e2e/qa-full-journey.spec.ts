@@ -68,16 +68,54 @@ async function delay(page: Page, ms: number = VISUAL_DELAY) {
   await page.waitForTimeout(ms);
 }
 
-// Helper לקריאת console errors
-function setupConsoleLogging(page: Page) {
+// Helper לקריאת console - כל הסוגים
+function setupConsoleLogging(page: Page, verbose: boolean = false) {
+  // Track errors for the final report
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const networkErrors: string[] = [];
+  
   page.on('console', msg => {
-    if (msg.type() === 'error') {
-      console.log(`🔴 Console Error: ${msg.text()}`);
+    const text = msg.text();
+    const type = msg.type();
+    
+    if (type === 'error') {
+      // Skip common non-critical errors
+      if (text.includes('THREE.GLTFLoader') || text.includes('Failed to load resource: the server responded with a status of 401')) {
+        return; // Skip these common ones
+      }
+      errors.push(text);
+      console.log(`🔴 Console Error: ${text}`);
+    } else if (type === 'warning' && verbose) {
+      warnings.push(text);
+      console.log(`🟡 Console Warn: ${text}`);
+    } else if (type === 'log' && verbose && text.startsWith('[')) {
+      // Only show app logs (starting with [AuthContext], [Entities], etc.)
+      console.log(`📝 App Log: ${text}`);
     }
   });
+  
   page.on('pageerror', err => {
+    errors.push(err.message);
     console.log(`🔴 Page Error: ${err.message}`);
   });
+  
+  // Track failed network requests
+  page.on('response', response => {
+    const status = response.status();
+    if (status >= 400 && status !== 401) { // Skip 401 which is expected sometimes
+      const url = response.url();
+      // Only log API errors, not static resources
+      if (url.includes('/rest/v1/') || url.includes('/api/') || url.includes('/functions/')) {
+        const errorMsg = `${status} ${response.statusText()}: ${url.split('?')[0]}`;
+        networkErrors.push(errorMsg);
+        console.log(`🌐 API Error: ${errorMsg}`);
+      }
+    }
+  });
+  
+  // Return function to get all collected errors
+  return () => ({ errors, warnings, networkErrors });
 }
 
 async function loginViaPin(page: Page, pin: string) {
@@ -178,9 +216,10 @@ test.describe('QA Full Journey – בדיקות פונקציונליות מלא�
   test('בדיקה רציפה מלאה עם יצירת ישויות', async ({ page }) => {
     test.setTimeout(1200000); // 20 דקות
     
-    // הפעלת logging לקונסול
-    setupConsoleLogging(page);
+    // הפעלת logging לקונסול (verbose=false לראות רק שגיאות, true לכל ההודעות)
+    const getCollectedErrors = setupConsoleLogging(page, false);
     console.log('🚀 מתחיל בדיקת QA Full Journey...');
+    console.log(`📅 תאריך: ${new Date().toLocaleString('he-IL')}`);
 
     // ═══════════════════════════════════════════════════════════════════════
     // 1. דפי נחיתה (Landing) – גלישה ציבורית
@@ -912,6 +951,27 @@ test.describe('QA Full Journey – בדיקות פונקציונליות מלא�
       console.log(`   • יועץ: ${testData.consultantName}`);
       console.log(`   • ספק: ${testData.supplierName}`);
       console.log('\n───────────────────────────────────────────────────────────────\n');
+      
+      // הצגת שגיאות שנאספו
+      const collectedErrors = getCollectedErrors();
+      if (collectedErrors.errors.length > 0 || collectedErrors.networkErrors.length > 0) {
+        console.log('⚠️ שגיאות שנאספו במהלך הבדיקה:');
+        if (collectedErrors.networkErrors.length > 0) {
+          console.log(`\n   🌐 שגיאות API (${collectedErrors.networkErrors.length}):`);
+          collectedErrors.networkErrors.slice(0, 10).forEach(e => console.log(`      • ${e}`));
+          if (collectedErrors.networkErrors.length > 10) {
+            console.log(`      ... ועוד ${collectedErrors.networkErrors.length - 10} שגיאות`);
+          }
+        }
+        if (collectedErrors.errors.length > 0) {
+          console.log(`\n   🔴 שגיאות Console (${collectedErrors.errors.length}):`);
+          collectedErrors.errors.slice(0, 10).forEach(e => console.log(`      • ${e.slice(0, 100)}${e.length > 100 ? '...' : ''}`));
+          if (collectedErrors.errors.length > 10) {
+            console.log(`      ... ועוד ${collectedErrors.errors.length - 10} שגיאות`);
+          }
+        }
+        console.log('\n───────────────────────────────────────────────────────────────\n');
+      }
 
       const passed = report.filter((r) => r.status === '✅').length;
       const failed = report.filter((r) => r.status === '❌').length;

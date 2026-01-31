@@ -58,14 +58,25 @@ export default function LandingFooter() {
     if (roleData) {
       console.log('[AdminBypass] PIN correct, role:', roleData.app_role);
       
+      // Generate a valid UUID v4 for testing (deterministic per role for consistency)
+      const roleUUIDs = {
+        'super_admin': '00000000-0000-4000-a000-000000000001',
+        'architect': '00000000-0000-4000-a000-000000000002',
+        'client': '00000000-0000-4000-a000-000000000003',
+        'consultant': '00000000-0000-4000-a000-000000000004',
+        'contractor': '00000000-0000-4000-a000-000000000005',
+      };
+      
       const bypassToken = `admin_bypass_${Date.now()}_${Math.random().toString(36).substring(7)}`;
       const bypassUser = {
-        id: `bypass_${roleData.app_role}`,
+        id: roleUUIDs[roleData.app_role] || '00000000-0000-4000-a000-000000000099',
         email: roleData.email,
         full_name: roleData.full_name,
         role: roleData.role,
         app_role: roleData.app_role,
-        approval_status: 'approved'
+        approval_status: 'approved',
+        architect_id: roleUUIDs[roleData.app_role] || '00000000-0000-4000-a000-000000000099',
+        architect_email: roleData.email,
       };
       
       localStorage.setItem('adminBypassToken', bypassToken);

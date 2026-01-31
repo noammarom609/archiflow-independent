@@ -132,8 +132,8 @@ export default function AddSupplierDialog({ isOpen, onClose }) {
       status: 'active',
       rating: 0,
       orders_completed: 0,
-      architect_id: currentUser?.id || null,
-      architect_email: currentUser?.email || authUser?.email || null,
+      architect_id: currentUser?.id || authUser?.id || authUser?.architect_id || null,
+      architect_email: currentUser?.email || authUser?.email || authUser?.architect_email || null,
       created_by: currentUser?.email || authUser?.email || null,
       approval_status: 'approved',
     };

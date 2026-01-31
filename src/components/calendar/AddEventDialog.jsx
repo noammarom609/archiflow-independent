@@ -95,6 +95,9 @@ export default function AddEventDialog({ isOpen, onClose, selectedDate, prefille
         created_by: userEmail || null,
         owner_email: userEmail || null,
         attendees: attendeesStr || null,
+        // Add architect fields for multi-tenant support (supports bypass auth)
+        architect_id: user?.id || user?.architect_id || null,
+        architect_email: userEmail || user?.architect_email || null,
         ...(rest.project_id ? { project_id: rest.project_id } : {}),
       };
       const event = await archiflow.entities.CalendarEvent.create(insertPayload);

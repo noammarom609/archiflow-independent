@@ -140,6 +140,7 @@ export function PushNotificationPrompt({ delay = 5000 }) {
                 variant="ghost" 
                 onClick={handleLater}
                 className="text-gray-500"
+                data-testid="notification-popup-later"
               >
                 אחר כך
               </Button>

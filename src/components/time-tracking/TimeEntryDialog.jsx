@@ -184,10 +184,16 @@ export default function TimeEntryDialog({
       return;
     }
 
-    onSave({
+    // Convert empty strings to null for TIME fields (PostgreSQL can't parse "")
+    const dataToSave = {
       ...formData,
       duration_minutes: duration,
-    });
+      start_time: formData.start_time || null,
+      end_time: formData.end_time || null,
+      task_id: formData.task_id || null,
+    };
+    
+    onSave(dataToSave);
   };
 
   const formatDuration = (minutes) => {

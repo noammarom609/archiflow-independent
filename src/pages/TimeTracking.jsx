@@ -137,9 +137,10 @@ export default function TimeTracking() {
   // Create mutation
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      // Add user info
+      // Add user info and ensure entry_date is set (required field)
       const entryData = {
         ...data,
+        entry_date: data.date || format(new Date(), 'yyyy-MM-dd'), // Required field
         user_id: currentUser?.id,
         user_name: currentUser?.full_name,
         user_email: currentUser?.email,

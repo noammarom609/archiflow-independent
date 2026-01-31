@@ -78,18 +78,23 @@ export default function AddEventDialog({ isOpen, onClose, selectedDate, prefille
       const attendeesStr = Array.isArray(rest.attendees)
         ? rest.attendees.filter(Boolean).join(', ')
         : (typeof rest.attendees === 'string' ? rest.attendees : '');
+      const toISO = (v) => {
+        if (!v) return null;
+        const d = new Date(v);
+        return isNaN(d.getTime()) ? v : d.toISOString();
+      };
       const insertPayload = {
         title: rest.title,
         description: rest.description ?? '',
         event_type: rest.event_type ?? 'meeting',
-        start_date: rest.start_date,
-        end_date: rest.end_date ?? rest.start_date,
+        start_date: toISO(rest.start_date) || rest.start_date,
+        end_date: toISO(rest.end_date) || toISO(rest.start_date) || rest.end_date || rest.start_date,
         all_day: rest.all_day ?? false,
         location: rest.location ?? '',
         status: rest.status ?? 'approved',
-        created_by: userEmail,
-        owner_email: userEmail,
-        attendees: attendeesStr,
+        created_by: userEmail || null,
+        owner_email: userEmail || null,
+        attendees: attendeesStr || null,
         ...(rest.project_id ? { project_id: rest.project_id } : {}),
       };
       const event = await archiflow.entities.CalendarEvent.create(insertPayload);
@@ -139,8 +144,10 @@ export default function AddEventDialog({ isOpen, onClose, selectedDate, prefille
       onClose();
       resetForm();
     },
-    onError: () => {
-      showError('שגיאה בהוספת אירוע');
+    onError: (err) => {
+      console.error('[AddEventDialog] Create event error:', err?.message || err);
+      const msg = err?.message || err?.error_description || 'שגיאה בהוספת אירוע';
+      showError(typeof msg === 'string' ? msg : 'שגיאה בהוספת אירוע');
     },
   });
 

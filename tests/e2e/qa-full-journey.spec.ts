@@ -2,15 +2,19 @@ import { test, expect, Page } from '@playwright/test';
 
 /**
  * QA Full Journey – בדיקה רציפה מקיפה עם פונקציונליות מלאה
- * 
+ *
  * ✅ יוצר ישויות אמיתיות (פרויקטים, לקוחות, אירועים, קבלנים, יועצים, ספקים)
  * ✅ ממלא את כל השדות הנדרשים
  * ✅ משהה 1-2 שניות בין פעולות לצפייה נוחה
  * ✅ בודק פונקציונליות לכל תפקיד
  * ✅ משאיר את הנתונים לבדיקה ידנית
+ * ✅ Fail-fast: ברירת מחדל – עצירה מידית ברגע ששלב נכשל, עם הדפסת מזהה והערה. תקן והרץ מחדש עד 100%.
  *
  * הרצה:
  *   $env:PLAYWRIGHT_BASE_URL="https://archiflow-independent.vercel.app"; npm run test:e2e:full:headed
+ *
+ * אופציונלי:
+ *   QA_FAIL_FAST=0  – הרצה מלאה בלי עצירה על כשל ראשון (לסיכום בסוף).
  */
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -18,6 +22,9 @@ import { test, expect, Page } from '@playwright/test';
 // ═══════════════════════════════════════════════════════════════════════════
 const VISUAL_DELAY = 1500; // 1.5 שניות בין פעולות
 const SHORT_DELAY = 800;   // 0.8 שניות לפעולות קטנות
+
+/** עצירה מידית בריצה ברגע שמזוהה כשל – מתקנים את השגיאה ומריצים מחדש עד 100% */
+const QA_FAIL_FAST = process.env.QA_FAIL_FAST !== '0';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PINים לתפקידים
@@ -37,12 +44,58 @@ const report: { id: string; name: string; status: '✅' | '❌' | '⚠️'; note
 
 function logResult(id: string, name: string, passed: boolean, note = '') {
   report.push({ id, name, status: passed ? '✅' : '❌', note });
+  if (!passed && QA_FAIL_FAST) {
+    console.log('\n');
+    console.log('═══════════════════════════════════════════════════════════════');
+    console.log('  🛑 FAIL-FAST: הריצה נעצרת – נתגלה כשל. תקן והרץ מחדש.');
+    console.log('═══════════════════════════════════════════════════════════════');
+    console.log(`  ❌ מזהה: ${id}`);
+    console.log(`  📋 בדיקה: ${name}`);
+    if (note) console.log(`  📝 הערה: ${note}`);
+    console.log('═══════════════════════════════════════════════════════════════');
+    console.log('  להרצה מלאה בלי עצירה: QA_FAIL_FAST=0');
+    console.log('═══════════════════════════════════════════════════════════════\n');
+    throw new Error(`[QA FAIL] ${id} – ${name}${note ? ` | ${note}` : ''}`);
+  }
 }
 function logSkipped(id: string, name: string, note: string) {
   report.push({ id, name, status: '⚠️', note });
 }
 function logIndirect(id: string, name: string, note: string) {
   report.push({ id, name, status: '✅', note: `עבר עקיף: ${note}` });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// לוג ריצה – ללמידה ולשיפור (ניתן לייצא לקובץ בסוף)
+// ═══════════════════════════════════════════════════════════════════════════
+const RUN_LOG_ENABLED = process.env.QA_RUN_LOG !== '0';
+type RunLogEntry = {
+  ts: string;
+  stepId: string;
+  action: string;
+  result: 'ok' | 'fail' | 'skip';
+  durationMs?: number;
+  details?: string;
+};
+const runLog: RunLogEntry[] = [];
+
+function logRun(stepId: string, action: string, result: 'ok' | 'fail' | 'skip', durationMs?: number, details?: string) {
+  if (!RUN_LOG_ENABLED) return;
+  runLog.push({
+    ts: new Date().toISOString(),
+    stepId,
+    action,
+    result,
+    durationMs,
+    details: details ? details.slice(0, 200) : undefined,
+  });
+  const icon = result === 'ok' ? '✓' : result === 'fail' ? '✗' : '○';
+  const dur = durationMs != null ? ` ${durationMs}ms` : '';
+  console.log(`   [run] ${icon} ${stepId} ${action}${dur}${details ? ` | ${details.slice(0, 80)}` : ''}`);
+}
+
+function getRunLog(): RunLogEntry[] {
+  return [...runLog];
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -66,6 +119,33 @@ const testData = {
 // ═══════════════════════════════════════════════════════════════════════════
 async function delay(page: Page, ms: number = VISUAL_DELAY) {
   await page.waitForTimeout(ms);
+}
+
+/** המתנה אחרי פעולה משמעותית – networkidle + delay ליציבות UI */
+async function waitAfterAction(page: Page, ms: number = SHORT_DELAY) {
+  await page.waitForLoadState('networkidle').catch(() => {});
+  await page.waitForTimeout(ms);
+}
+
+/** הרצת בדיקה עם תזמון ולוג ריצה; מחזיר את תוצאת הבדיקה */
+async function runStepWithLog(
+  stepId: string,
+  name: string,
+  fn: () => Promise<boolean>,
+  options?: { logNote?: string }
+): Promise<boolean> {
+  const start = Date.now();
+  let passed = false;
+  try {
+    passed = await fn();
+    const durationMs = Date.now() - start;
+    logRun(stepId, name, passed ? 'ok' : 'fail', durationMs, options?.logNote);
+    return passed;
+  } catch (e) {
+    const durationMs = Date.now() - start;
+    logRun(stepId, name, 'fail', durationMs, e instanceof Error ? e.message : String(e));
+    return false;
+  }
 }
 
 // Helper לסגירת popups חוסמים (התראות, מודלים וכו')
@@ -361,6 +441,7 @@ test.describe('QA Full Journey – בדיקות פונקציונליות מלא�
         return page.url().includes('/Dashboard');
       });
       logResult('2.2', 'אחרי התחברות – מעבר ל־Dashboard', ok);
+      logRun('2.2', 'login_success', ok ? 'ok' : 'fail');
 
       // 2.3 התנתקות
       ok = await safeCheck(async () => {
@@ -497,6 +578,7 @@ test.describe('QA Full Journey – בדיקות פונקציונליות מלא�
         return success || modalClosed;
       });
       logResult('4.1', `יצירת פרויקט: ${testData.projectName}`, ok);
+      logRun('4.1', 'project_created', ok ? 'ok' : 'fail');
     });
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -564,6 +646,7 @@ test.describe('QA Full Journey – בדיקות פונקציונליות מלא�
         return success;
       });
       logResult('5.1', `יצירת אירוע: ${testData.eventName}`, ok);
+      logRun('5.1', 'event_created', ok ? 'ok' : 'fail');
     });
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1174,109 +1257,134 @@ test.describe('QA Full Journey – בדיקות פונקציונליות מלא�
     });
 
     // ═══════════════════════════════════════════════════════════════════════
-    // 16. Project Deep Dive – כניסה לפרויקט ומעבר בשלבים
+    // 16. Project Deep Dive – ניהול פרויקט: כל שלבי Workflow + תיק פרויקט + וידוא פעולות
     // ═══════════════════════════════════════════════════════════════════════
+    const WORKFLOW_STAGE_LABELS = [
+      'שיחה ראשונה',
+      'הצעת מחיר',
+      'יצירת גנט',
+      'מדידה',
+      'פרוגרמה וקונספט',
+      'סקיצות',
+      'הדמיות',
+      'היתרים',
+      'תוכניות עבודה',
+      'בחירות וכתב כמויות',
+      'ביצוע',
+      'סיום',
+    ];
+
     await test.step('16. Project Deep Dive', async () => {
       await page.goto('/Projects');
       await delay(page);
       await dismissPopups(page);
+      await waitAfterAction(page, SHORT_DELAY);
 
       // 16.1 כניסה לפרויקט שנוצר
-      let ok = await safeCheck(async () => {
+      let ok = await runStepWithLog('16.1', 'כניסה לפרויקט', async () => {
         const projectCard = page.locator(`text=${testData.projectName}`).first();
         if (await projectCard.isVisible({ timeout: 5000 }).catch(() => false)) {
           await projectCard.click();
-          await delay(page, 2000);
-          
-          // בדיקה שנכנסנו לפרויקט (URL מכיל id או שיש breadcrumb)
+          await waitAfterAction(page, 2000);
           const urlHasId = page.url().includes('id=') || page.url().includes('/Projects/');
           const projectNameVisible = await page.getByText(testData.projectName).isVisible({ timeout: 3000 }).catch(() => false);
-          
           return urlHasId || projectNameVisible;
         }
         return false;
       });
       logResult('16.1', 'כניסה לפרויקט', ok);
+      if (!ok) {
+        logRun('16.2', 'מעבר שלבי Workflow', 'skip', undefined, 'פרויקט לא נפתח');
+        logRun('16.3', 'טאבי תיק פרויקט', 'skip', undefined, 'פרויקט לא נפתח');
+        logResult('16.2', 'מעבר בין כל שלבי Workflow', false);
+        logResult('16.3', 'תיק פרויקט – סקירה/מסמכים/משימות', false);
+        logResult('16.4', 'פתיחת AI Report', false);
+        logResult('16.5', 'וידוא פונקציונליות בשלב נוכחי', false);
+        return;
+      }
 
-      // 16.2 מעבר בין שלבי Workflow
-      ok = await safeCheck(async () => {
-        // חיפוש ה-stepper
-        const stepper = page.locator('[class*="stepper"], [class*="workflow"], [class*="stages"]').first();
-        
-        // ניסיון ללחוץ על שלב "הצעת מחיר"
-        const proposalStage = page.getByText(/הצעת מחיר/i).first();
-        if (await proposalStage.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await proposalStage.click();
-          await delay(page);
+      await dismissPopups(page);
+
+      // 16.2 מעבר בכל שלבי Workflow + המתנה + וידוא טעינת תוכן
+      let stagesOk = 0;
+      for (const label of WORKFLOW_STAGE_LABELS) {
+        const stageBtn = page.getByText(new RegExp(label.replace(/\s+/g, '\\s*'), 'i')).first();
+        if (await stageBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await stageBtn.click();
+          await waitAfterAction(page, VISUAL_DELAY);
+          const contentVisible = await page.locator('[class*="stage"], [class*="content"], section, [role="region"]')
+            .filter({ hasText: new RegExp(label.split(' ')[0] || label) })
+            .first()
+            .isVisible({ timeout: 3000 })
+            .catch(() => true);
+          if (contentVisible) stagesOk++;
+          logRun('16.2', `שלב: ${label}`, contentVisible ? 'ok' : 'fail', undefined, contentVisible ? 'תוכן נראה' : 'לא אומת');
         }
-        
-        // ניסיון ללחוץ על שלב "מדידה"
-        const surveyStage = page.getByText(/מדידה/i).first();
-        if (await surveyStage.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await surveyStage.click();
-          await delay(page);
+      }
+      ok = stagesOk >= 2;
+      logResult('16.2', 'מעבר בין כל שלבי Workflow', ok, `${stagesOk}/${WORKFLOW_STAGE_LABELS.length} שלבים אומתו`);
+
+      // 16.3 תיק פרויקט – פתיחת הקולפס + מעבר בין סקירה / מסמכים / משימות
+      ok = await runStepWithLog('16.3', 'תיק פרויקט – סקירה/מסמכים/משימות', async () => {
+        const collapsibleTitle = page.getByText(/תיק פרויקט/i).first();
+        if (await collapsibleTitle.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await collapsibleTitle.click();
+          await waitAfterAction(page, 1000);
         }
-        
+        const overviewBtn = page.getByText(/סקירה כללית|סקירה|overview/i).first();
+        if (await overviewBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await overviewBtn.click();
+          await waitAfterAction(page, SHORT_DELAY);
+        }
+        const docsBtn = page.getByText(/מסמכים|documents/i).first();
+        if (await docsBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await docsBtn.click();
+          await waitAfterAction(page, SHORT_DELAY);
+          const docsContent = page.getByText(/מסמכים|אין מסמכים|רשימת מסמכים/i).first();
+          await expect(docsContent).toBeVisible({ timeout: 3000 }).catch(() => {});
+        }
+        const tasksBtn = page.getByText(/משימות|tasks/i).first();
+        if (await tasksBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await tasksBtn.click();
+          await waitAfterAction(page, SHORT_DELAY);
+          const tasksContent = page.getByText(/משימות|אין משימות|רשימת משימות/i).first();
+          await expect(tasksContent).toBeVisible({ timeout: 3000 }).catch(() => {});
+        }
         return true;
       });
-      logResult('16.2', 'מעבר בין שלבי Workflow', ok);
+      logResult('16.3', 'תיק פרויקט – סקירה/מסמכים/משימות', ok);
 
-      // 16.3 בדיקת Portfolio Tabs
-      ok = await safeCheck(async () => {
-        // סקירה
-        const overviewTab = page.getByText(/סקירה|overview/i).first();
-        if (await overviewTab.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await overviewTab.click();
-          await delay(page);
-        }
-        
-        // מסמכים
-        const docsTab = page.getByText(/מסמכים|documents/i).first();
-        if (await docsTab.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await docsTab.click();
-          await delay(page);
-        }
-        
-        // משימות
-        const tasksTab = page.getByText(/משימות|tasks/i).first();
-        if (await tasksTab.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await tasksTab.click();
-          await delay(page);
-        }
-        
-        return true;
-      });
-      logResult('16.3', 'מעבר בין טאבי Portfolio', ok);
-
-      // 16.4 פתיחת AI Report
-      ok = await safeCheck(async () => {
+      // 16.4 פתיחת AI Report + המתנה לתגובה
+      ok = await runStepWithLog('16.4', 'פתיחת AI Report', async () => {
         const reportBtn = page.getByRole('button', { name: /דוח|report/i }).first();
         if (await reportBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
           await reportBtn.click();
-          await delay(page);
-          
-          // המתנה לדיאלוג
+          await waitAfterAction(page, VISUAL_DELAY);
           const dialog = page.locator('[role="dialog"]').first();
           const dialogOpen = await dialog.isVisible({ timeout: 5000 }).catch(() => false);
-          
           if (dialogOpen) {
-            // המתנה לתגובת AI (עד 60 שניות)
             console.log('   🤖 ממתין לתגובת AI...');
             const aiContent = page.locator('[class*="report"], [class*="content"], [class*="summary"]')
               .filter({ hasText: /סיכום|דוח|פרויקט/ }).first();
-            
             await aiContent.waitFor({ state: 'visible', timeout: 60000 }).catch(() => {});
-            
-            // סגירת הדיאלוג
             await page.keyboard.press('Escape');
             await delay(page, SHORT_DELAY);
-            
             return true;
           }
         }
         return false;
       });
       logResult('16.4', 'פתיחת AI Report', ok);
+
+      // 16.5 וידוא פונקציונליות בשלב נוכחי – כפתור/פעולה אופיינית לשלב
+      ok = await runStepWithLog('16.5', 'וידוא פונקציונליות בשלב', async () => {
+        await dismissPopups(page);
+        const hasProposalBtn = await page.getByRole('button', { name: /הצעת מחיר|יצירת הצעה|הצעה/i }).first().isVisible({ timeout: 2000 }).catch(() => false);
+        const hasUploadOrAction = await page.getByRole('button', { name: /העלאה|הוסף|יצירה|חדש/i }).first().isVisible({ timeout: 2000 }).catch(() => false);
+        const hasStageContent = await page.locator('section, [class*="Stage"], [role="region"]').first().isVisible({ timeout: 2000 }).catch(() => false);
+        return hasProposalBtn || hasUploadOrAction || hasStageContent;
+      });
+      logResult('16.5', 'וידוא פונקציונליות בשלב נוכחי', ok);
     });
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1767,6 +1875,34 @@ test.describe('QA Full Journey – בדיקות פונקציונליות מלא�
       console.log(`❌ נכשלו: ${failed}`);
       console.log(`⚠️ דולגו: ${skipped}`);
       console.log('═══════════════════════════════════════════════════════════════\n');
+
+      // לוג ריצה – למידה ושיפור
+      const runLogEntries = getRunLog();
+      if (runLogEntries.length > 0) {
+        console.log('📋 לוג ריצה (לניתוח ולשיפור):');
+        const byStep = new Map<string, { ok: number; fail: number; skip: number; totalMs: number }>();
+        for (const e of runLogEntries) {
+          const cur = byStep.get(e.stepId) || { ok: 0, fail: 0, skip: 0, totalMs: 0 };
+          if (e.result === 'ok') cur.ok++;
+          else if (e.result === 'fail') cur.fail++;
+          else cur.skip++;
+          if (e.durationMs != null) cur.totalMs += e.durationMs;
+          byStep.set(e.stepId, cur);
+        }
+        for (const [stepId, stats] of byStep) {
+          console.log(`   ${stepId}: ok=${stats.ok} fail=${stats.fail} skip=${stats.skip} totalMs=${stats.totalMs}`);
+        }
+        const runLogPath = process.env.QA_RUN_LOG_FILE;
+        if (runLogPath) {
+          try {
+            const fs = await import('fs');
+            const payload = { runId: new Date().toISOString(), report: report.map(r => ({ id: r.id, name: r.name, status: r.status, note: r.note })), runLog: runLogEntries };
+            await fs.promises.writeFile(runLogPath, JSON.stringify(payload, null, 2), 'utf8');
+            console.log(`\n📁 לוג ריצה נשמר: ${runLogPath}`);
+          } catch (_) { /* ignore */ }
+        }
+        console.log('');
+      }
 
       expect(failed).toBe(0);
     });

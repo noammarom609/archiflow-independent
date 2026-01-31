@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { archiflow } from '@/api/archiflow';
-import { getCurrentUser } from '@/utils/authHelpers';
+import { useAuth } from '@/lib/AuthContext';
 import { format, startOfWeek, endOfWeek, subWeeks, addWeeks } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { motion } from 'framer-motion';
@@ -40,6 +40,7 @@ import { isAdmin, isArchitect } from '@/utils/roleHelpers';
 
 export default function TimeTracking() {
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth(); // Get user directly from AuthContext
   const [activeTab, setActiveTab] = useState('entries');
   const [showEntryDialog, setShowEntryDialog] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
@@ -49,12 +50,6 @@ export default function TimeTracking() {
     project_id: '',
     user_email: '',
     dateRange: 'week'
-  });
-
-  // Get current user
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => getCurrentUser(archiflow),
   });
 
   // Check permissions
@@ -137,16 +132,23 @@ export default function TimeTracking() {
   // Create mutation
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      // Add user info and ensure entry_date is set (required field)
+      // Validate user has email before creating entry
+      if (!currentUser?.email) {
+        throw new Error('המשתמש לא מחובר או חסר מייל');
+      }
+      
+      // Add user info and ensure required fields are set
       const entryData = {
         ...data,
         entry_date: data.date || format(new Date(), 'yyyy-MM-dd'), // Required field
         user_id: currentUser?.id,
-        user_name: currentUser?.full_name,
+        user_name: currentUser?.full_name || currentUser?.email,
         user_email: currentUser?.email,
         architect_id: currentUser?.architect_id || currentUser?.id,
-        architect_email: currentUser?.architect_email || currentUser?.email,
+        architect_email: currentUser?.architect_email || currentUser?.email, // Required field - fallback to user email
       };
+      
+      console.log('[TimeTracking] Creating time entry:', entryData);
       return archiflow.entities.TimeEntry.create(entryData);
     },
     onSuccess: () => {
@@ -155,7 +157,10 @@ export default function TimeTracking() {
       setShowEntryDialog(false);
       setEditingEntry(null);
     },
-    onError: () => showError('שגיאה בשמירת דיווח השעות'),
+    onError: (error) => {
+      console.error('[TimeTracking] Create error:', error);
+      showError(error.message || 'שגיאה בשמירת דיווח השעות');
+    },
   });
 
   // Update mutation

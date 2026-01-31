@@ -167,6 +167,7 @@ export const AuthProvider = ({ children }) => {
             status: supabaseUser?.status || 'pending_approval',
             allowed_pages: supabaseUser?.allowed_pages || clerkUser.publicMetadata?.allowed_pages || [],
             architect_id: supabaseUser?.architect_id,
+            architect_email: supabaseUser?.architect_email || userEmail, // For multi-tenant time entries
             created_at: supabaseUser?.created_at || clerkUser.createdAt,
           };
 

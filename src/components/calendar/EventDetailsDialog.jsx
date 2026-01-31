@@ -138,7 +138,7 @@ export default function EventDetailsDialog({ event, onClose }) {
               <Users className="w-5 h-5 text-slate-600 mt-0.5" />
               <div>
                 <p className="text-sm font-semibold text-slate-700">משתתפים</p>
-                <p className="text-slate-900">{event.attendees.join(', ')}</p>
+                <p className="text-slate-900">{Array.isArray(event.attendees) ? event.attendees.join(', ') : event.attendees}</p>
               </div>
             </div>
           )}

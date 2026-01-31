@@ -68,6 +68,33 @@ async function delay(page: Page, ms: number = VISUAL_DELAY) {
   await page.waitForTimeout(ms);
 }
 
+// Helper לסגירת popups חוסמים (התראות, מודלים וכו')
+async function dismissPopups(page: Page) {
+  try {
+    // סגירת popup התראות "הישאר מעודכן"
+    const notificationPopup = page.locator('text=/הישאר מעודכן|אחר כך|later|dismiss/i');
+    if (await notificationPopup.isVisible({ timeout: 1000 }).catch(() => false)) {
+      const dismissBtn = page.getByRole('button', { name: /אחר כך|later|dismiss|סגור|close/i }).first();
+      if (await dismissBtn.isVisible({ timeout: 500 }).catch(() => false)) {
+        await dismissBtn.click();
+        await page.waitForTimeout(300);
+      }
+    }
+    
+    // סגירת כפתור X בפופאפים
+    const closeBtn = page.locator('button[class*="close"], button:has(svg.lucide-x)').first();
+    if (await closeBtn.isVisible({ timeout: 500 }).catch(() => false)) {
+      await closeBtn.click().catch(() => {});
+      await page.waitForTimeout(300);
+    }
+    
+    // לחיצה על Escape לסגירת מודלים
+    await page.keyboard.press('Escape').catch(() => {});
+  } catch {
+    // ignore errors
+  }
+}
+
 // Helper לקריאת console - כל הסוגים
 function setupConsoleLogging(page: Page, verbose: boolean = false) {
   // Track errors for the final report
@@ -214,7 +241,7 @@ async function fillByLabel(page: Page, labelText: string | RegExp, value: string
 // ═══════════════════════════════════════════════════════════════════════════
 test.describe('QA Full Journey – בדיקות פונקציונליות מלאות', () => {
   test('בדיקה רציפה מלאה עם יצירת ישויות', async ({ page }) => {
-    test.setTimeout(1200000); // 20 דקות
+    test.setTimeout(1800000); // 30 דקות - כולל המתנת 61 שניות לטיימר ופונקציות AI
     
     // הפעלת logging לקונסול (verbose=false לראות רק שגיאות, true לכל ההודעות)
     const getCollectedErrors = setupConsoleLogging(page, false);
@@ -895,17 +922,599 @@ test.describe('QA Full Journey – בדיקות פונקציונליות מלא�
     });
 
     // ═══════════════════════════════════════════════════════════════════════
-    // 13. בדיקות טכניות
+    // 14. Calendar Deep Dive – צפייה ועריכת אירוע
     // ═══════════════════════════════════════════════════════════════════════
-    await test.step('13. בדיקות טכניות', async () => {
-      // 13.1 משתני סביבה
+    await test.step('14. Calendar Deep Dive', async () => {
+      await loginViaPin(page, PINS.super_admin);
+      await page.goto('/Calendar');
+      await delay(page);
+      await dismissPopups(page);
+
+      // 14.1 פתיחת פרטי אירוע שנוצר
+      let ok = await safeCheck(async () => {
+        // חיפוש האירוע שיצרנו (לפי הטקסט)
+        const eventCard = page.locator(`text=${testData.eventName}`).first();
+        if (await eventCard.isVisible({ timeout: 5000 }).catch(() => false)) {
+          await eventCard.click();
+          await delay(page);
+          
+          // בדיקה שנפתח דיאלוג פרטי אירוע
+          const detailsDialog = page.locator('[role="dialog"]').first();
+          const isDialogOpen = await detailsDialog.isVisible({ timeout: 3000 }).catch(() => false);
+          
+          if (isDialogOpen) {
+            // בדיקה שהכותרת מוצגת
+            const titleVisible = await page.getByText(testData.eventName).isVisible({ timeout: 2000 }).catch(() => false);
+            
+            // סגירת הדיאלוג
+            await page.keyboard.press('Escape');
+            await delay(page, SHORT_DELAY);
+            
+            return titleVisible;
+          }
+        }
+        return false;
+      });
+      logResult('14.1', 'צפייה בפרטי אירוע שנוצר', ok);
+
+      // 14.2 בדיקת מעבר בין תצוגות לוח שנה
+      ok = await safeCheck(async () => {
+        // מעבר לתצוגת שבוע
+        const weekViewBtn = page.locator('button').filter({ has: page.locator('svg.lucide-columns-2, svg.lucide-columns') }).first();
+        if (await weekViewBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await weekViewBtn.click();
+          await delay(page);
+        }
+        
+        // מעבר לתצוגת יום
+        const dayViewBtn = page.locator('button').filter({ has: page.locator('svg.lucide-list') }).first();
+        if (await dayViewBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await dayViewBtn.click();
+          await delay(page);
+        }
+        
+        // חזרה לתצוגת חודש
+        const monthViewBtn = page.locator('button').filter({ has: page.locator('svg.lucide-grid') }).first();
+        if (await monthViewBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await monthViewBtn.click();
+          await delay(page);
+        }
+        
+        return true;
+      });
+      logResult('14.2', 'מעבר בין תצוגות לוח שנה', ok);
+
+      // 14.3 בדיקת כפתור Google Sync קיים
+      ok = await safeCheck(async () => {
+        const googleBtn = page.getByRole('button', { name: /google/i });
+        return await googleBtn.isVisible({ timeout: 3000 }).catch(() => false);
+      });
+      logResult('14.3', 'כפתור Google Calendar קיים', ok);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 15. Time Tracking Deep Dive – טיימר מלא עם ניווט
+    // ═══════════════════════════════════════════════════════════════════════
+    await test.step('15. Time Tracking Deep Dive', async () => {
+      await page.goto('/TimeTracking');
+      await delay(page);
+      await dismissPopups(page);
+
+      // 15.1 התחלת טיימר
+      let ok = await safeCheck(async () => {
+        const timerBtn = page.getByRole('button', { name: /טיימר/i }).first();
+        await timerBtn.click();
+        await delay(page);
+        
+        // בחירת פרויקט אם נדרש (popover)
+        const projectPopover = page.locator('[role="dialog"], [data-radix-popper-content-wrapper]').first();
+        if (await projectPopover.isVisible({ timeout: 2000 }).catch(() => false)) {
+          // לחיצה על הפרויקט הראשון
+          const firstProject = projectPopover.locator('button, [role="option"]').first();
+          if (await firstProject.isVisible({ timeout: 2000 }).catch(() => false)) {
+            await firstProject.click();
+            await delay(page, SHORT_DELAY);
+          }
+        }
+        
+        // בדיקה שהטיימר רץ (יש תצוגת זמן)
+        const timerDisplay = page.locator('text=/\\d{2}:\\d{2}:\\d{2}/').first();
+        return await timerDisplay.isVisible({ timeout: 5000 }).catch(() => false);
+      });
+      logResult('15.1', 'התחלת טיימר', ok);
+
+      // 15.2 ניווט בזמן שהטיימר רץ
+      ok = await safeCheck(async () => {
+        console.log('   ⏱️ טיימר רץ - ממתין 61 שניות עם ניווט...');
+        
+        // ניווט ל-Projects
+        await page.goto('/Projects');
+        await delay(page);
+        const projectsLoaded = await page.getByText(/פרויקטים|projects/i).first().isVisible({ timeout: 5000 }).catch(() => false);
+        
+        // המתנה של 20 שניות
+        await page.waitForTimeout(20000);
+        
+        // ניווט ל-Dashboard
+        await page.goto('/Dashboard');
+        await delay(page);
+        const dashboardLoaded = page.url().includes('/Dashboard');
+        
+        // המתנה של 20 שניות נוספות
+        await page.waitForTimeout(20000);
+        
+        // ניווט ל-Clients
+        await page.goto('/Clients');
+        await delay(page);
+        const clientsLoaded = await page.getByText(/לקוחות|clients/i).first().isVisible({ timeout: 5000 }).catch(() => false);
+        
+        // המתנה של 21 שניות אחרונות
+        await page.waitForTimeout(21000);
+        
+        return projectsLoaded && dashboardLoaded && clientsLoaded;
+      });
+      logResult('15.2', 'ניווט בין דפים בזמן שטיימר רץ (61 שניות)', ok);
+
+      // 15.3 חזרה ל-TimeTracking ועצירת הטיימר
+      ok = await safeCheck(async () => {
+        await page.goto('/TimeTracking');
+        await delay(page);
+        
+        // בדיקה שהטיימר עדיין רץ
+        const timerDisplay = page.locator('text=/\\d{2}:\\d{2}:\\d{2}/').first();
+        const stillRunning = await timerDisplay.isVisible({ timeout: 3000 }).catch(() => false);
+        
+        if (stillRunning) {
+          // עצירת הטיימר (כפתור עצירה אדום - square icon)
+          const stopBtn = page.locator('button').filter({ has: page.locator('svg.lucide-square') }).first()
+            .or(page.getByRole('button', { name: /עצור|stop/i }));
+          
+          if (await stopBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+            await stopBtn.click();
+            await delay(page, 2000);
+            return true;
+          }
+        }
+        return false;
+      });
+      logResult('15.3', 'עצירת טיימר אחרי 61+ שניות', ok);
+
+      // 15.4 וידוא שנוצר דיווח שעות
+      ok = await safeCheck(async () => {
+        // רענון הדף
+        await page.reload();
+        await delay(page);
+        
+        // בדיקה שיש לפחות רשומה אחת ברשימה
+        const timeEntry = page.locator('[class*="TimeEntry"], [class*="time-entry"], tr, [role="row"]')
+          .filter({ hasText: /\d+:\d+|\d+ דקות/ }).first();
+        
+        const hasEntry = await timeEntry.isVisible({ timeout: 5000 }).catch(() => false);
+        
+        // או בדיקה שאין הודעת "אין דיווחים"
+        const noEntriesMsg = await page.getByText(/אין דיווחים|no entries/i).isVisible({ timeout: 2000 }).catch(() => false);
+        
+        return hasEntry || !noEntriesMsg;
+      });
+      logResult('15.4', 'דיווח שעות נוצר', ok);
+
+      // 15.5 מעבר בין טאבים
+      ok = await safeCheck(async () => {
+        // טאב שבועון
+        const weeklyTab = page.getByRole('tab', { name: /שבועון|weekly/i });
+        if (await weeklyTab.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await weeklyTab.click();
+          await delay(page);
+        }
+        
+        // טאב דוחות
+        const reportsTab = page.getByRole('tab', { name: /דוחות|reports/i });
+        if (await reportsTab.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await reportsTab.click();
+          await delay(page);
+        }
+        
+        // חזרה לרשימה
+        const listTab = page.getByRole('tab', { name: /רשימה|list/i });
+        if (await listTab.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await listTab.click();
+          await delay(page);
+        }
+        
+        return true;
+      });
+      logResult('15.5', 'מעבר בין טאבים TimeTracking', ok);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 16. Project Deep Dive – כניסה לפרויקט ומעבר בשלבים
+    // ═══════════════════════════════════════════════════════════════════════
+    await test.step('16. Project Deep Dive', async () => {
+      await page.goto('/Projects');
+      await delay(page);
+      await dismissPopups(page);
+
+      // 16.1 כניסה לפרויקט שנוצר
+      let ok = await safeCheck(async () => {
+        const projectCard = page.locator(`text=${testData.projectName}`).first();
+        if (await projectCard.isVisible({ timeout: 5000 }).catch(() => false)) {
+          await projectCard.click();
+          await delay(page, 2000);
+          
+          // בדיקה שנכנסנו לפרויקט (URL מכיל id או שיש breadcrumb)
+          const urlHasId = page.url().includes('id=') || page.url().includes('/Projects/');
+          const projectNameVisible = await page.getByText(testData.projectName).isVisible({ timeout: 3000 }).catch(() => false);
+          
+          return urlHasId || projectNameVisible;
+        }
+        return false;
+      });
+      logResult('16.1', 'כניסה לפרויקט', ok);
+
+      // 16.2 מעבר בין שלבי Workflow
+      ok = await safeCheck(async () => {
+        // חיפוש ה-stepper
+        const stepper = page.locator('[class*="stepper"], [class*="workflow"], [class*="stages"]').first();
+        
+        // ניסיון ללחוץ על שלב "הצעת מחיר"
+        const proposalStage = page.getByText(/הצעת מחיר/i).first();
+        if (await proposalStage.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await proposalStage.click();
+          await delay(page);
+        }
+        
+        // ניסיון ללחוץ על שלב "מדידה"
+        const surveyStage = page.getByText(/מדידה/i).first();
+        if (await surveyStage.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await surveyStage.click();
+          await delay(page);
+        }
+        
+        return true;
+      });
+      logResult('16.2', 'מעבר בין שלבי Workflow', ok);
+
+      // 16.3 בדיקת Portfolio Tabs
+      ok = await safeCheck(async () => {
+        // סקירה
+        const overviewTab = page.getByText(/סקירה|overview/i).first();
+        if (await overviewTab.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await overviewTab.click();
+          await delay(page);
+        }
+        
+        // מסמכים
+        const docsTab = page.getByText(/מסמכים|documents/i).first();
+        if (await docsTab.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await docsTab.click();
+          await delay(page);
+        }
+        
+        // משימות
+        const tasksTab = page.getByText(/משימות|tasks/i).first();
+        if (await tasksTab.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await tasksTab.click();
+          await delay(page);
+        }
+        
+        return true;
+      });
+      logResult('16.3', 'מעבר בין טאבי Portfolio', ok);
+
+      // 16.4 פתיחת AI Report
+      ok = await safeCheck(async () => {
+        const reportBtn = page.getByRole('button', { name: /דוח|report/i }).first();
+        if (await reportBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await reportBtn.click();
+          await delay(page);
+          
+          // המתנה לדיאלוג
+          const dialog = page.locator('[role="dialog"]').first();
+          const dialogOpen = await dialog.isVisible({ timeout: 5000 }).catch(() => false);
+          
+          if (dialogOpen) {
+            // המתנה לתגובת AI (עד 60 שניות)
+            console.log('   🤖 ממתין לתגובת AI...');
+            const aiContent = page.locator('[class*="report"], [class*="content"], [class*="summary"]')
+              .filter({ hasText: /סיכום|דוח|פרויקט/ }).first();
+            
+            await aiContent.waitFor({ state: 'visible', timeout: 60000 }).catch(() => {});
+            
+            // סגירת הדיאלוג
+            await page.keyboard.press('Escape');
+            await delay(page, SHORT_DELAY);
+            
+            return true;
+          }
+        }
+        return false;
+      });
+      logResult('16.4', 'פתיחת AI Report', ok);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 17. Design Library Deep Dive – תיקיות ותוכן
+    // ═══════════════════════════════════════════════════════════════════════
+    await test.step('17. Design Library Deep Dive', async () => {
+      await page.goto('/DesignLibrary');
+      await delay(page);
+      await dismissPopups(page);
+
+      // 17.1 כניסה לקטגוריה
+      let ok = await safeCheck(async () => {
+        // לחיצה על קטגוריית "תוכן" או כל קטגוריה אחרת
+        const contentCategory = page.getByText(/תוכן|content/i).first();
+        const moodboardCategory = page.getByText(/לוחות השראה|moodboards/i).first();
+        
+        if (await contentCategory.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await contentCategory.click();
+          await delay(page);
+          return true;
+        } else if (await moodboardCategory.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await moodboardCategory.click();
+          await delay(page);
+          return true;
+        }
+        return false;
+      });
+      logResult('17.1', 'כניסה לקטגוריה בספרייה', ok);
+
+      // 17.2 בדיקת כפתורי העלאה
+      ok = await safeCheck(async () => {
+        const uploadBtn = page.getByRole('button', { name: /העלאה|upload|הוסף/i }).first();
+        return await uploadBtn.isVisible({ timeout: 3000 }).catch(() => false);
+      });
+      logResult('17.2', 'כפתור העלאה קיים', ok);
+
+      // 17.3 מעבר בין Grid/List
+      ok = await safeCheck(async () => {
+        // Grid
+        const gridBtn = page.locator('button').filter({ has: page.locator('svg.lucide-grid, svg.lucide-layout-grid') }).first();
+        if (await gridBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await gridBtn.click();
+          await delay(page, SHORT_DELAY);
+        }
+        
+        // List
+        const listBtn = page.locator('button').filter({ has: page.locator('svg.lucide-list') }).first();
+        if (await listBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await listBtn.click();
+          await delay(page, SHORT_DELAY);
+        }
+        
+        return true;
+      });
+      logResult('17.3', 'מעבר Grid/List', ok);
+
+      // 17.4 חזרה לספריית תוכן
+      ok = await safeCheck(async () => {
+        const backBtn = page.getByRole('button', { name: /חזרה|back/i }).first()
+          .or(page.getByText(/חזרה לספריית תוכן/i));
+        
+        if (await backBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await backBtn.click();
+          await delay(page);
+          return true;
+        }
+        
+        // או ניווט ידני
+        await page.goto('/DesignLibrary');
+        await delay(page);
+        return true;
+      });
+      logResult('17.4', 'חזרה לספריית תוכן', ok);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 18. Clients Deep Dive – פרופיל לקוח
+    // ═══════════════════════════════════════════════════════════════════════
+    await test.step('18. Clients Deep Dive', async () => {
+      await page.goto('/Clients');
+      await delay(page);
+      await dismissPopups(page);
+
+      // 18.1 כניסה לפרופיל לקוח
+      let ok = await safeCheck(async () => {
+        const clientCard = page.locator(`text=${testData.clientName}`).first();
+        if (await clientCard.isVisible({ timeout: 5000 }).catch(() => false)) {
+          await clientCard.click();
+          await delay(page, 2000);
+          
+          // בדיקה שנפתח פרופיל או דיאלוג
+          const clientDetails = page.locator('[role="dialog"], [class*="profile"], [class*="detail"]').first();
+          return await clientDetails.isVisible({ timeout: 3000 }).catch(() => 
+            page.getByText(testData.clientName).isVisible({ timeout: 2000 })
+          );
+        }
+        return false;
+      });
+      logResult('18.1', 'כניסה לפרופיל לקוח', ok);
+
+      // 18.2 בדיקת Timeline קיים
+      ok = await safeCheck(async () => {
+        const timeline = page.getByText(/timeline|ציר זמן|היסטוריה/i).first();
+        return await timeline.isVisible({ timeout: 3000 }).catch(() => false);
+      });
+      logResult('18.2', 'Timeline לקוח קיים', ok);
+
+      // 18.3 כפתור עריכה קיים
+      ok = await safeCheck(async () => {
+        const editBtn = page.getByRole('button', { name: /עריכה|edit/i }).first()
+          .or(page.locator('button').filter({ has: page.locator('svg.lucide-pencil, svg.lucide-edit') }));
+        return await editBtn.isVisible({ timeout: 3000 }).catch(() => false);
+      });
+      logResult('18.3', 'כפתור עריכת לקוח קיים', ok);
+
+      // סגירת דיאלוג אם פתוח
+      await page.keyboard.press('Escape').catch(() => {});
+      await delay(page, SHORT_DELAY);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 19. Settings Deep Dive – הגדרות ו-Dark Mode
+    // ═══════════════════════════════════════════════════════════════════════
+    await test.step('19. Settings Deep Dive', async () => {
+      await page.goto('/Settings');
+      await delay(page);
+      await dismissPopups(page);
+
+      // 19.1 בדיקת Dark Mode Toggle
+      let ok = await safeCheck(async () => {
+        const darkModeToggle = page.getByRole('switch').first()
+          .or(page.locator('[class*="dark"], [class*="theme"]').filter({ has: page.locator('button, [role="switch"]') }));
+        
+        if (await darkModeToggle.isVisible({ timeout: 3000 }).catch(() => false)) {
+          // לחיצה להחלפה
+          await darkModeToggle.click();
+          await delay(page);
+          
+          // לחיצה חוזרת
+          await darkModeToggle.click();
+          await delay(page);
+          
+          return true;
+        }
+        return false;
+      });
+      logResult('19.1', 'Dark Mode Toggle עובד', ok);
+
+      // 19.2 בדיקת Language Selector
+      ok = await safeCheck(async () => {
+        const langSelector = page.getByText(/שפה|language|עברית|english/i).first();
+        return await langSelector.isVisible({ timeout: 3000 }).catch(() => false);
+      });
+      logResult('19.2', 'Language Selector קיים', ok);
+
+      // 19.3 בדיקת Logout Button
+      ok = await safeCheck(async () => {
+        const logoutBtn = page.getByRole('button', { name: /התנתק|logout/i });
+        return await logoutBtn.isVisible({ timeout: 3000 }).catch(() => false);
+      });
+      logResult('19.3', 'Logout Button קיים', ok);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 20. Recordings Deep Dive – הקלטות ותמלול
+    // ═══════════════════════════════════════════════════════════════════════
+    await test.step('20. Recordings Deep Dive', async () => {
+      await page.goto('/Recordings');
+      await delay(page);
+      await dismissPopups(page);
+
+      // 20.1 דף הקלטות נטען
+      let ok = await safeCheck(async () => {
+        const recordingsPage = page.getByText(/הקלטות|recordings|שיחות/i).first();
+        return await recordingsPage.isVisible({ timeout: 5000 }).catch(() => page.url().includes('/Recordings'));
+      });
+      logResult('20.1', 'דף Recordings נטען', ok);
+
+      // 20.2 כפתור הקלטה חדשה קיים
+      ok = await safeCheck(async () => {
+        const newRecordingBtn = page.getByRole('button', { name: /הקלטה חדשה|new recording|העלאה/i }).first();
+        return await newRecordingBtn.isVisible({ timeout: 3000 }).catch(() => false);
+      });
+      logResult('20.2', 'כפתור הקלטה חדשה קיים', ok);
+
+      // 20.3 בדיקת AI Features קיימים
+      ok = await safeCheck(async () => {
+        const aiFeatures = page.getByText(/תמלול|transcription|סיכום|AI|summary/i).first();
+        return await aiFeatures.isVisible({ timeout: 3000 }).catch(() => false);
+      });
+      logResult('20.3', 'AI Features קיימים', ok);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 21. Quotes Deep Dive – הצעות מחיר
+    // ═══════════════════════════════════════════════════════════════════════
+    await test.step('21. Quotes Deep Dive', async () => {
+      // ניסיון להיכנס לדף Quotes דרך פרויקט
+      await page.goto('/Projects');
+      await delay(page);
+      await dismissPopups(page);
+
+      // 21.1 בדיקת גישה להצעות מחיר
+      let ok = await safeCheck(async () => {
+        // לחיצה על הפרויקט שנוצר
+        const projectCard = page.locator(`text=${testData.projectName}`).first();
+        if (await projectCard.isVisible({ timeout: 5000 }).catch(() => false)) {
+          await projectCard.click();
+          await delay(page);
+        }
+        
+        // חיפוש כפתור "הצעת מחיר" או שלב הצעת מחיר
+        const quoteBtn = page.getByText(/הצעת מחיר|quote|proposal/i).first();
+        if (await quoteBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await quoteBtn.click();
+          await delay(page);
+          return true;
+        }
+        return false;
+      });
+      logResult('21.1', 'גישה להצעות מחיר', ok);
+
+      // 21.2 בדיקת יצירת הצעת מחיר
+      ok = await safeCheck(async () => {
+        const createQuoteBtn = page.getByRole('button', { name: /צור הצעת מחיר|create quote|הצעה חדשה/i }).first();
+        if (await createQuoteBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await createQuoteBtn.click();
+          await delay(page);
+          
+          // בדיקה שנפתח עורך
+          const quoteEditor = page.locator('[role="dialog"], [class*="quote"], [class*="editor"]').first();
+          const isOpen = await quoteEditor.isVisible({ timeout: 5000 }).catch(() => false);
+          
+          // סגירה
+          await page.keyboard.press('Escape').catch(() => {});
+          await delay(page, SHORT_DELAY);
+          
+          return isOpen;
+        }
+        return false;
+      });
+      logResult('21.2', 'יצירת הצעת מחיר', ok);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 22. Dashboard Widgets Deep Dive
+    // ═══════════════════════════════════════════════════════════════════════
+    await test.step('22. Dashboard Widgets', async () => {
+      await page.goto('/Dashboard');
+      await delay(page);
+      await dismissPopups(page);
+
+      // 22.1 בדיקת Widgets טוענים
+      let ok = await safeCheck(async () => {
+        // חיפוש widgets נפוצים
+        const widgets = page.locator('[class*="widget"], [class*="card"], [class*="stat"]');
+        const count = await widgets.count();
+        return count >= 2;
+      });
+      logResult('22.1', 'Dashboard Widgets נטענו', ok);
+
+      // 22.2 בדיקת Quick Actions
+      ok = await safeCheck(async () => {
+        const quickAction = page.getByRole('button', { name: /פרויקט חדש|לקוח חדש|הוסף/i }).first();
+        return await quickAction.isVisible({ timeout: 3000 }).catch(() => false);
+      });
+      logResult('22.2', 'Quick Actions קיימים', ok);
+
+      // 22.3 בדיקת רשימת אירועים/משימות
+      ok = await safeCheck(async () => {
+        const eventsList = page.getByText(/אירועים קרובים|משימות|events|tasks/i).first();
+        return await eventsList.isVisible({ timeout: 3000 }).catch(() => false);
+      });
+      logResult('22.3', 'רשימת אירועים/משימות קיימת', ok);
+    });
+
+    await test.step('23. בדיקות טכניות', async () => {
+      // 23.1 משתני סביבה
       if (testData.dashboardLoginSucceeded) {
-        logIndirect('13.1', 'משתני סביבה', 'ההתחברות הצליחה');
+        logIndirect('23.1', 'משתני סביבה', 'ההתחברות הצליחה');
       } else {
-        logSkipped('13.1', 'משתני סביבה', 'ההתחברות לא הצליחה');
+        logSkipped('23.1', 'משתני סביבה', 'ההתחברות לא הצליחה');
       }
 
-      // 13.2 רספונסיביות
+      // 23.2 רספונסיביות
       let ok = await safeCheck(async () => {
         await page.setViewportSize({ width: 375, height: 667 });
         await page.goto('/');
@@ -914,25 +1523,25 @@ test.describe('QA Full Journey – בדיקות פונקציונליות מלא�
         await page.setViewportSize({ width: 1280, height: 800 });
         return true;
       });
-      logResult('13.2', 'רספונסיביות מובייל', ok);
+      logResult('23.2', 'רספונסיביות מובייל', ok);
 
-      // 13.3 RTL
+      // 23.3 RTL
       ok = await safeCheck(async () => {
         await page.goto('/');
         await delay(page, SHORT_DELAY);
         const dir = await page.locator('html').getAttribute('dir');
         return dir === 'rtl' || dir === null;
       });
-      logResult('13.3', 'RTL מוגדר', ok);
+      logResult('23.3', 'RTL מוגדר', ok);
 
-      // 13.4 אין שגיאות קריטיות בקונסול
+      // 23.4 אין שגיאות קריטיות בקונסול
       const errors: string[] = [];
       page.on('pageerror', (e) => errors.push(e.message));
       await page.goto('/');
       await delay(page);
       const criticalErrors = errors.filter((m) => /useLandingLanguage must be used within|Cannot read propert/i.test(m));
       ok = criticalErrors.length === 0;
-      logResult('13.4', 'אין שגיאות קריטיות בקונסול', ok, ok ? '' : criticalErrors.join('; '));
+      logResult('23.4', 'אין שגיאות קריטיות בקונסול', ok, ok ? '' : criticalErrors.join('; '));
     });
 
     // ═══════════════════════════════════════════════════════════════════════

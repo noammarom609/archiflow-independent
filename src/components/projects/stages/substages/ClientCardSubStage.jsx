@@ -1,53 +1,19 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { archiflow } from '@/api/archiflow';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { 
-  User,
-  Phone,
-  Mail,
-  MapPin,
-  Building2,
   Sparkles,
-  Save,
   CheckCircle2,
   Loader2,
-  RefreshCw,
-  FolderKanban,
-  ClipboardList
+  Info
 } from 'lucide-react';
 import { showSuccess, showError } from '../../../utils/notifications';
 
 export default function ClientCardSubStage({ project, onComplete, onContinue, onUpdate }) {
-  const queryClient = useQueryClient();
-  const [isCreatingBoth, setIsCreatingBoth] = useState(false);
-  
-  const [clientData, setClientData] = useState({
-    full_name: project?.client || '',
-    email: project?.client_email || '',
-    phone: project?.client_phone || '',
-    address: project?.location || '',
-    company: '',
-    source: 'other',
-    notes: '',
-    preferences: {
-      styles: [],
-      colors: [],
-      materials: [],
-      budget_range: '',
-      priorities: []
-    }
-  });
-  
   const [isGenerating, setIsGenerating] = useState(false);
-  const [aiSuggestions, setAiSuggestions] = useState(null);
 
   const { data: recordings = [] } = useQuery({
     queryKey: ['projectRecordings', project?.id],
@@ -55,48 +21,13 @@ export default function ClientCardSubStage({ project, onComplete, onContinue, on
     enabled: !!project?.id
   });
 
-  const [projectData, setProjectData] = useState({
-    name: project?.name || '',
-    description: '',
-    location: project?.location || '',
-    budget: '',
-    timeline: '',
-    notes: ''
-  });
-
-  const createClientMutation = useMutation({
-    mutationFn: async (data) => {
-      const newClient = await archiflow.entities.Client.create(data);
-      // Also update project with synced client data
-      if (onUpdate) {
-        await onUpdate({ 
-          client_id: newClient.id,
-          client: newClient.full_name,
-          client_email: newClient.email,
-          client_phone: newClient.phone,
-          location: newClient.address || project?.location
-        });
-      }
-      return newClient;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      showSuccess('כרטיס לקוח נוצר בהצלחה!');
-    },
-    onError: () => {
-      showError('שגיאה ביצירת כרטיס לקוח');
-    }
-  });
-
   const generateFromAI = async () => {
     if (recordings.length === 0 && !project?.ai_summary && !project?.phone_call_checklist && !project?.client_needs_checklist) {
-      showError('אין מספיק נתונים ליצירת כרטיס אוטומטי');
+      showError('אין מספיק נתונים למילוי אוטומטי');
       return;
     }
 
     setIsGenerating(true);
-    setIsCreatingBoth(true);
 
     try {
       // Collect ALL available data
@@ -105,7 +36,6 @@ export default function ClientCardSubStage({ project, onComplete, onContinue, on
       const phoneChecklist = project?.phone_call_checklist || [];
       const meetingChecklist = project?.client_needs_checklist || [];
       
-      // Build comprehensive context
       const phoneChecklistText = phoneChecklist
         .filter(item => item.checked)
         .map(item => `${item.item}: ${item.notes || 'בוצע'}`)
@@ -117,7 +47,7 @@ export default function ClientCardSubStage({ project, onComplete, onContinue, on
         .join('\n');
 
       const result = await archiflow.integrations.Core.InvokeLLM({
-        prompt: `אתה עוזר חכם ליצירת כרטיסי לקוח ותיקי פרויקט מקיפים עבור משרד אדריכלות.
+        prompt: `אתה עוזר חכם לעדכון כרטיסי לקוח ותיקי פרויקט עבור משרד אדריכלות.
 
 ## נתונים זמינים:
 
@@ -136,25 +66,23 @@ ${meetingChecklistText || 'לא זמין'}
 ### פרטי פרויקט קיימים:
 שם: ${project?.name || 'לא מוגדר'}
 מיקום: ${project?.location || 'לא מוגדר'}
+לקוח: ${project?.client || 'לא מוגדר'}
 
 ---
 
 ## המשימה שלך:
-צור כרטיס לקוח מפורט ותיק פרויקט מלא על בסיס כל הנתונים לעיל.
+חלץ ומלא פרטי לקוח ופרויקט על בסיס כל הנתונים לעיל.
 
-עבור **כרטיס הלקוח**, חלץ ומלא:
+עבור **לקוח**:
 - פרטים אישיים (שם, טלפון, אימייל, כתובת)
-- העדפות עיצוביות (סגנונות, צבעים, חומרים)
-- טווח תקציבי
-- הערות רלוונטיות על הלקוח
+- העדפות עיצוביות
+- הערות רלוונטיות
 
-עבור **תיק הפרויקט**, חלץ ומלא:
-- שם הפרויקט (אם לא מוגדר, צור שם תיאורי)
-- תיאור מפורט של הפרויקט
-- מיקום מדויק
+עבור **פרויקט**:
+- תיאור מפורט
 - תקציב משוער
 - לוח זמנים רצוי
-- הערות ודגשים חשובים
+- הערות ודגשים
 
 היה מדויק ומקצועי. אם משהו לא הוזכר, השאר ריק.`,
         response_json_schema: {
@@ -167,25 +95,13 @@ ${meetingChecklistText || 'לא זמין'}
                 phone: { type: 'string' },
                 email: { type: 'string' },
                 address: { type: 'string' },
-                preferences: {
-                  type: 'object',
-                  properties: {
-                    styles: { type: 'array', items: { type: 'string' } },
-                    colors: { type: 'array', items: { type: 'string' } },
-                    materials: { type: 'array', items: { type: 'string' } },
-                    budget_range: { type: 'string' },
-                    priorities: { type: 'array', items: { type: 'string' } }
-                  }
-                },
                 notes: { type: 'string' }
               }
             },
             project: {
               type: 'object',
               properties: {
-                name: { type: 'string' },
                 description: { type: 'string' },
-                location: { type: 'string' },
                 budget: { type: 'string' },
                 timeline: { type: 'string' },
                 notes: { type: 'string' }
@@ -195,72 +111,47 @@ ${meetingChecklistText || 'לא זמין'}
         }
       });
 
-      setAiSuggestions(result);
+      const aiData = result?.response && typeof result.response === 'object' 
+        ? result.response 
+        : result;
       
-      // Update client data
-      if (result.client) {
-        setClientData(prev => ({
-          ...prev,
-          full_name: result.client.full_name || prev.full_name,
-          phone: result.client.phone || prev.phone,
-          email: result.client.email || prev.email,
-          address: result.client.address || prev.address,
-          preferences: { ...prev.preferences, ...result.client.preferences },
-          notes: result.client.notes || prev.notes
-        }));
-      }
+      console.log('🤖 AI Response for client/project:', aiData);
       
-      // Update project data
-      if (result.project) {
-        setProjectData(prev => ({
-          ...prev,
-          name: result.project.name || prev.name,
-          description: result.project.description || prev.description,
-          location: result.project.location || prev.location,
-          budget: result.project.budget || prev.budget,
-          timeline: result.project.timeline || prev.timeline,
-          notes: result.project.notes || prev.notes
-        }));
+      // Update project with AI data
+      if (onUpdate && aiData) {
+        const updates = {};
+        
+        if (aiData.client) {
+          if (aiData.client.full_name) updates.client = aiData.client.full_name;
+          if (aiData.client.phone) updates.client_phone = aiData.client.phone;
+          if (aiData.client.email) updates.client_email = aiData.client.email;
+          if (aiData.client.address) updates.location = aiData.client.address;
+        }
+        
+        if (aiData.project) {
+          if (aiData.project.description) updates.description = aiData.project.description;
+          if (aiData.project.budget) updates.budget = parseInt(aiData.project.budget.replace(/[^\d]/g, '')) || undefined;
+          if (aiData.project.timeline) updates.timeline = aiData.project.timeline;
+          if (aiData.project.notes) updates.notes = aiData.project.notes;
+        }
+        
+        if (Object.keys(updates).length > 0) {
+          await onUpdate(updates);
+        }
       }
 
-      showSuccess('כרטיס לקוח ותיק פרויקט נוצרו מ-AI!');
+      showSuccess('הנתונים עודכנו מ-AI! בדוק את פרטי הלקוח ותיק הפרויקט למטה.');
     } catch (error) {
       console.error('AI Generation Error:', error);
-      showError('שגיאה ביצירת נתונים מ-AI');
+      showError('שגיאה במילוי נתונים מ-AI');
     } finally {
       setIsGenerating(false);
-      setIsCreatingBoth(false);
     }
-  };
-
-  const handleSave = async () => {
-    if (!clientData.full_name || !clientData.phone) {
-      showError('שם וטלפון הם שדות חובה');
-      return;
-    }
-
-    createClientMutation.mutate({
-      ...clientData,
-      status: 'active',
-      projects: project?.id ? [String(project.id)] : [],
-      first_contact_date: new Date().toISOString().split('T')[0],
-      timeline: [{
-        date: new Date().toISOString(),
-        type: 'client_created',
-        title: 'כרטיס לקוח נוצר',
-        description: `נוצר מפרויקט: ${project?.name}`,
-        project_id: project?.id ? String(project.id) : undefined
-      }]
-    });
-  };
-
-  const updateField = (field, value) => {
-    setClientData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
     <div className="space-y-6">
-      {/* AI Generation */}
+      {/* ✅ AI Fill Button */}
       <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
@@ -269,20 +160,11 @@ ${meetingChecklistText || 'לא זמין'}
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-indigo-900 text-lg">יצירה אוטומטית חכמה מ-AI</h3>
-                <p className="text-sm text-indigo-700">כרטיס לקוח + תיק פרויקט מלא מכל הנתונים שנאספו</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="outline" className="text-xs bg-white/50">
-                    <User className="w-3 h-3 ml-1" />
-                    ניתוח הקלטות
-                  </Badge>
-                  <Badge variant="outline" className="text-xs bg-white/50">
-                    <ClipboardList className="w-3 h-3 ml-1" />
-                    צ'קליסטים
-                  </Badge>
-                </div>
+                <h3 className="font-semibold text-indigo-900 text-lg">עדכון באמצעות AI</h3>
+                <p className="text-sm text-indigo-700">מילוי פרטי לקוח ותיק פרויקט מהנתונים שנאספו</p>
               </div>
             </div>
+            
             <Button 
               onClick={generateFromAI} 
               disabled={isGenerating}
@@ -292,12 +174,12 @@ ${meetingChecklistText || 'לא זמין'}
               {isGenerating ? (
                 <>
                   <Loader2 className="w-5 h-5 ml-2 animate-spin" />
-                  יוצר...
+                  ממלא...
                 </>
               ) : (
                 <>
                   <Sparkles className="w-5 h-5 ml-2" />
-                  צור כרטיס + תיק
+                  מלא מ-AI
                 </>
               )}
             </Button>
@@ -305,191 +187,42 @@ ${meetingChecklistText || 'לא זמין'}
         </CardContent>
       </Card>
 
-      {/* Client Form */}
-      <Card className="border-slate-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <User className="w-5 h-5 text-indigo-600" />
-            כרטיס לקוח
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>שם מלא *</Label>
-              <div className="relative mt-1">
-                <User className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <Input value={clientData.full_name} onChange={(e) => updateField('full_name', e.target.value)} className="pr-10" placeholder="שם הלקוח" />
-              </div>
-            </div>
-            
-            <div>
-              <Label>טלפון *</Label>
-              <div className="relative mt-1">
-                <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <Input value={clientData.phone} onChange={(e) => updateField('phone', e.target.value)} className="pr-10" placeholder="050-0000000" dir="ltr" />
-              </div>
-            </div>
-            
-            <div>
-              <Label>אימייל</Label>
-              <div className="relative mt-1">
-                <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <Input type="email" value={clientData.email} onChange={(e) => updateField('email', e.target.value)} className="pr-10" dir="ltr" />
-              </div>
-            </div>
-            
-            <div>
-              <Label>כתובת</Label>
-              <div className="relative mt-1">
-                <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <Input value={clientData.address} onChange={(e) => updateField('address', e.target.value)} className="pr-10" />
-              </div>
-            </div>
-            
-            <div>
-              <Label>מקור הפניה</Label>
-              <Select value={clientData.source} onValueChange={(value) => updateField('source', value)}>
-                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="referral">המלצה</SelectItem>
-                  <SelectItem value="website">אתר</SelectItem>
-                  <SelectItem value="social_media">רשתות חברתיות</SelectItem>
-                  <SelectItem value="other">אחר</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      {/* ✅ Info Banner - Direct user to accordions below */}
+      <Card className="border-blue-200 bg-blue-50">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3 text-blue-800">
+            <Info className="w-5 h-5 flex-shrink-0" />
+            <p className="text-sm">
+              <span className="font-medium">ערוך את פרטי הלקוח ותיק הפרויקט</span>
+              {' '}באקורדיונים הפתוחים למטה. לחץ "מלא מ-AI" למילוי אוטומטי מהנתונים שנאספו.
+            </p>
           </div>
-
-          <div>
-            <Label>הערות</Label>
-            <Textarea value={clientData.notes} onChange={(e) => updateField('notes', e.target.value)} className="mt-1 min-h-[100px]" />
-          </div>
-
-          <Button onClick={handleSave} disabled={createClientMutation.isPending} className="w-full bg-indigo-600 hover:bg-indigo-700">
-            {createClientMutation.isPending ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Save className="w-4 h-4 ml-2" />}
-            שמור כרטיס לקוח
-          </Button>
         </CardContent>
       </Card>
 
-      {/* Project Form */}
-      <Card className="border-slate-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <FolderKanban className="w-5 h-5 text-purple-600" />
-            תיק פרויקט
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>שם הפרויקט</Label>
-              <Input 
-                value={projectData.name} 
-                onChange={(e) => setProjectData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="שם תיאורי לפרויקט"
-                className="mt-1"
-              />
-            </div>
-            
-            <div>
-              <Label>מיקום</Label>
-              <div className="relative mt-1">
-                <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <Input 
-                  value={projectData.location} 
-                  onChange={(e) => setProjectData(prev => ({ ...prev, location: e.target.value }))}
-                  className="pr-10"
-                  placeholder="כתובת הפרויקט"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <Label>תקציב משוער</Label>
-              <Input 
-                value={projectData.budget} 
-                onChange={(e) => setProjectData(prev => ({ ...prev, budget: e.target.value }))}
-                placeholder="₪150,000 - ₪250,000"
-                className="mt-1"
-              />
-            </div>
-            
-            <div>
-              <Label>לוח זמנים</Label>
-              <Input 
-                value={projectData.timeline} 
-                onChange={(e) => setProjectData(prev => ({ ...prev, timeline: e.target.value }))}
-                placeholder="6-8 חודשים"
-                className="mt-1"
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label>תיאור הפרויקט</Label>
-            <Textarea 
-              value={projectData.description} 
-              onChange={(e) => setProjectData(prev => ({ ...prev, description: e.target.value }))}
-              className="mt-1 min-h-[100px]"
-              placeholder="תיאור מקיף של הפרויקט, היקף העבודה, מטרות..."
-            />
-          </div>
-
-          <div>
-            <Label>הערות נוספות</Label>
-            <Textarea 
-              value={projectData.notes} 
-              onChange={(e) => setProjectData(prev => ({ ...prev, notes: e.target.value }))}
-              className="mt-1 min-h-[80px]"
-              placeholder="הערות חשובות, דגשים, נקודות לתשומת לב..."
-            />
-          </div>
-
-          <Button 
-            onClick={async () => {
-              if (onUpdate) {
-                await onUpdate({
-                  name: projectData.name,
-                  description: projectData.description,
-                  location: projectData.location,
-                  budget: projectData.budget,
-                  timeline: projectData.timeline,
-                  notes: projectData.notes
-                });
-                showSuccess('תיק הפרויקט עודכן!');
-              }
-            }}
-            variant="outline"
-            className="w-full"
-          >
-            <Save className="w-4 h-4 ml-2" />
-            שמור תיק פרויקט
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Continue Button */}
+      {/* ✅ Continue Button */}
       <Card className="border-green-300 bg-green-50">
         <CardContent className="p-4">
           <Button 
-            onClick={() => {
-              // Validate that client was saved before continuing
-              if (!project?.client_id) {
-                showError('יש לשמור כרטיס לקוח לפני המשך');
-                return;
-              }
-              // Move project to next stage
-              if (onUpdate) {
-                onUpdate({ status: 'proposal' });
-              }
-              if (onContinue) {
-                onContinue();
+            onClick={async () => {
+              try {
+                // ✅ Update current_stage to 'proposal' (not status)
+                if (onUpdate) {
+                  await onUpdate({ 
+                    current_stage: 'proposal',
+                    current_sub_stage: 'create_proposal'
+                  });
+                }
+                if (onContinue) {
+                  onContinue();
+                }
+                showSuccess('עוברים לשלב הצעת מחיר!');
+              } catch (error) {
+                console.error('Error moving to proposal stage:', error);
+                showError('שגיאה במעבר לשלב הבא');
               }
             }} 
             className="w-full bg-green-600 hover:bg-green-700 text-white h-12"
-            disabled={!project?.client_id}
           >
             המשך להצעת מחיר
             <CheckCircle2 className="w-5 h-5 mr-2" />

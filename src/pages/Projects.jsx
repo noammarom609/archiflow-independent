@@ -107,8 +107,15 @@ const statusConfig = {
 };
 
 // Collapsible Section Component - Organic Modernism Style
-function CollapsibleSection({ title, children, defaultOpen = false }) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+function CollapsibleSection({ title, children, defaultOpen = false, forceOpen = false }) {
+  const [isOpen, setIsOpen] = useState(defaultOpen || forceOpen);
+  
+  // ✅ Update state when forceOpen changes
+  React.useEffect(() => {
+    if (forceOpen) {
+      setIsOpen(true);
+    }
+  }, [forceOpen]);
 
   return (
     <FadeIn delay={0.1} direction="up" distance={10}>
@@ -894,12 +901,22 @@ export default function Projects() {
             {renderStageContent()}
 
             {/* Client Info Card - Moved to bottom */}
-            <CollapsibleSection title="פרטי הלקוח" defaultOpen={false}>
+            {/* ✅ Force open when on client_card substage */}
+            <CollapsibleSection 
+              title="פרטי הלקוח" 
+              defaultOpen={false}
+              forceOpen={selectedProject?.current_sub_stage === 'client_card'}
+            >
               <ClientInfoCard project={selectedProject} onUpdate={handleProjectUpdate} />
             </CollapsibleSection>
 
             {/* Project Portfolio - Moved to bottom */}
-            <CollapsibleSection title="תיק פרויקט" defaultOpen={false}>
+            {/* ✅ Force open when on client_card substage */}
+            <CollapsibleSection 
+              title="תיק פרויקט" 
+              defaultOpen={false}
+              forceOpen={selectedProject?.current_sub_stage === 'client_card'}
+            >
               <ProjectPortfolio project={selectedProject} onUpdate={handleProjectUpdate} />
             </CollapsibleSection>
           </ScrollReveal>

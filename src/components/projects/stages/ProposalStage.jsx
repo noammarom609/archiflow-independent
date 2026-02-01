@@ -6,6 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -414,20 +421,39 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
     }));
   };
 
-  // Add item
-  const addItem = () => {
+  // Add item (with optional category)
+  const addItem = (category = null) => {
+    const categoryPrefixes = {
+      'ייזום': 'שלב ייזום: ',
+      'תכנון': 'שלב תכנון: ',
+      'רישוי': 'שלב רישוי: ',
+      'ליווי': 'שלב ליווי: ',
+      'סיום': 'שלב סיום: ',
+    };
+    const prefix = category ? categoryPrefixes[category] || '' : '';
+    
     setProposalData(prev => ({
       ...prev,
-      items: [...prev.items, { description: '', quantity: 1, unit: 'יח\'', unit_price: 0, total: 0 }],
+      items: [...prev.items, { 
+        description: prefix, 
+        category: category || '',
+        quantity: 1, 
+        unit: 'יח\'', 
+        unit_price: 0, 
+        total: 0 
+      }],
     }));
   };
 
   // Add item from clause library
   const addItemFromClause = (clause) => {
+    // Use clause_text as main content, fallback to title
+    const clauseText = clause.clause_text || clause.title || clause.description || '';
     const newItem = {
-      description: clause.title + (clause.description ? ` - ${clause.description}` : ''),
+      description: clauseText,
+      category: clause.category || '',
       quantity: 1,
-      unit: clause.unit || 'יח\'',
+      unit: clause.default_unit || clause.unit || 'יח\'',
       unit_price: clause.default_price || 0,
       total: clause.default_price || 0,
     };
@@ -438,7 +464,8 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
       items: newItems,
       ...totals,
     }));
-    showSuccess(`סעיף "${clause.title}" נוסף להצעה`);
+    const displayName = clause.title || (clause.clause_text ? clause.clause_text.substring(0, 30) + '...' : 'סעיף');
+    showSuccess(`סעיף "${displayName}" נוסף להצעה`);
   };
 
   // Remove item
@@ -561,6 +588,29 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
         priorities: aiData.priorities || [],
       };
 
+      // Determine project complexity for item count
+      const projectComplexity = (() => {
+        const budget = parseFloat(String(projectContext.budget).replace(/[^\d]/g, '')) || 0;
+        const needsCount = projectContext.needs.length;
+        const type = (projectContext.type || '').toLowerCase();
+        
+        // High complexity: large budget, many needs, or commercial/new build
+        if (budget > 500000 || needsCount > 5 || type.includes('מסחרי') || type.includes('בנייה חדשה')) {
+          return 'high';
+        }
+        // Low complexity: small budget, few needs, simple renovation
+        if (budget < 100000 && needsCount < 3) {
+          return 'low';
+        }
+        return 'medium';
+      })();
+
+      const itemCountGuideline = {
+        low: '2-3 סעיפים לכל קטגוריה',
+        medium: '3-5 סעיפים לכל קטגוריה',
+        high: '5-8 סעיפים לכל קטגוריה'
+      }[projectComplexity];
+
       const result = await archiflow.integrations.Core.InvokeLLM({
         prompt: `אתה אדריכל מקצועי בכיר המתמחה בהכנת הצעות מחיר מפורטות ומקצועיות.
 
@@ -573,6 +623,7 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
 • מיקום: ${projectContext.location || 'לא צוין'}
 • תקציב משוער: ${projectContext.budget}
 • לוח זמנים משוער: ${projectContext.timeline || 'לא צוין'}
+• **רמת מורכבות הפרויקט: ${projectComplexity === 'high' ? 'גבוהה' : projectComplexity === 'medium' ? 'בינונית' : 'נמוכה'}**
 
 ═══════════════════════════════════════════════════════════
 📊 ניתוח צרכי הלקוח (מתוך שיחות קודמות)
@@ -584,37 +635,72 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
 • סדרי עדיפויות: ${projectContext.priorities.length > 0 ? projectContext.priorities.join(', ') : 'לא צוינו'}
 
 ═══════════════════════════════════════════════════════════
-📚 ספריית סעיפים זמינה (בחר מתוכה)
+📚 ספריית סעיפים זמינה (בחר מתוכה והרחב)
 ═══════════════════════════════════════════════════════════
 ${clausesContext || 'אין סעיפים מוגדרים - צור סעיפים מקצועיים מותאמים'}
 
 ═══════════════════════════════════════════════════════════
-📝 הנחיות ליצירת ההצעה
+📝 הנחיות ליצירת ההצעה - חובה ${itemCountGuideline}!
 ═══════════════════════════════════════════════════════════
+
+**כמות סעיפים נדרשת (קריטי!):**
+בהתאם לרמת המורכבות, צור ${itemCountGuideline} בכל אחת מ-5 הקטגוריות.
+סה"כ ההצעה צריכה לכלול ${projectComplexity === 'high' ? '25-40' : projectComplexity === 'medium' ? '15-25' : '10-15'} סעיפים.
 
 **שפה וסגנון:**
 - השתמש בשפה אדריכלית-משפטית מקצועית
-- כל תיאור פריט יהיה מפורט ומדויק (3-4 משפטים לפחות)
+- כל תיאור פריט יהיה מפורט ומדויק (2-3 משפטים)
 - הסבר מה כולל כל שלב ומה התוצר הסופי שלו
 
 **מבנה הפריטים (חובה לסדר לפי קטגוריות):**
-1. 🎯 שלב ייזום ותכנון מקדמי
-2. 📐 שלב תכנון אדריכלי
-3. 📋 שלב רישוי והיתרים
-4. 🏗️ שלב ליווי ביצוע ופיקוח עליון
-5. ✅ שלב סיום ומסירה
+
+🎯 **שלב ייזום ותכנון מקדמי** - דוגמאות לסעיפים:
+   - פגישת היכרות ותיאום ציפיות
+   - סקר מצב קיים ותיעוד
+   - הכנת תוכנית עבודה
+   - ניתוח צרכים מפורט
+   - הגדרת תקציב ולו"ז
+
+📐 **שלב תכנון אדריכלי** - דוגמאות לסעיפים:
+   - תכנון קונספטואלי וסקיצות
+   - תוכניות ארכיטקטוניות
+   - חתכים וחזיתות
+   - פרטי בנייה
+   - תכנון פנים ופריסת ריהוט
+   - בחירת חומרים וגימורים
+   - תאום יועצים (קונסטרוקציה, חשמל, אינסטלציה)
+
+📋 **שלב רישוי והיתרים** - דוגמאות לסעיפים:
+   - הכנת תיק היתר בנייה
+   - הגשה לוועדה מקומית
+   - טיפול בהערות והשלמות
+   - קבלת היתר בנייה
+   - היתרי עבודה נוספים
+
+🏗️ **שלב ליווי ביצוע ופיקוח עליון** - דוגמאות לסעיפים:
+   - סיור קבלנים והכנת כתב כמויות
+   - ליווי מכרז קבלנים
+   - פגישות ליווי שבועיות/דו-שבועיות
+   - פיקוח עליון על איכות הביצוע
+   - אישור דוגמאות וחומרים
+   - טיפול בשינויים ותוספות
+   - בקרת תקציב ולו"ז
+
+✅ **שלב סיום ומסירה** - דוגמאות לסעיפים:
+   - סיור גמר ורשימת ליקויים
+   - אישור תיקון ליקויים
+   - הכנת מסמכי AS-MADE
+   - מסירת מפתחות ותיעוד
 
 **תיאור כל פריט יכלול:**
-- מהות העבודה
-- תוצרים צפויים
-- מספר פגישות/סבבים (אם רלוונטי)
+- מהות העבודה והתוצר הסופי
 - אחריות האדריכל
 
 **היקף העבודה (scope_of_work):**
-כתוב פסקה מקצועית (5-8 משפטים) המתארת את מהות הפרויקט, היקפו, והשירותים הכלולים. התייחס לצרכים הספציפיים של הלקוח כפי שעלו בשיחה.
+כתוב פסקה מקצועית (5-8 משפטים) המתארת את מהות הפרויקט, היקפו, והשירותים הכלולים.
 
 **הערות מקצועיות (notes):**
-כלול הבהרות משפטיות חשובות: מה לא כלול בהצעה, תנאים מיוחדים, הסתייגויות מקצועיות.`,
+כלול הבהרות משפטיות: מה לא כלול, תנאים מיוחדים, הסתייגויות.`,
         response_json_schema: {
           type: 'object',
           properties: {
@@ -1241,10 +1327,36 @@ ArchiFlow`
                         <Layout className="w-4 h-4 ml-1" />
                         ספריית סעיפים
                       </Button>
-                      <Button size="sm" variant="outline" onClick={addItem}>
-                        <Plus className="w-4 h-4 ml-1" />
-                        הוסף פריט
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="outline">
+                            <Plus className="w-4 h-4 ml-1" />
+                            הוסף פריט
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem onClick={() => addItem()}>
+                            <Plus className="w-4 h-4 ml-2" />
+                            פריט כללי
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => addItem('ייזום')}>
+                            🎯 שלב ייזום
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => addItem('תכנון')}>
+                            📐 שלב תכנון
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => addItem('רישוי')}>
+                            📋 שלב רישוי
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => addItem('ליווי')}>
+                            🏗️ שלב ליווי
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => addItem('סיום')}>
+                            ✅ שלב סיום
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 </CardHeader>
@@ -1263,21 +1375,72 @@ ArchiFlow`
                             <h4 className="font-medium text-indigo-900 flex items-center gap-2">
                               <Layout className="w-4 h-4" />
                               בחר מספריית הסעיפים
+                              <Badge variant="outline" className="text-xs">
+                                {clauseLibrary.length} סעיפים
+                              </Badge>
                             </h4>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setShowClauseLibrary(false)}
-                              className="text-indigo-600"
-                            >
-                              סגור
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={async () => {
+                                  try {
+                                    const { syncClausesFromProposals } = await import('@/utils/syncProposalClauses');
+                                    const result = await syncClausesFromProposals();
+                                    if (result.success) {
+                                      showSuccess(`נוספו ${result.created} סעיפים חדשים מ-${result.templatesProcessed || 0} תבניות!`);
+                                      queryClient.invalidateQueries(['proposalClauses']);
+                                    } else {
+                                      showError('שגיאה בסנכרון: ' + (result.error || ''));
+                                    }
+                                  } catch (err) {
+                                    showError('שגיאה בסנכרון');
+                                  }
+                                }}
+                                className="text-indigo-600"
+                              >
+                                <Sparkles className="w-4 h-4 ml-1" />
+                                סנכרן
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setShowClauseLibrary(false)}
+                                className="text-indigo-600"
+                              >
+                                סגור
+                              </Button>
+                            </div>
                           </div>
                           
                           {Object.keys(clausesByCategory).length === 0 ? (
-                            <p className="text-sm text-indigo-600 text-center py-4">
-                              אין סעיפים בספרייה עדיין
-                            </p>
+                            <div className="text-center py-4">
+                              <p className="text-sm text-indigo-600 mb-3">
+                                אין סעיפים בספרייה עדיין
+                              </p>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={async () => {
+                                  try {
+                                    const { syncClausesFromProposals } = await import('@/utils/syncProposalClauses');
+                                    const result = await syncClausesFromProposals();
+                                    if (result.success) {
+                                      showSuccess(`נוספו ${result.created} סעיפים מ-${result.templatesProcessed || 0} תבניות!`);
+                                      queryClient.invalidateQueries(['proposalClauses']);
+                                    } else {
+                                      showError('שגיאה בסנכרון: ' + (result.error || ''));
+                                    }
+                                  } catch (err) {
+                                    showError('שגיאה בסנכרון הסעיפים');
+                                  }
+                                }}
+                                className="text-indigo-600 border-indigo-300"
+                              >
+                                <Sparkles className="w-4 h-4 ml-1" />
+                                סנכרן סעיפים מהצעות קיימות
+                              </Button>
+                            </div>
                           ) : (
                             <div className="space-y-3 max-h-[300px] overflow-y-auto">
                               {Object.entries(clausesByCategory).map(([category, clauses]) => (
@@ -1287,12 +1450,14 @@ ArchiFlow`
                                     {clauses.map((clause) => (
                                       <div
                                         key={clause.id}
-                                        onClick={() => addItemFromClause(clause)}
-                                        className="flex items-center justify-between p-2 bg-white rounded-lg border border-indigo-100 hover:border-indigo-300 hover:shadow-sm cursor-pointer transition-all group"
+                                        className="flex items-center justify-between p-2 bg-white rounded-lg border border-indigo-100 hover:border-indigo-300 hover:shadow-sm transition-all group"
                                       >
-                                        <div className="flex-1 min-w-0">
+                                        <div 
+                                          className="flex-1 min-w-0 cursor-pointer"
+                                          onClick={() => addItemFromClause(clause)}
+                                        >
                                           <p className="text-sm font-medium text-slate-900 truncate">
-                                            {clause.title}
+                                            {clause.title || (clause.clause_text ? clause.clause_text.substring(0, 50) + '...' : 'סעיף')}
                                           </p>
                                           {clause.default_price > 0 && (
                                             <p className="text-xs text-slate-500">
@@ -1300,7 +1465,33 @@ ArchiFlow`
                                             </p>
                                           )}
                                         </div>
-                                        <Plus className="w-4 h-4 text-indigo-400 group-hover:text-indigo-600 flex-shrink-0" />
+                                        <div className="flex items-center gap-1 flex-shrink-0">
+                                          <button
+                                            onClick={() => addItemFromClause(clause)}
+                                            className="p-1 text-indigo-400 hover:text-indigo-600"
+                                            title="הוסף להצעה"
+                                          >
+                                            <Plus className="w-4 h-4" />
+                                          </button>
+                                          <button
+                                            onClick={async (e) => {
+                                              e.stopPropagation();
+                                              if (confirm('האם למחוק סעיף זה מהספרייה?')) {
+                                                try {
+                                                  await archiflow.entities.ProposalClause.delete(clause.id);
+                                                  queryClient.invalidateQueries(['proposalClauses']);
+                                                  showSuccess('הסעיף הוסר מהספרייה');
+                                                } catch (err) {
+                                                  showError('שגיאה במחיקת הסעיף');
+                                                }
+                                              }
+                                            }}
+                                            className="p-1 text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            title="הסר מהספרייה"
+                                          >
+                                            <Trash2 className="w-3 h-3" />
+                                          </button>
+                                        </div>
                                       </div>
                                     ))}
                                   </div>

@@ -446,11 +446,52 @@ export default function PhoneCallSubStage({ project, onComplete, onContinue, onU
       return;
     }
     
-    if (chunkFilesRef.current.length === 0) {
+    // ✅ CRITICAL FIX: Check if we have an existing server URL (for re-processing)
+    const hasExistingServerUrl = serverAudioUrl && serverAudioUrl.startsWith('http');
+    
+    if (chunkFilesRef.current.length === 0 && !hasExistingServerUrl) {
       showError('אין הקלטה לעיבוד');
       return;
     }
 
+    // ✅ If we have an existing server URL but no new files, use the existing URL directly
+    if (chunkFilesRef.current.length === 0 && hasExistingServerUrl) {
+      console.log('✅ Re-processing existing recording from server URL:', serverAudioUrl);
+      setProcessingState('transcribing');
+      setProgressInfo({
+        stage: 'transcribing',
+        current: 1,
+        total: 1,
+        percent: 50,
+        message: 'מתמלל הקלטה קיימת...'
+      });
+      
+      try {
+        const response = await archiflow.functions.invoke('transcribeLargeAudio', { audio_url: serverAudioUrl });
+        const fullTranscription = response.data?.transcription || '';
+        
+        if (!fullTranscription) {
+          showError('לא ניתן לתמלל את ההקלטה');
+          setProcessingState('idle');
+          setProgressInfo({ stage: '', current: 0, total: 0, percent: 0, message: '' });
+          return;
+        }
+        
+        setTranscription(fullTranscription.trim());
+        
+        // Continue with analysis using existing server URL
+        await analyzeAndSaveRecording(fullTranscription.trim(), [serverAudioUrl]);
+      } catch (error) {
+        console.error('Error re-processing recording:', error);
+        const errorMessage = error?.response?.data?.error || error?.message || 'שגיאה לא ידועה';
+        showError(`שגיאה בעיבוד: ${errorMessage}`);
+        setProcessingState('idle');
+        setProgressInfo({ stage: '', current: 0, total: 0, percent: 0, message: '' });
+      }
+      return;
+    }
+
+    // ✅ Normal flow: Upload new files and process
     setProcessingState('uploading');
     const totalChunks = chunkFilesRef.current.length;
     
@@ -766,30 +807,42 @@ ${fullTranscription}
         }
       });
 
-      // Edge Function returns { response: string }; parse JSON for UI (summary, client_info, etc.)
+      // ✅ Handle LLM response - can be string or parsed object
+      // Edge Function now returns { response: object|string } depending on json_schema
       let analysisResult;
       try {
         const content = rawLLM?.response ?? rawLLM;
-        if (typeof content === 'string') {
+        
+        // ✅ If response is already a parsed object, use it directly
+        if (content && typeof content === 'object' && !Array.isArray(content)) {
+          console.log('✅ LLM returned parsed JSON object');
+          analysisResult = content;
+        } else if (typeof content === 'string') {
           const trimmed = content.trim();
-          // If response looks like markdown (starts with #), use as summary only – no JSON parse
+          // If response looks like markdown (starts with #), use as summary only
           if (/^\s*#+\s/m.test(trimmed) || trimmed.startsWith('###')) {
+            console.log('⚠️ LLM returned markdown, using as summary');
             analysisResult = { summary: trimmed };
           } else {
+            // Try to parse as JSON
             const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
             const toParse = (jsonMatch ? jsonMatch[1] : trimmed).trim();
             analysisResult = toParse ? JSON.parse(toParse) : { summary: trimmed };
           }
-        } else if (content && typeof content === 'object' && (content.summary != null || content.client_info != null)) {
-          analysisResult = content;
         } else {
-          analysisResult = content && typeof content === 'object' ? content : {};
+          analysisResult = {};
         }
       } catch (e) {
         console.error('Failed to parse LLM analysis response:', e);
         const fallbackText = typeof rawLLM?.response === 'string' ? rawLLM.response : '';
         analysisResult = { summary: fallbackText || 'לא ניתן לפרסר את תוצאת הניתוח.' };
       }
+      
+      console.log('🤖 Analysis result:', {
+        hasSummary: !!analysisResult.summary,
+        hasChecklistAnalysis: !!analysisResult.checklist_analysis?.length,
+        checklistAnalysisCount: analysisResult.checklist_analysis?.length || 0
+      });
 
       // When response was markdown (only summary), try to extract checklist_analysis for auto-fill
       if (analysisResult.summary && !analysisResult.checklist_analysis?.length) {

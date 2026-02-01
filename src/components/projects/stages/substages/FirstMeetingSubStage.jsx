@@ -223,9 +223,13 @@ export default function FirstMeetingSubStage({ project, onComplete, onContinue, 
       setChecklist(newChecklist);
       checklistLoadedRef.current = true; // ✅ Mark as loaded after manual change
       
-      // Update project with new type
+      // ✅ CRITICAL FIX: Update project with new type AND the new checklist (not empty!)
       if (project?.id && onUpdate) {
-        await onUpdate({ project_type: newType, client_needs_checklist: [] });
+        await onUpdate({ project_type: newType, client_needs_checklist: newChecklist });
+        console.log('✅ Project updated with new checklist:', {
+          type: newType,
+          checklistItems: newChecklist.length
+        });
       }
       
       showSuccess(`הצ׳קליסט עודכן ל${PROJECT_TYPES[newType]?.shortLabel || newType}`);
@@ -243,6 +247,7 @@ export default function FirstMeetingSubStage({ project, onComplete, onContinue, 
   const [analysis, setAnalysis] = useState(null);
   const [currentChunkSize, setCurrentChunkSize] = useState(0);
   const [uploadedChunks, setUploadedChunks] = useState([]);
+  const [hasLiveRecording, setHasLiveRecording] = useState(false); // ✅ Track pending live recording
   const [meetingNotes, setMeetingNotes] = useState('');
   const [uploadedFile, setUploadedFile] = useState(null);
   const [uploadedFileUrl, setUploadedFileUrl] = useState(null);
@@ -374,6 +379,22 @@ export default function FirstMeetingSubStage({ project, onComplete, onContinue, 
           await saveCurrentChunk();
         }
         stream.getTracks().forEach(track => track.stop());
+        
+        // ✅ CRITICAL: Create a combined blob for preview and set uploadedFileUrl
+        if (chunkFilesRef.current.length > 0) {
+          // Combine all chunk files into a single blob for preview
+          const allChunks = await Promise.all(
+            chunkFilesRef.current.map(file => file.arrayBuffer())
+          );
+          const combinedBlob = new Blob(allChunks, { type: 'audio/webm' });
+          const previewUrl = URL.createObjectURL(combinedBlob);
+          setUploadedFileUrl(previewUrl);
+          setHasLiveRecording(true); // ✅ Mark that we have a pending live recording
+          console.log('✅ Live recording stopped, preview URL created:', {
+            chunks: chunkFilesRef.current.length,
+            totalSize: `${(combinedBlob.size / (1024 * 1024)).toFixed(1)} MB`
+          });
+        }
       };
 
       mediaRecorder.start(5000);
@@ -463,10 +484,12 @@ export default function FirstMeetingSubStage({ project, onComplete, onContinue, 
   };
 
   const processRecording = async () => {
-    // Check if we have files to process - either from recording or uploaded file
+    // ✅ CRITICAL FIX: Check if we have an existing server URL (for re-processing)
+    // Priority: 1) New uploaded files, 2) Existing server URL
     const filesToProcess = chunkFilesRef.current.length > 0 ? chunkFilesRef.current : (uploadedFile ? [uploadedFile] : []);
+    const hasExistingServerUrl = serverAudioUrl && serverAudioUrl.startsWith('http');
     
-    if (filesToProcess.length === 0) {
+    if (filesToProcess.length === 0 && !hasExistingServerUrl) {
       showError('אין הקלטה לעיבוד');
       return;
     }
@@ -478,6 +501,44 @@ export default function FirstMeetingSubStage({ project, onComplete, onContinue, 
       return;
     }
 
+    // ✅ If we have an existing server URL but no new files, use the existing URL directly
+    if (filesToProcess.length === 0 && hasExistingServerUrl) {
+      console.log('✅ Re-processing existing recording from server URL:', serverAudioUrl);
+      setProcessingState('transcribing');
+      setProgressInfo({
+        stage: 'transcribing',
+        current: 1,
+        total: 1,
+        percent: 50,
+        message: 'מתמלל הקלטה קיימת...'
+      });
+      
+      try {
+        const response = await archiflow.functions.invoke('transcribeLargeAudio', { audio_url: serverAudioUrl });
+        const fullTranscription = response.data?.transcription || '';
+        
+        if (!fullTranscription) {
+          showError('לא ניתן לתמלל את ההקלטה');
+          setProcessingState('idle');
+          setProgressInfo({ stage: '', current: 0, total: 0, percent: 0, message: '' });
+          return;
+        }
+        
+        setTranscription(fullTranscription.trim());
+        
+        // Continue with analysis using existing server URL
+        await analyzeAndSaveMeeting(fullTranscription.trim(), serverAudioUrl);
+      } catch (error) {
+        console.error('Error re-processing recording:', error);
+        const errorMessage = error?.response?.data?.error || error?.message || 'שגיאה לא ידועה';
+        showError(`שגיאה בעיבוד: ${errorMessage}`);
+        setProcessingState('idle');
+        setProgressInfo({ stage: '', current: 0, total: 0, percent: 0, message: '' });
+      }
+      return;
+    }
+
+    // ✅ Normal flow: Upload new files and process
     setProcessingState('uploading');
     const totalChunks = filesToProcess.length;
     
@@ -776,31 +837,42 @@ ${checklistItemsForAI.map(item => `${item.index + 1}. [ID: ${item.id}] ${item.qu
         }
       });
 
-      // ✅ CRITICAL FIX: Parse the LLM response properly (same as PhoneCallSubStage)
-      // Edge Function returns { response: string }; parse JSON for UI
+      // ✅ CRITICAL FIX: Handle LLM response - can be string or parsed object
+      // Edge Function now returns { response: object|string } depending on json_schema
       let analysisResult;
       try {
         const content = rawLLMResult?.response ?? rawLLMResult;
-        if (typeof content === 'string') {
+        
+        // ✅ If response is already a parsed object, use it directly
+        if (content && typeof content === 'object' && !Array.isArray(content)) {
+          console.log('✅ LLM returned parsed JSON object');
+          analysisResult = content;
+        } else if (typeof content === 'string') {
           const trimmed = content.trim();
-          // If response looks like markdown (starts with #), use as summary only – no JSON parse
+          // If response looks like markdown (starts with #), use as summary only
           if (/^\s*#+\s/m.test(trimmed) || trimmed.startsWith('###')) {
+            console.log('⚠️ LLM returned markdown, using as summary');
             analysisResult = { summary: trimmed, executive_summary: trimmed };
           } else {
+            // Try to parse as JSON
             const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
             const toParse = (jsonMatch ? jsonMatch[1] : trimmed).trim();
             analysisResult = toParse ? JSON.parse(toParse) : { summary: trimmed, executive_summary: trimmed };
           }
-        } else if (content && typeof content === 'object' && (content.executive_summary != null || content.client_info != null)) {
-          analysisResult = content;
         } else {
-          analysisResult = content && typeof content === 'object' ? content : {};
+          analysisResult = {};
         }
       } catch (e) {
         console.error('Failed to parse LLM analysis response:', e);
         const fallbackText = typeof rawLLMResult?.response === 'string' ? rawLLMResult.response : '';
         analysisResult = { summary: fallbackText || 'לא ניתן לפרסר את תוצאת הניתוח.', executive_summary: fallbackText };
       }
+      
+      console.log('🤖 Analysis result:', {
+        hasExecutiveSummary: !!analysisResult.executive_summary,
+        hasChecklistAnalysis: !!analysisResult.checklist_analysis?.length,
+        checklistAnalysisCount: analysisResult.checklist_analysis?.length || 0
+      });
 
       // ✅ When response was markdown (only summary), try to extract checklist_analysis for auto-fill
       if ((analysisResult.summary || analysisResult.executive_summary) && !analysisResult.checklist_analysis?.length) {
@@ -898,6 +970,17 @@ ${checklistItemsForAI.map(item => `${item.index + 1}. [ID: ${item.id}] ${item.qu
         architect_email: authUser?.email || null,
         created_by: authUser?.email || null,
       });
+      
+      // ✅ CRITICAL: Update UI state to reflect the saved recording
+      if (serverUrl) {
+        setServerAudioUrl(serverUrl);
+        setUploadedFileUrl(serverUrl);
+        // Clear local file references since recording is now on server
+        setUploadedFile(null);
+        setHasLiveRecording(false); // ✅ Clear pending live recording flag
+        chunkFilesRef.current = [];
+        console.log('✅ Recording saved to server, UI updated with URL:', serverUrl);
+      }
 
       // Generate automatic tags
       const autoTags = getRecordingTags('meeting', project, 'first_call');
@@ -1421,12 +1504,14 @@ ${checklistItemsForAI.map(item => `${item.index + 1}. [ID: ${item.id}] ${item.qu
                     className="hidden"
                   />
                   <p className="text-sm font-medium text-purple-900">
-                    {uploadedFile?.name || (serverAudioUrl ? 'הקלטה שמורה' : 'הקלטת פגישה')}
+                    {uploadedFile?.name || (serverAudioUrl ? 'הקלטה שמורה' : (hasLiveRecording ? 'הקלטה חיה' : 'הקלטת פגישה'))}
                   </p>
                   <p className="text-xs text-purple-600">
                     {uploadedFile 
                       ? `${(uploadedFile.size / (1024 * 1024)).toFixed(1)} MB` 
-                      : (serverAudioUrl ? 'נטען מהשרת' : '')
+                      : serverAudioUrl 
+                        ? 'נטען מהשרת' 
+                        : (hasLiveRecording ? `${chunkFilesRef.current.length} חלקים - ממתין לעיבוד` : '')
                     }
                   </p>
                 </div>
@@ -1447,14 +1532,31 @@ ${checklistItemsForAI.map(item => `${item.index + 1}. [ID: ${item.id}] ${item.qu
                     <Download className="w-4 h-4 ml-1" />
                     הורד
                   </Button>
-                  {uploadedFile && (
+                  {/* ✅ Show remove button for local files, server recordings, AND live recordings */}
+                  {(uploadedFile || serverAudioUrl || hasLiveRecording) && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
+                      onClick={async () => {
+                        // ✅ If removing a server recording, also clear the project reference
+                        if (serverAudioUrl && project?.first_meeting_recording_id && onUpdate) {
+                          try {
+                            // Clear the recording reference from project
+                            await onUpdate({ first_meeting_recording_id: null });
+                            console.log('✅ Cleared recording reference from project');
+                          } catch (err) {
+                            console.error('Failed to clear recording reference:', err);
+                          }
+                        }
+                        // Clear all local state
                         setUploadedFile(null);
                         setUploadedFileUrl(null);
+                        setServerAudioUrl(null);
+                        setHasLiveRecording(false); // ✅ Clear pending live recording flag
+                        setTranscription('');
+                        setAnalysis(null);
                         chunkFilesRef.current = [];
+                        showSuccess('ההקלטה הוסרה');
                       }}
                       className="text-red-600 hover:text-red-700"
                     >

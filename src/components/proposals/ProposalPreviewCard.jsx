@@ -69,35 +69,106 @@ export default function ProposalPreviewCard({ proposalData, project, template, f
       .replace(/\{\{Date\}\}/g, new Date().toLocaleDateString('he-IL'));
   };
 
-  // If no template, render simple preview
+  // If no template, render simple preview with categories
   if (!template) {
+    // Group items by category
+    const categoryOrder = ['ייזום', 'תכנון', 'רישוי', 'ליווי', 'סיום', 'אחר'];
+    const categoryLabels = {
+      'ייזום': '🎯 שלב ייזום ותכנון מקדמי',
+      'תכנון': '📐 שלב תכנון אדריכלי',
+      'רישוי': '📋 שלב רישוי והיתרים',
+      'ליווי': '🏗️ שלב ליווי ביצוע ופיקוח',
+      'סיום': '✅ שלב סיום ומסירה',
+      'אחר': '📌 שירותים נוספים'
+    };
+    
+    const categorizedItems = proposalData.items.reduce((acc, item) => {
+      let category = 'אחר';
+      const desc = (item.category || item.description || '').toLowerCase();
+      if (desc.includes('ייזום') || desc.includes('מקדמי') || desc.includes('פתיחה')) category = 'ייזום';
+      else if (desc.includes('תכנון') || desc.includes('אדריכלי') || desc.includes('עיצוב')) category = 'תכנון';
+      else if (desc.includes('רישוי') || desc.includes('היתר') || desc.includes('רשות')) category = 'רישוי';
+      else if (desc.includes('ליווי') || desc.includes('פיקוח') || desc.includes('ביצוע')) category = 'ליווי';
+      else if (desc.includes('סיום') || desc.includes('מסירה') || desc.includes('גמר')) category = 'סיום';
+      
+      if (!acc[category]) acc[category] = [];
+      acc[category].push(item);
+      return acc;
+    }, {});
+
     return (
-      <div className="bg-white rounded-xl p-6 border border-slate-200">
-        <h3 className="text-xl font-bold text-center mb-4">{proposalData.title}</h3>
-        <p className="text-slate-600 mb-4">{proposalData.scope_of_work}</p>
+      <div className="bg-gradient-to-b from-cyan-50 to-white rounded-xl border border-cyan-200 overflow-hidden shadow-lg">
+        {/* Header */}
+        <div className="bg-cyan-700 text-white p-6 text-center">
+          <h3 className="text-2xl font-bold mb-2">{proposalData.title}</h3>
+          <p className="text-cyan-100 text-sm">{project?.location || ''}</p>
+        </div>
+
+        {/* Scope of Work */}
+        <div className="p-6 border-b border-cyan-100">
+          <h4 className="text-sm font-bold text-cyan-800 uppercase tracking-wider mb-3">היקף העבודה</h4>
+          <p className="text-slate-700 leading-relaxed text-sm">{proposalData.scope_of_work}</p>
+        </div>
         
-        <div className="border-t pt-4">
-          {proposalData.items.map((item, idx) => (
-            <div key={idx} className="flex justify-between py-2 border-b border-slate-100">
-              <span>{item.description}</span>
-              <span className="font-medium">{formatCurrency(item.total)}</span>
+        {/* Items by Category */}
+        <div className="p-6 space-y-6">
+          {categoryOrder.filter(cat => categorizedItems[cat]?.length > 0).map(category => (
+            <div key={category}>
+              <h4 className="text-sm font-bold text-slate-600 mb-3 pb-2 border-b border-slate-100">
+                {categoryLabels[category]}
+              </h4>
+              <div className="space-y-3">
+                {categorizedItems[category].map((item, idx) => (
+                  <div key={idx} className="flex justify-between items-start gap-4 text-sm">
+                    <span className="text-slate-700 flex-1">{item.description}</span>
+                    <span className="font-bold text-slate-900 whitespace-nowrap">{formatCurrency(item.total)}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>
 
-        <div className="text-left mt-4 pt-4 border-t-2 border-slate-300">
-          <span className="text-2xl font-bold text-cyan-700">
-            {formatCurrency(proposalData.total_amount)}
-          </span>
-          <span className="text-slate-500 mr-2">(כולל מע"מ)</span>
+        {/* Totals */}
+        <div className="bg-slate-50 p-6 border-t border-slate-200">
+          <div className="flex justify-between items-center mb-2 text-sm">
+            <span className="text-slate-600">סכום ביניים:</span>
+            <span className="font-medium">{formatCurrency(proposalData.subtotal)}</span>
+          </div>
+          <div className="flex justify-between items-center mb-4 text-sm">
+            <span className="text-slate-600">מע"מ ({proposalData.vat_percent}%):</span>
+            <span className="font-medium">{formatCurrency(proposalData.vat_amount)}</span>
+          </div>
+          <div className="flex justify-between items-center pt-4 border-t-2 border-cyan-300">
+            <span className="text-lg font-bold text-slate-800">סה"כ לתשלום:</span>
+            <span className="text-2xl font-bold text-cyan-700">{formatCurrency(proposalData.total_amount)}</span>
+          </div>
         </div>
 
-        {/* Signature Section for simple preview */}
-        <div className="mt-6 pt-4 border-t border-slate-200">
+        {/* Payment Terms & Notes */}
+        {(proposalData.payment_terms || proposalData.notes) && (
+          <div className="p-6 bg-amber-50 border-t border-amber-100">
+            {proposalData.payment_terms && (
+              <div className="mb-4">
+                <h4 className="text-sm font-bold text-amber-800 mb-2">תנאי תשלום</h4>
+                <p className="text-sm text-amber-700">{proposalData.payment_terms}</p>
+              </div>
+            )}
+            {proposalData.notes && (
+              <div>
+                <h4 className="text-sm font-bold text-amber-800 mb-2">הערות</h4>
+                <p className="text-sm text-amber-700">{proposalData.notes}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Signature Section */}
+        <div className="p-6 border-t border-slate-200 bg-white">
           <div className="flex justify-between items-end">
             <div>
               <p className="text-sm text-slate-500 mb-1">תאריך</p>
-              <p className="text-slate-700">{new Date().toLocaleDateString('he-IL')}</p>
+              <p className="text-slate-700 font-medium">{new Date().toLocaleDateString('he-IL')}</p>
             </div>
             <SignatureDisplay signatureData={signatureData} />
           </div>

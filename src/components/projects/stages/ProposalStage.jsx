@@ -546,34 +546,95 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
       const allClauses = await archiflow.entities.ProposalClause.list();
       const clausesContext = allClauses.map(c => `- ${c.title}: ${c.description} (קטגוריה: ${c.category})`).join('\n');
 
+      // Build comprehensive context from AI analysis
+      const projectContext = {
+        name: project.name,
+        type: project.project_type || 'פרויקט מותאם אישית',
+        client: project.client,
+        location: project.location || project.address || '',
+        budget: aiData.budget_estimate || project.budget || 'לא צוין',
+        timeline: aiData.timeline_estimate || project.timeline || '',
+        needs: allNeeds,
+        styles: uniqueStyles,
+        summary: aiData.summary || '',
+        concerns: aiData.concerns || [],
+        priorities: aiData.priorities || [],
+      };
+
       const result = await archiflow.integrations.Core.InvokeLLM({
-        prompt: `צור הצעת מחיר לפרויקט אדריכלות בהתבסס על המידע הבא:
-        
-פרויקט: ${project.name}
-סוג פרויקט: ${project.project_type || 'מגורים'}
-לקוח: ${project.client}
-תקציב משוער: ${aiData.budget_estimate || project.budget || 'לא צוין'}
-צרכים ודרישות: ${allNeeds.length > 0 ? allNeeds.join(', ') : 'לא צוינו'}
+        prompt: `אתה אדריכל מקצועי בכיר המתמחה בהכנת הצעות מחיר מפורטות ומקצועיות.
 
-הנחיה קריטית: עליך לבנות את הצעת המחיר *אך ורק* על בסיס ספריית הסעיפים הבאה. בחר את הסעיפים הרלוונטיים ביותר לפרויקט זה מתוך הרשימה. אל תמציא סעיפים חדשים אלא אם זה הכרחי לחלוטין.
+═══════════════════════════════════════════════════════════
+📋 פרטי הפרויקט והלקוח
+═══════════════════════════════════════════════════════════
+• שם הפרויקט: ${projectContext.name}
+• סוג הפרויקט: ${projectContext.type}
+• שם הלקוח: ${projectContext.client}
+• מיקום: ${projectContext.location || 'לא צוין'}
+• תקציב משוער: ${projectContext.budget}
+• לוח זמנים משוער: ${projectContext.timeline || 'לא צוין'}
 
-ספריית סעיפים זמינה:
-${clausesContext}
+═══════════════════════════════════════════════════════════
+📊 ניתוח צרכי הלקוח (מתוך שיחות קודמות)
+═══════════════════════════════════════════════════════════
+• תקציר השיחה: ${projectContext.summary || 'לא זמין'}
+• צרכים ודרישות מרכזיות: ${projectContext.needs.length > 0 ? projectContext.needs.join(' | ') : 'לא צוינו'}
+• העדפות סגנון: ${projectContext.styles.length > 0 ? projectContext.styles.join(', ') : 'לא צוינו'}
+• חששות שהועלו: ${projectContext.concerns.length > 0 ? projectContext.concerns.join(', ') : 'לא צוינו'}
+• סדרי עדיפויות: ${projectContext.priorities.length > 0 ? projectContext.priorities.join(', ') : 'לא צוינו'}
 
-הנחיות נוספות:
-1. התאם את הכמויות לגודל ומורכבות הפרויקט (למשל, מספר פגישות ליווי).
-2. תן הערכת מחיר ריאלית בשקלים לכל סעיף (אם המחיר 0 בספרייה, תן הערכה).
-3. סדר את הפריטים בסדר הגיוני (פתיחה, תכנון, ליווי, פיקוח).`,
+═══════════════════════════════════════════════════════════
+📚 ספריית סעיפים זמינה (בחר מתוכה)
+═══════════════════════════════════════════════════════════
+${clausesContext || 'אין סעיפים מוגדרים - צור סעיפים מקצועיים מותאמים'}
+
+═══════════════════════════════════════════════════════════
+📝 הנחיות ליצירת ההצעה
+═══════════════════════════════════════════════════════════
+
+**שפה וסגנון:**
+- השתמש בשפה אדריכלית-משפטית מקצועית
+- כל תיאור פריט יהיה מפורט ומדויק (3-4 משפטים לפחות)
+- הסבר מה כולל כל שלב ומה התוצר הסופי שלו
+
+**מבנה הפריטים (חובה לסדר לפי קטגוריות):**
+1. 🎯 שלב ייזום ותכנון מקדמי
+2. 📐 שלב תכנון אדריכלי
+3. 📋 שלב רישוי והיתרים
+4. 🏗️ שלב ליווי ביצוע ופיקוח עליון
+5. ✅ שלב סיום ומסירה
+
+**תיאור כל פריט יכלול:**
+- מהות העבודה
+- תוצרים צפויים
+- מספר פגישות/סבבים (אם רלוונטי)
+- אחריות האדריכל
+
+**היקף העבודה (scope_of_work):**
+כתוב פסקה מקצועית (5-8 משפטים) המתארת את מהות הפרויקט, היקפו, והשירותים הכלולים. התייחס לצרכים הספציפיים של הלקוח כפי שעלו בשיחה.
+
+**הערות מקצועיות (notes):**
+כלול הבהרות משפטיות חשובות: מה לא כלול בהצעה, תנאים מיוחדים, הסתייגויות מקצועיות.`,
         response_json_schema: {
           type: 'object',
           properties: {
-            scope_of_work: { type: 'string' },
+            scope_of_work: { 
+              type: 'string',
+              description: 'תיאור מקצועי מפורט של היקף העבודה והשירותים הכלולים'
+            },
             items: {
               type: 'array',
               items: {
                 type: 'object',
                 properties: {
-                  description: { type: 'string' },
+                  category: { 
+                    type: 'string',
+                    description: 'קטגוריה: ייזום/תכנון/רישוי/ליווי/סיום'
+                  },
+                  description: { 
+                    type: 'string',
+                    description: 'תיאור מפורט של הפריט כולל תוצרים ואחריות'
+                  },
                   quantity: { type: 'number' },
                   unit: { type: 'string' },
                   unit_price: { type: 'number' },
@@ -581,24 +642,34 @@ ${clausesContext}
                 }
               }
             },
-            payment_terms: { type: 'string' },
-            notes: { type: 'string' }
+            payment_terms: { 
+              type: 'string',
+              description: 'תנאי תשלום מפורטים לפי אבני דרך'
+            },
+            notes: { 
+              type: 'string',
+              description: 'הערות משפטיות והבהרות מקצועיות'
+            }
           }
         }
       });
 
-      console.log('🤖 AI Response:', result);
-      console.log('🤖 AI Items:', result.items);
+      console.log('🤖 AI Raw Response:', result);
       
-      const totals = calculateTotals(result.items || [], 0, proposalData.vat_percent);
+      // ✅ Extract data from response - handle both direct and wrapped formats
+      const proposalResult = result.response || result;
+      console.log('🤖 AI Parsed Data:', proposalResult);
+      console.log('🤖 AI Items:', proposalResult.items);
+      
+      const totals = calculateTotals(proposalResult.items || [], 0, proposalData.vat_percent);
       
       // ✅ Create the new proposal data
       const newProposalData = {
         ...proposalData,
-        scope_of_work: result.scope_of_work || '',
-        items: result.items || proposalData.items,
-        payment_terms: result.payment_terms || proposalData.payment_terms,
-        notes: result.notes || '',
+        scope_of_work: proposalResult.scope_of_work || '',
+        items: proposalResult.items || proposalData.items,
+        payment_terms: proposalResult.payment_terms || proposalData.payment_terms,
+        notes: proposalResult.notes || '',
         ...totals,
       };
       
@@ -1251,55 +1322,105 @@ ArchiFlow`
                       <div className="col-span-2">סה"כ</div>
                     </div>
 
-                    {/* Table Body */}
+                    {/* Table Body - Grouped by Category */}
                     <div className="divide-y">
                       {proposalData.items.length === 0 ? (
                         <div className="p-8 text-center text-slate-400 bg-white">
                           אין סעיפים בהצעה. הוסף סעיף חדש או בחר מתבנית.
                         </div>
                       ) : (
-                        proposalData.items.map((item, index) => (
-                          <div key={index} className="grid grid-cols-12 gap-4 p-4 items-start bg-white hover:bg-slate-50/50 transition-colors group">
-                            <div className="col-span-6">
-                              <Textarea
-                                value={item.description}
-                                onChange={(e) => updateItem(index, 'description', e.target.value)}
-                                className="resize-none min-h-[2.5rem] border-transparent hover:border-input focus:border-ring bg-transparent"
-                                placeholder="תיאור הפריט..."
-                              />
-                            </div>
-                            <div className="col-span-2">
-                              <Input
-                                type="number"
-                                value={item.quantity}
-                                onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                                className="text-center border-transparent hover:border-input focus:border-ring bg-transparent"
-                              />
-                            </div>
-                            <div className="col-span-2 relative">
-                              <span className="absolute left-3 top-2 text-slate-400 text-sm">₪</span>
-                              <Input
-                                type="number"
-                                value={item.unit_price}
-                                onChange={(e) => updateItem(index, 'unit_price', parseFloat(e.target.value) || 0)}
-                                className="pl-6 border-transparent hover:border-input focus:border-ring bg-transparent"
-                              />
-                            </div>
-                            <div className="col-span-2 flex items-center justify-between gap-2">
-                              <div className="font-medium text-slate-700">
-                                {formatCurrency(item.total)}
+                        (() => {
+                          // Group items by category
+                          const categoryOrder = ['ייזום', 'תכנון', 'רישוי', 'ליווי', 'סיום', 'אחר'];
+                          const categoryIcons = {
+                            'ייזום': '🎯',
+                            'תכנון': '📐',
+                            'רישוי': '📋',
+                            'ליווי': '🏗️',
+                            'סיום': '✅',
+                            'אחר': '📌'
+                          };
+                          const categoryColors = {
+                            'ייזום': 'bg-purple-50 border-purple-200 text-purple-800',
+                            'תכנון': 'bg-blue-50 border-blue-200 text-blue-800',
+                            'רישוי': 'bg-amber-50 border-amber-200 text-amber-800',
+                            'ליווי': 'bg-green-50 border-green-200 text-green-800',
+                            'סיום': 'bg-cyan-50 border-cyan-200 text-cyan-800',
+                            'אחר': 'bg-slate-50 border-slate-200 text-slate-800'
+                          };
+                          
+                          // Categorize items
+                          const categorizedItems = proposalData.items.reduce((acc, item, index) => {
+                            let category = 'אחר';
+                            const desc = (item.category || item.description || '').toLowerCase();
+                            if (desc.includes('ייזום') || desc.includes('מקדמי') || desc.includes('פתיחה')) category = 'ייזום';
+                            else if (desc.includes('תכנון') || desc.includes('אדריכלי') || desc.includes('עיצוב')) category = 'תכנון';
+                            else if (desc.includes('רישוי') || desc.includes('היתר') || desc.includes('רשות')) category = 'רישוי';
+                            else if (desc.includes('ליווי') || desc.includes('פיקוח') || desc.includes('ביצוע')) category = 'ליווי';
+                            else if (desc.includes('סיום') || desc.includes('מסירה') || desc.includes('גמר')) category = 'סיום';
+                            
+                            if (!acc[category]) acc[category] = [];
+                            acc[category].push({ ...item, originalIndex: index });
+                            return acc;
+                          }, {});
+                          
+                          return categoryOrder.filter(cat => categorizedItems[cat]?.length > 0).map(category => (
+                            <div key={category}>
+                              {/* Category Header */}
+                              <div className={`px-4 py-2 border-b ${categoryColors[category]} font-medium text-sm flex items-center gap-2`}>
+                                <span>{categoryIcons[category]}</span>
+                                <span>שלב {category}</span>
+                                <Badge variant="outline" className="mr-auto text-xs">
+                                  {categorizedItems[category].length} פריטים
+                                </Badge>
                               </div>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => removeItem(index)}
-                                className="text-slate-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all h-8 w-8"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                              
+                              {/* Category Items */}
+                              {categorizedItems[category].map((item) => (
+                                <div key={item.originalIndex} className="grid grid-cols-12 gap-4 p-4 items-start bg-white hover:bg-slate-50/50 transition-colors group">
+                                  <div className="col-span-6">
+                                    <Textarea
+                                      value={item.description}
+                                      onChange={(e) => updateItem(item.originalIndex, 'description', e.target.value)}
+                                      className="resize-none min-h-[2.5rem] border-transparent hover:border-input focus:border-ring bg-transparent text-sm"
+                                      placeholder="תיאור הפריט..."
+                                    />
+                                  </div>
+                                  <div className="col-span-2">
+                                    <Input
+                                      type="number"
+                                      value={item.quantity}
+                                      onChange={(e) => updateItem(item.originalIndex, 'quantity', parseFloat(e.target.value) || 0)}
+                                      className="text-center border-transparent hover:border-input focus:border-ring bg-transparent"
+                                    />
+                                  </div>
+                                  <div className="col-span-2 relative">
+                                    <span className="absolute left-3 top-2 text-slate-400 text-sm">₪</span>
+                                    <Input
+                                      type="number"
+                                      value={item.unit_price}
+                                      onChange={(e) => updateItem(item.originalIndex, 'unit_price', parseFloat(e.target.value) || 0)}
+                                      className="pl-6 border-transparent hover:border-input focus:border-ring bg-transparent"
+                                    />
+                                  </div>
+                                  <div className="col-span-2 flex items-center justify-between gap-2">
+                                    <div className="font-medium text-slate-700">
+                                      {formatCurrency(item.total)}
+                                    </div>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      onClick={() => removeItem(item.originalIndex)}
+                                      className="text-slate-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all h-8 w-8"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          </div>
-                        ))
+                          ));
+                        })()
                       )}
                     </div>
                   </div>

@@ -13,6 +13,20 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -30,7 +44,8 @@ import {
   Download,
   Layout,
   PenTool,
-  AlertCircle
+  AlertCircle,
+  Edit2
 } from 'lucide-react';
 import { showSuccess, showError } from '../../utils/notifications';
 import { addProposalToClientHistory, addStageChangeToClientHistory } from '../../utils/clientHistoryHelper';
@@ -94,6 +109,7 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
   const [creationMode, setCreationMode] = useState(null); // 'ai', 'template', 'manual'
   const [showMissingDataDialog, setShowMissingDataDialog] = useState(false);
   const [showClauseLibrary, setShowClauseLibrary] = useState(false);
+  const [editingClause, setEditingClause] = useState(null); // For editing clause in library
 
   // Track if change came from parent to prevent loops
   const isExternalChange = React.useRef(false);
@@ -1020,6 +1036,128 @@ ArchiFlow`
         onSave={handleSaveMissingData}
       />
 
+      {/* Edit/Create Clause Dialog */}
+      <Dialog open={!!editingClause} onOpenChange={(open) => !open && setEditingClause(null)}>
+        <DialogContent className="max-w-lg" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>{editingClause?.isNew ? 'הוספת סעיף חדש לספרייה' : 'עריכת סעיף בספרייה'}</DialogTitle>
+          </DialogHeader>
+          {editingClause && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>כותרת קצרה</Label>
+                <Input
+                  value={editingClause.title || ''}
+                  onChange={(e) => setEditingClause(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="כותרת הסעיף"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>תיאור מלא</Label>
+                <Textarea
+                  value={editingClause.clause_text || ''}
+                  onChange={(e) => setEditingClause(prev => ({ ...prev, clause_text: e.target.value }))}
+                  placeholder="תיאור מפורט של הסעיף"
+                  rows={4}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>קטגוריה/שלב</Label>
+                  <Select
+                    value={editingClause.category || 'כללי'}
+                    onValueChange={(value) => setEditingClause(prev => ({ ...prev, category: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ייזום">🎯 ייזום</SelectItem>
+                      <SelectItem value="תכנון">📐 תכנון</SelectItem>
+                      <SelectItem value="רישוי">📋 רישוי</SelectItem>
+                      <SelectItem value="ליווי">🏗️ ליווי</SelectItem>
+                      <SelectItem value="סיום">✅ סיום</SelectItem>
+                      <SelectItem value="כללי">📦 כללי</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>מחיר ברירת מחדל</Label>
+                  <Input
+                    type="number"
+                    value={editingClause.default_price || 0}
+                    onChange={(e) => setEditingClause(prev => ({ ...prev, default_price: Number(e.target.value) }))}
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>כמות ברירת מחדל</Label>
+                  <Input
+                    type="number"
+                    value={editingClause.default_quantity || 1}
+                    onChange={(e) => setEditingClause(prev => ({ ...prev, default_quantity: Number(e.target.value) }))}
+                    min={1}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>יחידה</Label>
+                  <Input
+                    value={editingClause.default_unit || 'יח\''}
+                    onChange={(e) => setEditingClause(prev => ({ ...prev, default_unit: e.target.value }))}
+                    placeholder="יח'"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setEditingClause(null)}>
+              ביטול
+            </Button>
+            <Button
+              onClick={async () => {
+                try {
+                  if (!editingClause.clause_text || editingClause.clause_text.length < 5) {
+                    showError('נא להזין תיאור לסעיף');
+                    return;
+                  }
+                  
+                  const clauseData = {
+                    title: editingClause.title || editingClause.clause_text.substring(0, 50),
+                    clause_text: editingClause.clause_text,
+                    category: editingClause.category || 'כללי',
+                    default_price: editingClause.default_price || 0,
+                    default_quantity: editingClause.default_quantity || 1,
+                    default_unit: editingClause.default_unit || 'יח\'',
+                  };
+                  
+                  if (editingClause.isNew) {
+                    await archiflow.entities.ProposalClause.create(clauseData);
+                    showSuccess('הסעיף נוסף לספרייה');
+                  } else {
+                    await archiflow.entities.ProposalClause.update(editingClause.id, clauseData);
+                    showSuccess('הסעיף עודכן בהצלחה');
+                  }
+                  queryClient.invalidateQueries(['proposalClauses']);
+                  setEditingClause(null);
+                } catch (err) {
+                  showError(editingClause.isNew ? 'שגיאה בהוספת הסעיף' : 'שגיאה בעדכון הסעיף');
+                }
+              }}
+            >
+              {editingClause?.isNew ? 'הוסף לספרייה' : 'שמור שינויים'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Meeting Scheduler Modal */}
       <ProjectMeetingSchedulerModal
         isOpen={showMeetingScheduler}
@@ -1383,6 +1521,23 @@ ArchiFlow`
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                onClick={() => setEditingClause({
+                                  title: '',
+                                  clause_text: '',
+                                  category: 'כללי',
+                                  default_price: 0,
+                                  default_quantity: 1,
+                                  default_unit: 'יח\'',
+                                  isNew: true
+                                })}
+                                className="text-indigo-600"
+                              >
+                                <Plus className="w-4 h-4 ml-1" />
+                                חדש
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={async () => {
                                   try {
                                     const { syncClausesFromProposals } = await import('@/utils/syncProposalClauses');
@@ -1472,6 +1627,16 @@ ArchiFlow`
                                             title="הוסף להצעה"
                                           >
                                             <Plus className="w-4 h-4" />
+                                          </button>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setEditingClause({ ...clause });
+                                            }}
+                                            className="p-1 text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            title="ערוך סעיף"
+                                          >
+                                            <Edit2 className="w-3 h-3" />
                                           </button>
                                           <button
                                             onClick={async (e) => {

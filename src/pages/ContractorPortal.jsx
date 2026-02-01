@@ -19,8 +19,15 @@ import {
   PenTool,
   Loader2,
   LogOut,
-  Users
+  Users,
+  DollarSign,
+  Send
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { showSuccess, showError } from '@/components/utils/notifications';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ContractorDocumentUpload from '../components/contractors/ContractorDocumentUpload';
 import ContractorTaskManager from '../components/contractors/ContractorTaskManager';
@@ -31,11 +38,14 @@ import PageHeader from '../components/layout/PageHeader';
 
 export default function ContractorPortal() {
   const { user, isLoadingAuth: loadingUser, logout } = useAuth();
+  const queryClient = useQueryClient();
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [selectedContractor, setSelectedContractor] = useState(null);
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   const [documentToSign, setDocumentToSign] = useState(null);
   const [impersonateEmail, setImpersonateEmail] = useState(null);
+  const [quoteFormData, setQuoteFormData] = useState({});
+  const [submittingQuoteId, setSubmittingQuoteId] = useState(null);
 
   // Check if user is approved
   const isApproved = user?.approval_status === 'approved' || 
@@ -76,6 +86,34 @@ export default function ContractorPortal() {
     queryFn: () => archiflow.entities.DocumentSignature.list('-created_date', 200),
   });
 
+  // Fetch contractor quotes
+  const { data: allQuotes = [] } = useQuery({
+    queryKey: ['contractorQuotes'],
+    queryFn: () => archiflow.entities.ContractorQuote.list('-created_date', 100),
+  });
+
+  // Submit quote mutation
+  const submitQuoteMutation = useMutation({
+    mutationFn: async ({ quoteId, data }) => {
+      return archiflow.entities.ContractorQuote.update(quoteId, {
+        quote_amount: data.amount,
+        quote_details: data.details,
+        execution_time_days: data.executionDays,
+        status: 'submitted',
+        submitted_at: new Date().toISOString()
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contractorQuotes'] });
+      setQuoteFormData({});
+      setSubmittingQuoteId(null);
+      showSuccess('הצעת המחיר נשלחה בהצלחה!');
+    },
+    onError: () => {
+      showError('שגיאה בשליחת הצעת המחיר');
+    }
+  });
+
   // Multi-tenant filtering
   const targetEmail = canImpersonate && impersonateEmail ? impersonateEmail : user?.email;
   const showAll = canImpersonate && !impersonateEmail;
@@ -102,6 +140,14 @@ export default function ContractorPortal() {
   const signatures = showAll 
     ? allSignatures 
     : allSignatures.filter(sig => sig.created_by === targetEmail || sig.signer_id === targetEmail);
+
+  // Filter quotes for this contractor
+  const quotes = showAll 
+    ? allQuotes 
+    : allQuotes.filter(q => q.contractor_email === targetEmail || q.created_by === targetEmail);
+  
+  const pendingQuotes = quotes.filter(q => q.status === 'requested').length;
+  const submittedQuotes = quotes.filter(q => q.status === 'submitted').length;
 
   const pendingDocs = documents.filter(d => d.status === 'pending').length;
   const approvedDocs = documents.filter(d => d.status === 'approved').length;
@@ -271,10 +317,17 @@ export default function ContractorPortal() {
         <Card className="border-border">
           <CardContent className="p-6">
             <Tabs defaultValue="tasks" dir="rtl">
-              <TabsList className="grid w-full grid-cols-3 bg-muted">
+              <TabsList className="grid w-full grid-cols-4 bg-muted">
                 <TabsTrigger value="tasks">
                   <Briefcase className="w-4 h-4 ml-2" />
                   משימות
+                </TabsTrigger>
+                <TabsTrigger value="quotes">
+                  <DollarSign className="w-4 h-4 ml-2" />
+                  הצעות מחיר
+                  {pendingQuotes > 0 && (
+                    <Badge className="mr-2 bg-orange-500 text-white text-xs">{pendingQuotes}</Badge>
+                  )}
                 </TabsTrigger>
                 <TabsTrigger value="documents">
                   <FileText className="w-4 h-4 ml-2" />
@@ -288,6 +341,129 @@ export default function ContractorPortal() {
 
               <TabsContent value="tasks" className="mt-6">
                 <ContractorTaskManager tasks={tasks} />
+              </TabsContent>
+
+              <TabsContent value="quotes" className="mt-6">
+                <div className="space-y-4">
+                  {quotes.length === 0 ? (
+                    <div className="text-center py-12">
+                      <DollarSign className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
+                      <p className="text-muted-foreground">אין בקשות להצעות מחיר</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-4">
+                      {quotes.map((quote) => (
+                        <Card key={quote.id} className="border-border">
+                          <CardContent className="p-6">
+                            <div className="flex items-start justify-between mb-4">
+                              <div>
+                                <h3 className="font-bold text-foreground text-lg">{quote.project_name}</h3>
+                                <p className="text-sm text-muted-foreground">
+                                  נשלח: {new Date(quote.created_date).toLocaleDateString('he-IL')}
+                                </p>
+                              </div>
+                              <Badge className={
+                                quote.status === 'submitted' ? 'bg-blue-100 text-blue-700' :
+                                quote.status === 'selected' ? 'bg-green-100 text-green-700' :
+                                quote.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                'bg-orange-100 text-orange-700'
+                              }>
+                                {quote.status === 'submitted' ? 'נשלחה' :
+                                 quote.status === 'selected' ? 'נבחרה' :
+                                 quote.status === 'rejected' ? 'נדחתה' :
+                                 'ממתינה להגשה'}
+                              </Badge>
+                            </div>
+                            
+                            {quote.status === 'requested' ? (
+                              <div className="space-y-4 bg-muted/50 p-4 rounded-lg">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <Label>סכום הצעה (₪)</Label>
+                                    <Input
+                                      type="number"
+                                      placeholder="הזן סכום"
+                                      value={quoteFormData[quote.id]?.amount || ''}
+                                      onChange={(e) => setQuoteFormData({
+                                        ...quoteFormData,
+                                        [quote.id]: { ...quoteFormData[quote.id], amount: e.target.value }
+                                      })}
+                                      className="mt-1"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label>זמן ביצוע (ימים)</Label>
+                                    <Input
+                                      type="number"
+                                      placeholder="מספר ימים"
+                                      value={quoteFormData[quote.id]?.executionDays || ''}
+                                      onChange={(e) => setQuoteFormData({
+                                        ...quoteFormData,
+                                        [quote.id]: { ...quoteFormData[quote.id], executionDays: e.target.value }
+                                      })}
+                                      className="mt-1"
+                                    />
+                                  </div>
+                                </div>
+                                <div>
+                                  <Label>פרטי ההצעה</Label>
+                                  <Textarea
+                                    placeholder="תיאור מפורט של ההצעה, כולל חומרים, עבודה וכו'"
+                                    value={quoteFormData[quote.id]?.details || ''}
+                                    onChange={(e) => setQuoteFormData({
+                                      ...quoteFormData,
+                                      [quote.id]: { ...quoteFormData[quote.id], details: e.target.value }
+                                    })}
+                                    className="mt-1 min-h-[100px]"
+                                  />
+                                </div>
+                                <Button 
+                                  onClick={() => {
+                                    const formData = quoteFormData[quote.id];
+                                    if (!formData?.amount) {
+                                      showError('יש להזין סכום');
+                                      return;
+                                    }
+                                    setSubmittingQuoteId(quote.id);
+                                    submitQuoteMutation.mutate({ 
+                                      quoteId: quote.id, 
+                                      data: formData 
+                                    });
+                                  }}
+                                  disabled={submittingQuoteId === quote.id}
+                                  className="w-full bg-primary hover:bg-primary/90"
+                                >
+                                  {submittingQuoteId === quote.id ? (
+                                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                                  ) : (
+                                    <Send className="w-4 h-4 ml-2" />
+                                  )}
+                                  שלח הצעת מחיר
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="bg-muted/30 p-4 rounded-lg">
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                  <div>
+                                    <span className="text-muted-foreground">סכום:</span>
+                                    <span className="font-bold mr-2">₪{quote.quote_amount?.toLocaleString() || '-'}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">זמן ביצוע:</span>
+                                    <span className="font-bold mr-2">{quote.execution_time_days || '-'} ימים</span>
+                                  </div>
+                                </div>
+                                {quote.quote_details && (
+                                  <p className="text-sm text-muted-foreground mt-2">{quote.quote_details}</p>
+                                )}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </TabsContent>
 
               <TabsContent value="documents" className="mt-6">

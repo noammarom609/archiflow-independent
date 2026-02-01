@@ -13,7 +13,8 @@ import {
   Truck,
   MoreVertical,
   Trash2,
-  DollarSign
+  DollarSign,
+  Pencil
 } from 'lucide-react';
 import { 
   Table, 
@@ -37,6 +38,8 @@ import { showSuccess, showError } from '@/components/utils/notifications';
 export default function SelectionsStage({ project, onUpdate }) {
   const queryClient = useQueryClient();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
   const [newItem, setNewItem] = useState({
       category: 'tile',
       room: '',
@@ -84,6 +87,50 @@ export default function SelectionsStage({ project, onUpdate }) {
       mutationFn: ({ id, status }) => archiflow.entities.ProjectSelection.update(id, { status }),
       onSuccess: () => queryClient.invalidateQueries(['projectSelections'])
   });
+
+  const updateSelectionMutation = useMutation({
+      mutationFn: ({ id, data }) => archiflow.entities.ProjectSelection.update(id, data),
+      onSuccess: () => {
+          queryClient.invalidateQueries(['projectSelections']);
+          setIsEditModalOpen(false);
+          setEditingItem(null);
+          showSuccess('פריט עודכן בהצלחה');
+      },
+      onError: () => showError('שגיאה בעדכון פריט')
+  });
+
+  const openEditModal = (item) => {
+      setEditingItem({ ...item });
+      setIsEditModalOpen(true);
+  };
+
+  const handleCreate = () => {
+      // Validation
+      if (!newItem.item_name?.trim()) {
+          showError('יש להזין שם פריט');
+          return;
+      }
+      if (!newItem.cost_per_unit || newItem.cost_per_unit <= 0) {
+          showError('יש להזין מחיר ליחידה');
+          return;
+      }
+      createSelectionMutation.mutate(newItem);
+  };
+
+  const handleUpdate = () => {
+      if (!editingItem) return;
+      // Validation
+      if (!editingItem.item_name?.trim()) {
+          showError('יש להזין שם פריט');
+          return;
+      }
+      if (!editingItem.cost_per_unit || editingItem.cost_per_unit <= 0) {
+          showError('יש להזין מחיר ליחידה');
+          return;
+      }
+      const { id, ...data } = editingItem;
+      updateSelectionMutation.mutate({ id, data });
+  };
 
   const getStatusBadge = (status) => {
       const styles = {
@@ -195,6 +242,8 @@ export default function SelectionsStage({ project, onUpdate }) {
                                           <SelectItem value="proposed">הוצע</SelectItem>
                                           <SelectItem value="approved">אושר</SelectItem>
                                           <SelectItem value="ordered">הוזמן</SelectItem>
+                                          <SelectItem value="delivered">סופק</SelectItem>
+                                          <SelectItem value="installed">הותקן</SelectItem>
                                       </SelectContent>
                                   </Select>
                               </div>
@@ -219,7 +268,7 @@ export default function SelectionsStage({ project, onUpdate }) {
                                   />
                               </div>
                           </div>
-                          <Button onClick={() => createSelectionMutation.mutate(newItem)} className="mt-4 bg-indigo-600">
+                          <Button onClick={handleCreate} className="mt-4 bg-indigo-600">
                               שמור פריט
                           </Button>
                       </div>
@@ -227,6 +276,112 @@ export default function SelectionsStage({ project, onUpdate }) {
               </Dialog>
           </div>
       </div>
+
+      {/* Edit Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+          <DialogContent>
+              <DialogHeader>
+                  <DialogTitle>עריכת פריט</DialogTitle>
+              </DialogHeader>
+              {editingItem && (
+                  <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-2 gap-4">
+                          <div>
+                              <Label>קטגוריה</Label>
+                              <Select 
+                                value={editingItem.category} 
+                                onValueChange={(val) => setEditingItem({...editingItem, category: val})}
+                              >
+                                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                      <SelectItem value="tile">ריצוף וחיפוי</SelectItem>
+                                      <SelectItem value="sanitary">סניטרי</SelectItem>
+                                      <SelectItem value="lighting">תאורה</SelectItem>
+                                      <SelectItem value="carpentry">נגרות</SelectItem>
+                                      <SelectItem value="aluminum">אלומיניום</SelectItem>
+                                      <SelectItem value="furniture">ריהוט</SelectItem>
+                                      <SelectItem value="appliances">מוצרי חשמל</SelectItem>
+                                      <SelectItem value="other">אחר</SelectItem>
+                                  </SelectContent>
+                              </Select>
+                          </div>
+                          <div>
+                              <Label>חדר / אזור</Label>
+                              <Input 
+                                value={editingItem.room || ''} 
+                                onChange={(e) => setEditingItem({...editingItem, room: e.target.value})} 
+                                placeholder="לדוגמה: מטבח"
+                                className="mt-1"
+                              />
+                          </div>
+                      </div>
+                      <div>
+                          <Label>שם הפריט / דגם</Label>
+                          <Input 
+                            value={editingItem.item_name || ''} 
+                            onChange={(e) => setEditingItem({...editingItem, item_name: e.target.value})} 
+                            className="mt-1"
+                          />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                          <div>
+                              <Label>ספק</Label>
+                              <Select 
+                                value={editingItem.supplier_id || ''} 
+                                onValueChange={(val) => setEditingItem({...editingItem, supplier_id: val})}
+                              >
+                                  <SelectTrigger className="mt-1"><SelectValue placeholder="בחר ספק" /></SelectTrigger>
+                                  <SelectContent>
+                                      {suppliers.map(s => (
+                                          <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                      ))}
+                                  </SelectContent>
+                              </Select>
+                          </div>
+                          <div>
+                              <Label>סטטוס</Label>
+                              <Select 
+                                value={editingItem.status} 
+                                onValueChange={(val) => setEditingItem({...editingItem, status: val})}
+                              >
+                                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                      <SelectItem value="proposed">הוצע</SelectItem>
+                                      <SelectItem value="approved">אושר</SelectItem>
+                                      <SelectItem value="ordered">הוזמן</SelectItem>
+                                      <SelectItem value="delivered">סופק</SelectItem>
+                                      <SelectItem value="installed">הותקן</SelectItem>
+                                  </SelectContent>
+                              </Select>
+                          </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                          <div>
+                              <Label>כמות</Label>
+                              <Input 
+                                type="number" 
+                                value={editingItem.quantity || 1} 
+                                onChange={(e) => setEditingItem({...editingItem, quantity: parseFloat(e.target.value)})} 
+                                className="mt-1"
+                              />
+                          </div>
+                          <div>
+                              <Label>מחיר ליחידה (₪)</Label>
+                              <Input 
+                                type="number" 
+                                value={editingItem.cost_per_unit || ''} 
+                                onChange={(e) => setEditingItem({...editingItem, cost_per_unit: parseFloat(e.target.value)})} 
+                                className="mt-1"
+                              />
+                          </div>
+                      </div>
+                      <Button onClick={handleUpdate} className="mt-4 bg-indigo-600">
+                          עדכן פריט
+                      </Button>
+                  </div>
+              )}
+          </DialogContent>
+      </Dialog>
 
       <Card className="overflow-hidden border-slate-200">
           <Table>
@@ -271,14 +426,24 @@ export default function SelectionsStage({ project, onUpdate }) {
                                   </div>
                               </TableCell>
                               <TableCell>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="text-slate-400 hover:text-red-500"
-                                    onClick={() => deleteSelectionMutation.mutate(item.id)}
-                                  >
-                                      <Trash2 className="w-4 h-4" />
-                                  </Button>
+                                  <div className="flex gap-1">
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="text-slate-400 hover:text-blue-500"
+                                        onClick={() => openEditModal(item)}
+                                      >
+                                          <Pencil className="w-4 h-4" />
+                                      </Button>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="text-slate-400 hover:text-red-500"
+                                        onClick={() => deleteSelectionMutation.mutate(item.id)}
+                                      >
+                                          <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                  </div>
                               </TableCell>
                           </TableRow>
                       );

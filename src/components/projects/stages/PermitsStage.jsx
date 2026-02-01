@@ -29,6 +29,7 @@ import {
 import { showSuccess, showError } from '../../utils/notifications';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
+import DocumentUploadDialog from '../documents/DocumentUploadDialog';
 
 const PERMIT_SUBSTAGES = [
   { id: 'permit_preparation', label: 'הכנת מסמכים', icon: FileText, description: 'הכנת תוכניות, טפסים ונספחים נדרשים' },
@@ -46,6 +47,8 @@ export default function PermitsStage({ project, currentSubStage, onSubStageChang
   const [notes, setNotes] = useState(project?.permit_notes || '');
   const [corrections, setCorrections] = useState(project?.permit_corrections || []);
   const [newCorrection, setNewCorrection] = useState('');
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [permitSystemUrl, setPermitSystemUrl] = useState(project?.permit_system_url || 'https://rishui.interior.gov.il/');
 
   // Get current substage index
   const currentSubStageIndex = PERMIT_SUBSTAGES.findIndex(s => s.id === currentSubStage) || 0;
@@ -103,6 +106,21 @@ export default function PermitsStage({ project, currentSubStage, onSubStageChang
 
   const handleRemoveCorrection = (id) => {
     setCorrections(corrections.filter(c => c.id !== id));
+  };
+
+  // Open permit system website
+  const openPermitSystem = () => {
+    window.open(permitSystemUrl, '_blank');
+  };
+
+  // Download permit document (first permit document found)
+  const downloadPermit = () => {
+    const permitDoc = documents.find(d => d.file_url);
+    if (permitDoc?.file_url) {
+      window.open(permitDoc.file_url, '_blank');
+    } else {
+      showError('לא נמצא מסמך היתר להורדה');
+    }
   };
 
   const handleNextSubStage = () => {
@@ -248,7 +266,7 @@ export default function PermitsStage({ project, currentSubStage, onSubStageChang
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1 gap-2">
+                <Button variant="outline" className="flex-1 gap-2" onClick={() => setShowUploadDialog(true)}>
                   <Upload className="w-4 h-4" />
                   העלה מסמכים
                 </Button>
@@ -261,6 +279,18 @@ export default function PermitsStage({ project, currentSubStage, onSubStageChang
           </Card>
         </motion.div>
       )}
+
+      {/* Document Upload Dialog */}
+      <DocumentUploadDialog
+        isOpen={showUploadDialog}
+        onClose={() => {
+          setShowUploadDialog(false);
+          queryClient.invalidateQueries({ queryKey: ['projectDocuments'] });
+        }}
+        project={project}
+        presetCategory="permit"
+        categoryLabel="מסמכי היתר"
+      />
 
       {/* Submission Stage */}
       {currentSubStage === 'permit_submission' && (
@@ -314,7 +344,7 @@ export default function PermitsStage({ project, currentSubStage, onSubStageChang
               )}
 
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1 gap-2">
+                <Button variant="outline" className="flex-1 gap-2" onClick={openPermitSystem}>
                   <ExternalLink className="w-4 h-4" />
                   לינק למערכת רישוי
                 </Button>
@@ -441,7 +471,7 @@ export default function PermitsStage({ project, currentSubStage, onSubStageChang
               )}
 
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1 gap-2">
+                <Button variant="outline" className="flex-1 gap-2" onClick={downloadPermit}>
                   <Download className="w-4 h-4" />
                   הורד היתר
                 </Button>

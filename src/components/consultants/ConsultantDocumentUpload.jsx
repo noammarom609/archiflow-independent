@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,8 +9,10 @@ import { Upload, Loader2, FileText } from 'lucide-react';
 import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { showSuccess, showError } from '../utils/notifications';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function ConsultantDocumentUpload({ isOpen, onClose }) {
+  const { user } = useAuth();
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
@@ -24,12 +26,29 @@ export default function ConsultantDocumentUpload({ isOpen, onClose }) {
   });
 
   const queryClient = useQueryClient();
+  
+  // Check if user is a consultant
+  const isConsultantUser = user?.app_role === 'consultant';
 
   // Fetch consultants
   const { data: consultants = [] } = useQuery({
     queryKey: ['consultants'],
     queryFn: () => archiflow.entities.Consultant.list('-created_date', 100),
   });
+
+  // Auto-populate consultant if current user is a consultant
+  useEffect(() => {
+    if (isConsultantUser && consultants.length > 0 && !formData.consultant_id) {
+      const matchingConsultant = consultants.find(c => c.email === user?.email);
+      if (matchingConsultant) {
+        setFormData(prev => ({
+          ...prev,
+          consultant_id: matchingConsultant.id,
+          consultant_name: matchingConsultant.name,
+        }));
+      }
+    }
+  }, [isConsultantUser, consultants, user?.email, formData.consultant_id]);
 
   const uploadMutation = useMutation({
     mutationFn: (docData) => archiflow.entities.ConsultantDocument.create(docData),
@@ -212,24 +231,30 @@ export default function ConsultantDocumentUpload({ isOpen, onClose }) {
             </Select>
           </div>
 
-          {/* Consultant */}
+          {/* Consultant - auto-filled for consultant users */}
           <div>
             <Label>יועץ *</Label>
-            <Select
-              value={formData.consultant_id}
-              onValueChange={handleConsultantChange}
-            >
-              <SelectTrigger className="mt-2">
-                <SelectValue placeholder="בחר יועץ" />
-              </SelectTrigger>
-              <SelectContent>
-                {consultants.map(consultant => (
-                  <SelectItem key={consultant.id} value={consultant.id}>
-                    {consultant.name} - {getConsultantTypeLabel(consultant.consultant_type)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {isConsultantUser && formData.consultant_name ? (
+              <div className="mt-2 p-2 bg-slate-100 rounded-md text-sm">
+                {formData.consultant_name}
+              </div>
+            ) : (
+              <Select
+                value={formData.consultant_id}
+                onValueChange={handleConsultantChange}
+              >
+                <SelectTrigger className="mt-2">
+                  <SelectValue placeholder="בחר יועץ" />
+                </SelectTrigger>
+                <SelectContent>
+                  {consultants.map(consultant => (
+                    <SelectItem key={consultant.id} value={consultant.id}>
+                      {consultant.name} - {getConsultantTypeLabel(consultant.consultant_type)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* Project Name */}

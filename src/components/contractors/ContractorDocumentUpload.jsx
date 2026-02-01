@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,8 +9,10 @@ import { Upload, Loader2, FileText } from 'lucide-react';
 import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { showSuccess, showError } from '../utils/notifications';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function ContractorDocumentUpload({ isOpen, onClose }) {
+  const { user } = useAuth();
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
@@ -24,12 +26,29 @@ export default function ContractorDocumentUpload({ isOpen, onClose }) {
   });
 
   const queryClient = useQueryClient();
+  
+  // Check if user is a contractor
+  const isContractorUser = user?.app_role === 'contractor';
 
   // Fetch contractors
   const { data: contractors = [] } = useQuery({
     queryKey: ['contractors'],
     queryFn: () => archiflow.entities.Contractor.list('-created_date', 100),
   });
+
+  // Auto-populate contractor if current user is a contractor
+  useEffect(() => {
+    if (isContractorUser && contractors.length > 0 && !formData.contractor_id) {
+      const matchingContractor = contractors.find(c => c.email === user?.email);
+      if (matchingContractor) {
+        setFormData(prev => ({
+          ...prev,
+          contractor_id: matchingContractor.id,
+          contractor_name: matchingContractor.name,
+        }));
+      }
+    }
+  }, [isContractorUser, contractors, user?.email, formData.contractor_id]);
 
   const uploadMutation = useMutation({
     mutationFn: (docData) => archiflow.entities.ContractorDocument.create(docData),
@@ -190,24 +209,30 @@ export default function ContractorDocumentUpload({ isOpen, onClose }) {
             </Select>
           </div>
 
-          {/* Contractor */}
+          {/* Contractor - auto-filled for contractor users */}
           <div>
             <Label>קבלן *</Label>
-            <Select
-              value={formData.contractor_id}
-              onValueChange={handleContractorChange}
-            >
-              <SelectTrigger className="mt-2">
-                <SelectValue placeholder="בחר קבלן" />
-              </SelectTrigger>
-              <SelectContent>
-                {contractors.map(contractor => (
-                  <SelectItem key={contractor.id} value={contractor.id}>
-                    {contractor.name} - {contractor.specialty}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {isContractorUser && formData.contractor_name ? (
+              <div className="mt-2 p-2 bg-slate-100 rounded-md text-sm">
+                {formData.contractor_name}
+              </div>
+            ) : (
+              <Select
+                value={formData.contractor_id}
+                onValueChange={handleContractorChange}
+              >
+                <SelectTrigger className="mt-2">
+                  <SelectValue placeholder="בחר קבלן" />
+                </SelectTrigger>
+                <SelectContent>
+                  {contractors.map(contractor => (
+                    <SelectItem key={contractor.id} value={contractor.id}>
+                      {contractor.name} - {contractor.specialty}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* Project Name */}

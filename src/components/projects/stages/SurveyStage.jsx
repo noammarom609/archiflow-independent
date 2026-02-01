@@ -83,10 +83,32 @@ export default function SurveyStage({ project, onUpdate, onSubStageChange }) {
     }
   };
 
-  const handleDeleteFile = (fileIndex) => {
+  const handleDeleteFile = async (fileIndex) => {
+    try {
       const currentFiles = project.survey_files || [];
+      const fileToDelete = currentFiles[fileIndex];
+      
+      // Delete from Document entity if we have a document_id
+      if (fileToDelete?.document_id) {
+        try {
+          await archiflow.entities.Document.delete(fileToDelete.document_id);
+        } catch (docErr) {
+          console.warn('Could not delete document record:', docErr);
+        }
+      }
+      
+      // Note: Storage deletion would require a server-side function for security
+      // We remove from the array and let the orphaned storage file be cleaned up by admin
+      
       const updatedFiles = currentFiles.filter((_, i) => i !== fileIndex);
-      onUpdate({ survey_files: updatedFiles });
+      await onUpdate({ survey_files: updatedFiles });
+      
+      queryClient.invalidateQueries({ queryKey: ['projectDocuments'] });
+      showSuccess('קובץ נמחק');
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      showError('שגיאה במחיקת הקובץ');
+    }
   };
 
   // Drag and drop handlers

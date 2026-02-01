@@ -228,7 +228,6 @@ export default function Projects() {
 
   // Multi-tenant: Get architect ID for filtering
   const isSuperAdmin = user?.app_role === 'super_admin';
-  console.log('[Projects] User:', user?.email, 'app_role:', user?.app_role, 'isSuperAdmin:', isSuperAdmin);
   const myArchitectId = user?.app_role === 'architect' ? user?.id : user?.architect_id;
 
   // Fetch projects

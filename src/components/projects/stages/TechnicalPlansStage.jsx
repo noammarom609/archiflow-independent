@@ -764,6 +764,9 @@ ArchiFlow`
           isOpen={showSignatureDialog}
           onClose={() => {
             setShowSignatureDialog(false);
+          }}
+          onSignatureComplete={() => {
+            setShowSignatureDialog(false);
             handleSignatureComplete();
           }}
           document={documentToSign}

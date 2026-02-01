@@ -123,18 +123,24 @@ ArchiFlow`
 
   const handleApprove = async () => {
     try {
-      // Create signature record with full metadata
+      // Validate client email exists
+      if (!project?.client_email) {
+        showError('לא נמצא אימייל ללקוח - לא ניתן ליצור חתימה דיגיטלית');
+        return;
+      }
+      
+      // Create signature record with correct schema
       const signatureRecord = await archiflow.entities.DocumentSignature.create({
-        document_id: documents[0]?.id || 'approval',
-        document_title: `אישור ${typeLabel} - ${project?.name}`,
-        document_type: type,
-        signer_id: project?.client_id || 'client',
+        entity_type: 'document',
+        entity_id: documents[0]?.id || project?.id,
         signer_name: project?.client || 'לקוח',
-        signer_role: 'client',
+        signer_email: project?.client_email,
+        signature_type: 'digital',
         signature_data: 'digital_approval',
-        timestamp: new Date().toISOString(),
+        signed_at: new Date().toISOString(),
         verified: true,
         project_id: project?.id,
+        architect_email: project?.architect_email,
         ip_address: 'N/A',
         notes: `אישור ${typeLabel} לפרויקט ${project?.name}`
       });

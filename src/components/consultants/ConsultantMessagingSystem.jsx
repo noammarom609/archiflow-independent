@@ -72,6 +72,13 @@ export default function ConsultantMessagingSystem({ messages }) {
     },
   });
 
+  // Determine current user type and info
+  const currentUserId = user?.id || user?.email || 'unknown';
+  const currentUserName = user?.full_name || user?.name || 'משתמש';
+  const currentUserType = user?.app_role === 'consultant' ? 'consultant' : 
+                          user?.app_role === 'contractor' ? 'contractor' : 'architect';
+  const isArchitect = ['architect', 'super_admin', 'admin'].includes(user?.app_role);
+
   const handleSendMessage = () => {
     if (!newMessage.trim() || !selectedRecipient) {
       showError('אנא בחר נמען והזן הודעה');
@@ -80,18 +87,21 @@ export default function ConsultantMessagingSystem({ messages }) {
 
     sendMessageMutation.mutate({
       content: newMessage,
-      sender_id: user?.id || 'architect-1',
-      sender_name: user?.full_name || 'מנהל הפרויקט',
-      sender_type: 'architect',
+      sender_id: currentUserId,
+      sender_name: currentUserName,
+      sender_type: currentUserType,
       recipient_id: selectedRecipient.id,
       recipient_name: selectedRecipient.name,
-      recipient_type: 'consultant',
+      recipient_type: isArchitect ? 'consultant' : 'architect',
       project_name: 'פרויקט כללי',
+      created_by: user?.email,
+      architect_email: isArchitect ? user?.email : selectedRecipient.architect_email,
     });
   };
 
   const groupedMessages = messages.reduce((acc, msg) => {
-    const key = msg.sender_type === 'architect' ? msg.recipient_id : msg.sender_id;
+    // Group by the other party in the conversation
+    const key = msg.sender_id === currentUserId ? msg.recipient_id : msg.sender_id;
     if (!acc[key]) acc[key] = [];
     acc[key].push(msg);
     return acc;

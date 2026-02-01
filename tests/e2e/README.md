@@ -95,6 +95,34 @@ $env:PLAYWRIGHT_BASE_URL="https://archiflow-independent.vercel.app"; npm run tes
 
 כדי להוסיף בדיקות – הוסף `data-testid` לקומפוננטות והשתמש ב־`page.getByTestId('...')`.
 
+## קבצי בדיקה
+
+| קובץ | תיאור | פקודת הרצה |
+|------|-------|------------|
+| `qa-full-journey.spec.ts` | בדיקה רציפה מלאה - כל התפקידים והזרימות | `npm run test:e2e:full:headed` |
+| `qa-timer-only.spec.ts` | בדיקת טיימר בלבד | `npx playwright test qa-timer-only --headed` |
+| `qa-financials.spec.ts` | בדיקות פיננסים - הוצאות, חשבוניות, קבלות | `npx playwright test qa-financials --headed` |
+| `qa-journal.spec.ts` | בדיקות יומן רשומות | `npx playwright test qa-journal --headed` |
+| `qa-meeting-summaries.spec.ts` | בדיקות סיכומי פגישות עם AI | `npx playwright test qa-meeting-summaries --headed` |
+| `qa-user-management.spec.ts` | בדיקות ניהול משתמשים | `npx playwright test qa-user-management --headed` |
+| `qa-portals.spec.ts` | בדיקות פורטלים (לקוח/קבלן/יועץ/ספק) | `npx playwright test qa-portals --headed` |
+| `qa-proposal-templates.spec.ts` | בדיקות תבניות הצעות מחיר | `npx playwright test qa-proposal-templates --headed` |
+| `qa-notifications.spec.ts` | בדיקות מערכת התראות | `npx playwright test qa-notifications --headed` |
+| `qa-ai-features.spec.ts` | בדיקות פיצ'רי AI (moodboard, image gen) | `npx playwright test qa-ai-features --headed` |
+| `qa-misc-pages.spec.ts` | בדיקות דפים נוספים (Team, Support, Blog, ThemeSettings, SuperAdmin) | `npx playwright test qa-misc-pages --headed` |
+
+### הרצת כל הבדיקות יחד
+
+```powershell
+$env:PLAYWRIGHT_BASE_URL="https://archiflow-independent.vercel.app"; npx playwright test tests/e2e/ --headed
+```
+
+### הרצת בדיקה ספציפית
+
+```powershell
+$env:PLAYWRIGHT_BASE_URL="https://archiflow-independent.vercel.app"; npx playwright test tests/e2e/qa-financials.spec.ts --headed
+```
+
 ## תוצאות
 
 - דוח HTML: `npx playwright show-report` אחרי הרצה

@@ -228,9 +228,7 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
     queryKey: ['proposalTemplate', savedTemplateId],
     queryFn: async () => {
       if (!savedTemplateId) return null;
-      console.log('📋 Fetching template by ID:', savedTemplateId);
       const templates = await archiflow.entities.ProposalTemplate.filter({ id: savedTemplateId });
-      console.log('📋 Fetched template:', templates[0]?.name || 'not found');
       return templates[0] || null;
     },
     // Always fetch if we have an ID - don't prevent based on current selection
@@ -244,7 +242,6 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
     // 1. We have a saved template from DB
     // 2. User hasn't manually selected a different template in this session
     if (savedTemplate && !selectedTemplate) {
-      console.log('✅ Auto-loading saved template:', savedTemplate.name);
       setSelectedTemplate(savedTemplate);
     }
   }, [savedTemplate]); // Removed selectedTemplate from deps to prevent loops
@@ -258,9 +255,7 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
     queryKey: ['proposalSignature', savedSignatureId],
     queryFn: async () => {
       if (!savedSignatureId) return null;
-      console.log('🔏 Fetching signature by ID:', savedSignatureId);
       const signatures = await archiflow.entities.DocumentSignature.filter({ id: savedSignatureId });
-      console.log('🔏 Fetched signature:', signatures[0] ? 'found' : 'not found');
       return signatures[0] || null;
     },
     // Fetch if we have an ID AND proposal is approved
@@ -272,7 +267,6 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
   const getSignatureData = () => {
     // Priority 1: Client just signed in this session
     if (clientSignature) {
-      console.log('🔏 Using session signature');
       return clientSignature;
     }
     
@@ -714,7 +708,7 @@ ArchiFlow`
   };
 
   // Mark as approved with signature
-  const markAsApproved = async () => {
+  const markAsApproved = async (signatureImageData = null) => {
     try {
       if (existingProposals.length > 0) {
         await updateProposalMutation.mutateAsync({
@@ -723,18 +717,18 @@ ArchiFlow`
         });
       }
 
-      // Create signature record
+      // Create signature record with correct schema
       const signatureRecord = await archiflow.entities.DocumentSignature.create({
-        document_id: existingProposals[0]?.id || 'proposal',
-        document_title: `הצעת מחיר - ${project?.name}`,
-        document_type: 'proposal',
-        signer_id: project?.client_id || 'client',
+        entity_type: 'proposal',
+        entity_id: existingProposals[0]?.id || project?.id,
         signer_name: project?.client || 'לקוח',
-        signer_role: 'client',
-        signature_data: 'digital_approval',
-        timestamp: new Date().toISOString(),
+        signer_email: project?.client_email || '',
+        signature_type: signatureImageData ? 'drawn' : 'digital',
+        signature_data: signatureImageData || 'digital_approval',
+        signed_at: new Date().toISOString(),
         verified: true,
         project_id: project?.id,
+        architect_email: project?.architect_email,
         notes: `הצעה אושרה בסכום ₪${proposalData.total_amount.toLocaleString()}`
       });
       
@@ -814,8 +808,11 @@ ArchiFlow`
           name: project?.client || 'לקוח',
           role: 'client',
         }}
-        onSignatureComplete={(signatureImageData) => {
+        onSignatureComplete={async (signatureImageData) => {
           setClientSignature(signatureImageData);
+          setShowSignatureDialog(false);
+          // Auto-approve with the signature
+          await markAsApproved(signatureImageData);
         }}
       />
 
@@ -1210,8 +1207,42 @@ ArchiFlow`
                     </div>
                   </div>
 
+                  {/* Discount & VAT Controls */}
+                  <div className="mt-6 border-t pt-4 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm text-slate-600">הנחה (%)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={proposalData.discount_percent || 0}
+                          onChange={(e) => setProposalData(prev => ({ 
+                            ...prev, 
+                            discount_percent: parseFloat(e.target.value) || 0 
+                          }))}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm text-slate-600">מע"מ (%)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={proposalData.vat_percent || 17}
+                          onChange={(e) => setProposalData(prev => ({ 
+                            ...prev, 
+                            vat_percent: parseFloat(e.target.value) || 17 
+                          }))}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Totals */}
-                  <div className="mt-6 border-t pt-4 space-y-2">
+                  <div className="mt-4 pt-4 space-y-2 border-t">
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-600">סכום ביניים:</span>
                       <span className="font-medium">{formatCurrency(proposalData.subtotal)}</span>

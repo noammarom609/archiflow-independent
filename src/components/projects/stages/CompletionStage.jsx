@@ -82,7 +82,12 @@ export default function CompletionStage({ project, onUpdate, onSubStageChange })
       }
 
       // Send WhatsApp (using direct window.open if utility fails, but utility is imported)
-      const feedbackMessage = `היי ${project.client || ''}, תודה רבה על שבחרתם בנו! 🎉\n\nנשמח לקבל משוב על השירות:\nhttps://archiflow.app/feedback/${project.id}\n\nתמונות לפני/אחרי יתקבלו בברכה!`;
+      let feedbackMessage = `היי ${project.client || ''}, תודה רבה על שבחרתם בנו! 🎉\n\nנשמח לקבל משוב על השירות:\nhttps://archiflow.app/feedback/${project.id}\n\nתמונות לפני/אחרי יתקבלו בברכה!`;
+      
+      // Include testimonial note if provided
+      if (testimonialNote?.trim()) {
+        feedbackMessage += `\n\nנקודות שכדאי לציין: ${testimonialNote}`;
+      }
       
       try {
         sendWhatsApp(project.client_phone || '', feedbackMessage);
@@ -98,6 +103,60 @@ export default function CompletionStage({ project, onUpdate, onSubStageChange })
       console.error('Error closing project:', error);
       showError('שגיאה בסגירת הפרויקט');
     }
+  };
+
+  // Request photos from client
+  const requestPhotos = () => {
+    const message = `היי ${project?.client || ''}, אנחנו מסכמים את הפרויקט ונשמח לקבל תמונות איכותיות של התוצאה הסופית! 📸\n\nתמונות לפני/אחרי יעזרו מאוד לפורטפוליו שלנו.\n\nתודה רבה!`;
+    try {
+      sendWhatsApp(project?.client_phone || '', message);
+      showSuccess('בקשה לתמונות נשלחה!');
+    } catch (e) {
+      console.error('WhatsApp error', e);
+      window.open(`https://wa.me/${project?.client_phone?.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
+    }
+  };
+
+  // Add to portfolio
+  const addToPortfolio = async () => {
+    try {
+      if (onUpdate) {
+        await onUpdate({ 
+          in_portfolio: true,
+          portfolio_added_date: new Date().toISOString()
+        });
+      }
+      showSuccess('הפרויקט נוסף לפורטפוליו!');
+    } catch (error) {
+      console.error('Error adding to portfolio:', error);
+      showError('שגיאה בהוספה לפורטפוליו');
+    }
+  };
+
+  // Share functions
+  const shareToFacebook = () => {
+    const url = `${window.location.origin}/portfolio/${project?.id}`;
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank', 'width=600,height=400');
+  };
+
+  const shareToLinkedIn = () => {
+    const url = `${window.location.origin}/portfolio/${project?.id}`;
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank', 'width=600,height=400');
+  };
+
+  const shareToInstagram = () => {
+    // Instagram doesn't support direct sharing via URL, open profile or show message
+    showSuccess('העתק את הלינק ושתף בסטורי או בפוסט באינסטגרם');
+    copyProjectLink();
+  };
+
+  const copyProjectLink = () => {
+    const url = `${window.location.origin}/portfolio/${project?.id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      showSuccess('הלינק הועתק!');
+    }).catch(() => {
+      showError('לא ניתן להעתיק');
+    });
   };
 
   // Calculate performance metrics
@@ -254,7 +313,12 @@ export default function CompletionStage({ project, onUpdate, onSubStageChange })
                       <p className="text-sm text-pink-700 mt-1">
                         תמונות איכותיות מהפרויקט יעזרו לפורטפוליו ולשיווק העסק
                       </p>
-                      <Button variant="outline" size="sm" className="mt-3 border-pink-300 text-pink-700 hover:bg-pink-100">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-3 border-pink-300 text-pink-700 hover:bg-pink-100"
+                        onClick={requestPhotos}
+                      >
                         <Camera className="w-4 h-4 ml-2" />
                         בקש תמונות מהלקוח
                       </Button>
@@ -446,7 +510,7 @@ export default function CompletionStage({ project, onUpdate, onSubStageChange })
                 </div>
                 
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={addToPortfolio}>
                     <Camera className="w-4 h-4 ml-2" />
                     הוסף לפורטפוליו
                   </Button>
@@ -474,16 +538,16 @@ export default function CompletionStage({ project, onUpdate, onSubStageChange })
                     className="overflow-hidden"
                   >
                     <div className="flex gap-2 mt-4 pt-4 border-t border-slate-100">
-                      <Button size="sm" variant="outline" className="flex-1">
+                      <Button size="sm" variant="outline" className="flex-1" onClick={shareToFacebook}>
                         Facebook
                       </Button>
-                      <Button size="sm" variant="outline" className="flex-1">
+                      <Button size="sm" variant="outline" className="flex-1" onClick={shareToInstagram}>
                         Instagram
                       </Button>
-                      <Button size="sm" variant="outline" className="flex-1">
+                      <Button size="sm" variant="outline" className="flex-1" onClick={shareToLinkedIn}>
                         LinkedIn
                       </Button>
-                      <Button size="sm" variant="outline" className="flex-1">
+                      <Button size="sm" variant="outline" className="flex-1" onClick={copyProjectLink}>
                         העתק לינק
                       </Button>
                     </div>

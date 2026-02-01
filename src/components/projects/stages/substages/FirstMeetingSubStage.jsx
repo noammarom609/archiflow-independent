@@ -34,6 +34,7 @@ import ProjectMeetingSchedulerModal from '../../scheduling/ProjectMeetingSchedul
 import LargeAudioProcessor from '../../../audio/LargeAudioProcessor';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Home, Building, Building2, Briefcase, RefreshCw, Castle, UtensilsCrossed, Store, Sparkles as SparklesIcon } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
 
 // Helper function to get icon component by project type
 const getProjectTypeIcon = (projectType) => {
@@ -55,6 +56,7 @@ const MAX_CHUNK_SIZE = 25 * 1024 * 1024; // 25MB
 const LARGE_FILE_THRESHOLD_MB = 24; // Files above this will use LargeAudioProcessor
 
 export default function FirstMeetingSubStage({ project, onComplete, onContinue, onUpdate }) {
+  const { user: authUser } = useAuth();
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
   const chunkFilesRef = useRef([]);
@@ -786,7 +788,9 @@ ${checklistItemsForAI.map(item => `${item.index + 1}. [ID: ${item.id}] ${item.qu
         analysis: analysisResult,
         status: 'analyzed',
         project_id: project?.id ? String(project.id) : undefined,
-        project_name: project?.name
+        project_name: project?.name,
+        architect_email: authUser?.email || null,
+        created_by: authUser?.email || null,
       });
 
       // Generate automatic tags
@@ -803,7 +807,9 @@ ${checklistItemsForAI.map(item => `${item.index + 1}. [ID: ${item.id}] ${item.qu
         recording_id: recording.id,
         status: 'active',
         tags: autoTags,
-        description: `הקלטת פגישה ראשונה עם הלקוח. תמלול ונותח אוטומטית.`
+        description: `הקלטת פגישה ראשונה עם הלקוח. תמלול ונותח אוטומטית.`,
+        architect_email: authUser?.email || null,
+        created_by: authUser?.email || null,
       });
       
       // ✅ NEW: Save AI insights using the centralized manager with source tracking

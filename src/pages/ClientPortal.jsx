@@ -533,6 +533,24 @@ export default function ClientPortal() {
                           <p className="text-xs text-muted-foreground">{doc.file_size}</p>
                         </div>
                       </div>
+                      
+                      {/* Approval Buttons for documents that require approval */}
+                      {doc.approval_required && permissions.approve_items && (
+                        <div className="mb-4">
+                          <ApprovalButtons
+                            item={doc}
+                            itemType="document"
+                            currentUser={{
+                              name: client?.full_name || user?.full_name,
+                              email: user?.email,
+                              role: 'client'
+                            }}
+                            canApprove={permissions.approve_items}
+                            onApprovalChange={() => queryClient.invalidateQueries({ queryKey: ['clientDocuments'] })}
+                          />
+                        </div>
+                      )}
+                      
                       <div className="mt-auto">
                         <Button
                           variant="outline"

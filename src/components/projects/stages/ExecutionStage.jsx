@@ -140,7 +140,7 @@ export default function ExecutionStage({ project, onUpdate, onSubStageChange, cu
   };
 
   // Calculate progress metrics
-  const completedTasks = tasks.filter(t => t.status === 'done').length;
+  const completedTasks = tasks.filter(t => t.status === 'completed').length;
   const totalTasks = tasks.length;
   const taskProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 

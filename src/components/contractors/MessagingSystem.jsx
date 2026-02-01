@@ -57,6 +57,13 @@ export default function MessagingSystem({ messages }) {
     },
   });
 
+  // Determine current user type and info
+  const currentUserId = user?.id || user?.email || 'unknown';
+  const currentUserName = user?.full_name || user?.name || 'משתמש';
+  const currentUserType = user?.app_role === 'contractor' ? 'contractor' : 
+                          user?.app_role === 'consultant' ? 'consultant' : 'architect';
+  const isArchitect = ['architect', 'super_admin', 'admin'].includes(user?.app_role);
+
   const handleSendMessage = () => {
     if (!newMessage.trim() || !selectedRecipient) {
       showError('אנא בחר נמען והזן הודעה');
@@ -65,18 +72,21 @@ export default function MessagingSystem({ messages }) {
 
     sendMessageMutation.mutate({
       content: newMessage,
-      sender_id: 'architect-1',
-      sender_name: 'מנהל הפרויקט',
-      sender_type: 'architect',
+      sender_id: currentUserId,
+      sender_name: currentUserName,
+      sender_type: currentUserType,
       recipient_id: selectedRecipient.id,
       recipient_name: selectedRecipient.name,
-      recipient_type: 'contractor',
+      recipient_type: isArchitect ? 'contractor' : 'architect',
       project_name: 'פרויקט כללי',
+      created_by: user?.email,
+      architect_email: isArchitect ? user?.email : selectedRecipient.architect_email,
     });
   };
 
   const groupedMessages = messages.reduce((acc, msg) => {
-    const key = msg.sender_id === 'architect-1' ? msg.recipient_id : msg.sender_id;
+    // Group by the other party in the conversation
+    const key = msg.sender_id === currentUserId ? msg.recipient_id : msg.sender_id;
     if (!acc[key]) acc[key] = [];
     acc[key].push(msg);
     return acc;
@@ -92,7 +102,7 @@ export default function MessagingSystem({ messages }) {
             <div className="space-y-2">
               {contractors.map(contractor => {
                 const contractorMessages = groupedMessages[contractor.id] || [];
-                const unreadCount = contractorMessages.filter(m => !m.is_read && m.sender_id !== 'architect-1').length;
+                const unreadCount = contractorMessages.filter(m => !m.is_read && m.sender_id !== currentUserId).length;
                 const lastMessage = contractorMessages[contractorMessages.length - 1];
                 
                 return (

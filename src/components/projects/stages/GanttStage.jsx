@@ -23,6 +23,7 @@ import {
 import { showSuccess, showError } from '../../utils/notifications';
 import { format, addDays, differenceInDays } from 'date-fns';
 import { he } from 'date-fns/locale';
+import { useAuth } from '@/lib/AuthContext';
 
 const defaultMilestones = [
   { id: 'planning', name: 'תכנון ראשוני', duration: 14, color: '#6366f1' },
@@ -40,6 +41,7 @@ const subStages = [
 
 export default function GanttStage({ project, onUpdate, onSubStageChange, currentSubStage }) {
   const queryClient = useQueryClient();
+  const { user: authUser } = useAuth();
   const [activeSubStage, setActiveSubStage] = useState('create');
   const [completedSubStages, setCompletedSubStages] = useState([]);
   const [startDate, setStartDate] = useState(project?.start_date || new Date().toISOString().split('T')[0]);
@@ -119,7 +121,9 @@ export default function GanttStage({ project, onUpdate, onSubStageChange, curren
       - משך (duration): בימים
       - צבע (color): גוון מודרני המבדיל בין שלבים שונים (תכנון, ביצוע, גמר וכו')
 
-      פלט רצוי: JSON עם מערך milestones.`;
+      IMPORTANT: Try to respond in JSON format only.
+      פלט רצוי: אובייקט JSON בלבד עם מערך milestones. דוגמה:
+      {"milestones": [{"name": "תכנון ראשוני", "duration": 14, "color": "#6366f1"}]}`;
 
       const result = await archiflow.integrations.Core.InvokeLLM({
         prompt,
@@ -142,9 +146,23 @@ export default function GanttStage({ project, onUpdate, onSubStageChange, curren
         }
       });
 
-      if (result.milestones && result.milestones.length > 0) {
+      // Handle response - may come as object with milestones or as string/response field
+      let parsedResult = result;
+      if (result.response && typeof result.response === 'string') {
+        // Try to extract JSON from the response string
+        try {
+          const jsonMatch = result.response.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            parsedResult = JSON.parse(jsonMatch[0]);
+          }
+        } catch (parseErr) {
+          console.warn('Could not parse JSON from response:', parseErr);
+        }
+      }
+
+      if (parsedResult.milestones && parsedResult.milestones.length > 0) {
         // Add IDs to new milestones
-        const newMilestones = result.milestones.map((m, idx) => ({
+        const newMilestones = parsedResult.milestones.map((m, idx) => ({
           ...m,
           id: `ai_${idx}_${Date.now()}`,
           color: m.color || defaultMilestones[idx % defaultMilestones.length].color
@@ -152,6 +170,8 @@ export default function GanttStage({ project, onUpdate, onSubStageChange, curren
         
         setMilestones(newMilestones);
         showSuccess('לוח הזמנים נוצר בהצלחה על בסיס נתוני הפרויקט!');
+      } else {
+        showError('לא התקבלו אבני דרך מה-AI, נסה שנית');
       }
 
     } catch (error) {
@@ -228,6 +248,8 @@ export default function GanttStage({ project, onUpdate, onSubStageChange, curren
           project_id: project?.id,
           color: milestone.color,
           status: 'approved',
+          architect_email: authUser?.email || project?.architect_email || null,
+          created_by: authUser?.email || null,
         });
       }
 

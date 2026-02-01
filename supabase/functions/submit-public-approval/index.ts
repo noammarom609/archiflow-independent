@@ -22,9 +22,12 @@ Deno.serve(async (req) => {
 
     const body = await req.json()
     
+    console.log('📩 Raw request body:', JSON.stringify(body, null, 2))
+    
     // Support both old format (entityType, entityId, action) and new format (projectId, type, proposalId)
-    let entityType = body.entityType || body.type
-    let entityId = body.entityId || body.proposalId || body.projectId
+    let entityType = body.entityType || body.type || 'proposal'
+    // Don't use projectId as entityId - it's a different ID!
+    let entityId = body.entityId || body.proposalId
     const action = body.action || 'approve' // Default to approve for new format
     const signature = body.signature || body.signatureData
     const comments = body.comments
@@ -33,12 +36,12 @@ Deno.serve(async (req) => {
     const token = body.token
     const projectId = body.projectId
 
-    console.log('Received approval request:', { entityType, entityId, action, projectId, hasSignature: !!signature })
+    console.log('🔍 Parsed approval request:', { entityType, entityId, action, projectId, hasSignature: !!signature, approverName })
 
     // If we have projectId but no proposalId, try to find the proposal
-    if (projectId && !body.proposalId && entityType === 'proposal') {
+    if (projectId && (!body.proposalId || !entityId) && (entityType === 'proposal' || !entityType)) {
       console.log('Looking up proposal for project:', projectId)
-      const { data: proposal } = await supabase
+      const { data: proposal, error: lookupError } = await supabase
         .from('proposals')
         .select('id')
         .eq('project_id', projectId)
@@ -46,9 +49,16 @@ Deno.serve(async (req) => {
         .limit(1)
         .maybeSingle()
       
+      if (lookupError) {
+        console.error('Error looking up proposal:', lookupError)
+      }
+      
       if (proposal) {
         entityId = proposal.id
+        entityType = 'proposal'
         console.log('Found proposal:', entityId)
+      } else {
+        console.log('No proposal found for project:', projectId)
       }
     }
 
@@ -73,21 +83,31 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Verify the entity exists and has the correct token
+    // Verify the entity exists
     const { data: entity, error: fetchError } = await supabase
       .from(tableName)
-      .select('id, share_token, status')
+      .select('id, status, share_token')
       .eq('id', entityId)
-      .single()
+      .maybeSingle()
 
-    if (fetchError || !entity) {
+    if (fetchError) {
+      console.error('Database error:', fetchError)
       return new Response(
-        JSON.stringify({ error: 'Entity not found' }),
+        JSON.stringify({ error: 'Database error: ' + fetchError.message }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (!entity) {
+      console.log('Entity not found, entityId:', entityId, 'tableName:', tableName)
+      return new Response(
+        JSON.stringify({ error: 'Entity not found', entityId, tableName }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    if (token && entity.share_token !== token) {
+    // Only validate token if both token is provided AND entity has a share_token set
+    if (token && entity.share_token && entity.share_token !== token) {
       return new Response(
         JSON.stringify({ error: 'Invalid access token' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

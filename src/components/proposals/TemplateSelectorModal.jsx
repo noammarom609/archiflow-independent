@@ -66,8 +66,8 @@ export default function TemplateSelectorModal({ isOpen, onClose, onSelectTemplat
           />
         </div>
 
-        {/* Templates Grid */}
-        <ScrollArea className="flex-1 -mx-6 px-6">
+        {/* Templates Grid - with fixed height for scrolling */}
+        <ScrollArea className="h-[400px] -mx-6 px-6">
           {isLoading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-cyan-600" />

@@ -326,9 +326,19 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
     return acc;
   }, {});
 
-  // Load existing proposal data if available
+  // Track if we've already loaded from DB (to prevent overwriting AI-generated data)
+  const hasLoadedFromDB = React.useRef(false);
+
+  // Load existing proposal data if available (only on initial load, not after AI generation)
   useEffect(() => {
-    if (existingProposals.length > 0) {
+    // Skip if AI just generated data - don't overwrite it
+    if (aiGenerationComplete) {
+      return;
+    }
+
+    // Only load from DB once on initial mount
+    if (existingProposals.length > 0 && !hasLoadedFromDB.current) {
+      hasLoadedFromDB.current = true;
       const latest = existingProposals[0];
       
       // Recalculate totals to fix any legacy bad data
@@ -365,9 +375,10 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
       } else if (latest.items?.length > 0 && latest.total_amount > 0) {
         // Proposal exists with data - show editor mode
         setCreationMode('manual');
+        setAiGenerationComplete(true); // Mark as complete so editor shows
       }
     }
-  }, [existingProposals]);
+  }, [existingProposals, aiGenerationComplete]);
 
   // Create proposal mutation
   const createProposalMutation = useMutation({
@@ -576,6 +587,9 @@ ${clausesContext}
         }
       });
 
+      console.log('🤖 AI Response:', result);
+      console.log('🤖 AI Items:', result.items);
+      
       const totals = calculateTotals(result.items || [], 0, proposalData.vat_percent);
       
       // ✅ Create the new proposal data
@@ -588,6 +602,7 @@ ${clausesContext}
         ...totals,
       };
       
+      console.log('📋 New Proposal Data:', newProposalData);
       setProposalData(newProposalData);
       setCreationMode('ai');
       setAiGenerationComplete(true); // ✅ Mark AI generation as complete
@@ -1080,6 +1095,24 @@ ArchiFlow`
                         </p>
                       </div>
                       <Badge className="bg-cyan-100 text-cyan-700">נבחרה</Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={async () => {
+                          setSelectedTemplate(null);
+                          setProposalData(prev => ({ ...prev, template_id: null }));
+                          // Save to database
+                          if (existingProposals.length > 0) {
+                            await updateProposalMutation.mutateAsync({ 
+                              id: existingProposals[0].id, 
+                              data: { template_id: null } 
+                            });
+                          }
+                        }}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   ) : (
                     <div 

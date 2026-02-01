@@ -45,11 +45,19 @@ const subStages = [
 ];
 
 export default function FirstCallStage({ project, onUpdate, onSubStageChange, currentSubStage }) {
-  const [activeSubStage, setActiveSubStage] = useState('phone_call');
+  // Initialize from prop if available to prevent overwriting saved value
+  const [activeSubStage, setActiveSubStage] = useState(() => {
+    if (currentSubStage && ['phone_call', 'first_meeting', 'client_card'].includes(currentSubStage)) {
+      return currentSubStage;
+    }
+    return 'phone_call';
+  });
   const [completedSubStages, setCompletedSubStages] = useState([]);
 
   // Track if change came from parent to prevent loops
   const isExternalChange = React.useRef(false);
+  // Track if initial sync is done to prevent saving on mount
+  const initialSyncDone = React.useRef(false);
 
   // Sync from parent Stepper when sub-stage is clicked there
   React.useEffect(() => {
@@ -65,12 +73,20 @@ export default function FirstCallStage({ project, onUpdate, onSubStageChange, cu
         setActiveSubStage(mappedSubStage);
       }
     }
+    // Mark initial sync as done after first currentSubStage update
+    if (!initialSyncDone.current && currentSubStage) {
+      initialSyncDone.current = true;
+    }
   }, [currentSubStage]);
 
-  // Notify parent when active sub-stage changes (only if internal change)
+  // Notify parent when active sub-stage changes (only if internal change AND initial sync is done)
   React.useEffect(() => {
     if (isExternalChange.current) {
       isExternalChange.current = false;
+      return;
+    }
+    // Don't notify on initial mount - wait for sync from parent first
+    if (!initialSyncDone.current) {
       return;
     }
     if (onSubStageChange) {
@@ -98,15 +114,21 @@ export default function FirstCallStage({ project, onUpdate, onSubStageChange, cu
     // Only set active substage on initial load, not when project data updates
     if (!initialLoadDone.current) {
       initialLoadDone.current = true;
-      if (!completed.includes('phone_call')) {
-        setActiveSubStage('phone_call');
-      } else if (!completed.includes('first_meeting')) {
-        setActiveSubStage('first_meeting');
-      } else if (!completed.includes('client_card')) {
-        setActiveSubStage('client_card');
+      // Use saved currentSubStage from database if available
+      if (currentSubStage && ['phone_call', 'first_meeting', 'client_card'].includes(currentSubStage)) {
+        setActiveSubStage(currentSubStage);
+      } else {
+        // Fallback to completion-based logic only if no saved sub-stage
+        if (!completed.includes('phone_call')) {
+          setActiveSubStage('phone_call');
+        } else if (!completed.includes('first_meeting')) {
+          setActiveSubStage('first_meeting');
+        } else if (!completed.includes('client_card')) {
+          setActiveSubStage('client_card');
+        }
       }
     }
-  }, [project?.first_call_recording_id, project?.first_meeting_recording_id, project?.client_id, project?.client_needs_checklist]);
+  }, [project?.first_call_recording_id, project?.first_meeting_recording_id, project?.client_id, project?.client_needs_checklist, currentSubStage]);
 
   const handleSubStageComplete = (subStageId, autoAdvance = false) => {
     if (!completedSubStages.includes(subStageId)) {

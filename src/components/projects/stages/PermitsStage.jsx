@@ -127,7 +127,7 @@ export default function PermitsStage({ project, currentSubStage, onSubStageChang
     if (currentSubStageIndex < PERMIT_SUBSTAGES.length - 1) {
       const nextSubStage = PERMIT_SUBSTAGES[currentSubStageIndex + 1];
       if (onSubStageChange) {
-        onSubStageChange('permits', nextSubStage.id);
+        onSubStageChange(nextSubStage.id);
       }
     } else if (onComplete) {
       onComplete();
@@ -193,7 +193,7 @@ export default function PermitsStage({ project, currentSubStage, onSubStageChang
                         ? 'bg-green-50 border-green-200'
                         : 'bg-white border-slate-200 hover:border-sky-300'
                     }`}
-                    onClick={() => onSubStageChange && onSubStageChange('permits', substage.id)}
+                    onClick={() => onSubStageChange && onSubStageChange(substage.id)}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
@@ -493,7 +493,7 @@ export default function PermitsStage({ project, currentSubStage, onSubStageChang
 
       {/* Navigation */}
       <div className="flex justify-between">
-        <Button variant="outline" onClick={() => onSubStageChange && currentSubStageIndex > 0 && onSubStageChange('permits', PERMIT_SUBSTAGES[currentSubStageIndex - 1].id)}>
+        <Button variant="outline" onClick={() => onSubStageChange && currentSubStageIndex > 0 && onSubStageChange(PERMIT_SUBSTAGES[currentSubStageIndex - 1].id)}>
           <ChevronRight className="w-4 h-4" />
           הקודם
         </Button>

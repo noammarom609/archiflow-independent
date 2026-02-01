@@ -31,14 +31,28 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { archiflow } from '@/api/archiflow';
 import { showSuccess, showError } from '@/components/utils/notifications';
 
-export default function SurveyStage({ project, onUpdate, onSubStageChange }) {
+export default function SurveyStage({ project, onUpdate, onSubStageChange, currentSubStage }) {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState('upload_survey'); // upload_survey, as_made, site_photos
+  const [activeTab, setActiveTab] = useState(currentSubStage || 'upload_survey'); // upload_survey, as_made, site_photos
   const [notes, setNotes] = useState(project.notes || '');
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
   const [viewMode, setViewMode] = useState('grid'); // grid, list
+
+  // Sync from parent when currentSubStage changes
+  React.useEffect(() => {
+    if (currentSubStage && currentSubStage !== activeTab) {
+      setActiveTab(currentSubStage);
+    }
+  }, [currentSubStage]);
+
+  // Notify parent when active tab changes
+  React.useEffect(() => {
+    if (onSubStageChange && activeTab) {
+      onSubStageChange(activeTab);
+    }
+  }, [activeTab]);
 
   // File Upload Handlers
   const handleFileUpload = async (e, type) => {

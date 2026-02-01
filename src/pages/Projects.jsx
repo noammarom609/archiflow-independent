@@ -291,12 +291,13 @@ export default function Projects() {
 
   const selectedProject = allProjects.find(p => p.id === selectedProjectId);
 
-  // Sync stage with project
+  // Sync stage with project (use current_stage and current_sub_stage fields)
   useEffect(() => {
     if (selectedProject) {
-      const projectStatus = selectedProject.status || 'first_call';
-      setCurrentStage(projectStatus);
+      const projectStage = selectedProject.current_stage || 'first_call';
+      setCurrentStage(projectStage);
       
+      // Use saved sub-stage if available, otherwise use default
       const subStageDefaults = {
         first_call: 'phone_call',
         proposal: 'initial',
@@ -310,9 +311,10 @@ export default function Projects() {
         execution: null,
         completion: null,
       };
-      setCurrentSubStage(subStageDefaults[projectStatus] || null);
+      const savedSubStage = selectedProject.current_sub_stage;
+      setCurrentSubStage(savedSubStage || subStageDefaults[projectStage] || null);
     }
-  }, [selectedProject?.id, selectedProject?.status]);
+  }, [selectedProject?.id, selectedProject?.current_stage, selectedProject?.current_sub_stage]);
 
   // Handlers
   const handleProjectClick = (projectId) => {
@@ -366,7 +368,7 @@ export default function Projects() {
     }
   };
 
-  const handleStageClick = (stageId) => {
+  const handleStageClick = async (stageId) => {
     setCurrentStage(stageId);
     const subStageDefaults = {
       first_call: 'phone_call',
@@ -375,23 +377,61 @@ export default function Projects() {
       sketches: 'upload',
       rendering: 'upload',
       technical: 'upload',
+      survey: 'upload_survey',
+      concept: 'program',
+      selections: 'spec_list',
       execution: null,
       completion: null,
     };
-    setCurrentSubStage(subStageDefaults[stageId] || null);
+    const defaultSubStage = subStageDefaults[stageId] || null;
+    setCurrentSubStage(defaultSubStage);
+    
+    // Save the stage change to database (save both stage and default sub-stage)
+    if (selectedProjectId && stageId !== selectedProject?.current_stage) {
+      try {
+        await handleProjectUpdate({ 
+          current_stage: stageId,
+          current_sub_stage: defaultSubStage
+        });
+      } catch (error) {
+        console.error('Failed to save stage change:', error);
+        // Stage change still works locally even if save fails
+      }
+    }
   };
 
-  const handleSubStageClick = (stageId, subStageId) => {
+  const handleSubStageClick = async (stageId, subStageId) => {
     setCurrentStage(stageId);
     setCurrentSubStage(subStageId);
+    
+    // Save to database
+    if (selectedProjectId) {
+      try {
+        await handleProjectUpdate({ 
+          current_stage: stageId, 
+          current_sub_stage: subStageId 
+        });
+      } catch (error) {
+        console.error('Failed to save sub-stage change:', error);
+      }
+    }
   };
 
-  const handleSubStageChange = (subStageId) => {
+  const handleSubStageChange = async (subStageId) => {
     setCurrentSubStage(subStageId);
+    
+    // Save to database
+    if (selectedProjectId && subStageId !== selectedProject?.current_sub_stage) {
+      try {
+        await handleProjectUpdate({ current_sub_stage: subStageId });
+      } catch (error) {
+        console.error('Failed to save sub-stage change:', error);
+      }
+    }
   };
 
   const renderStageContent = () => {
-    const effectiveStage = currentStage || selectedProject?.status || 'first_call';
+    const effectiveStage = currentStage || selectedProject?.current_stage || 'first_call';
     const stageProps = {
       project: selectedProject,
       onUpdate: handleProjectUpdate,
@@ -841,7 +881,7 @@ export default function Projects() {
           <ScrollReveal delay={0.2} direction="right" distance={30} className="lg:col-span-3">
             <ProjectWorkflowStepper
               project={selectedProject}
-              currentStage={currentStage || selectedProject?.status || 'first_call'}
+              currentStage={currentStage || selectedProject?.current_stage || 'first_call'}
               currentSubStage={currentSubStage}
               onStageClick={handleStageClick}
               onSubStageClick={handleSubStageClick}

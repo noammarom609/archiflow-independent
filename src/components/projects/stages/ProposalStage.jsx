@@ -62,7 +62,19 @@ const calculateTotals = (items, discountPercent, vatPercent) => {
 export default function ProposalStage({ project, onUpdate, onSubStageChange, currentSubStage }) {
   const queryClient = useQueryClient();
   const { sendTemplate } = useNotifications();
-  const [activeSubStage, setActiveSubStage] = useState('create');
+  // Initialize from prop if available to prevent overwriting saved value
+  const [activeSubStage, setActiveSubStage] = useState(() => {
+    const reverseMap = {
+      'create_proposal': 'create',
+      'proposal_approval': 'approval',
+      'initial_proposal': 'create',
+      'formal_proposal': 'create',
+    };
+    if (currentSubStage && reverseMap[currentSubStage]) {
+      return reverseMap[currentSubStage];
+    }
+    return 'create';
+  });
   const [completedSubStages, setCompletedSubStages] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -77,6 +89,8 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
 
   // Track if change came from parent to prevent loops
   const isExternalChange = React.useRef(false);
+  // Track if initial sync is done to prevent saving on mount
+  const initialSyncDone = React.useRef(false);
 
   // Sync from parent Stepper when sub-stage is clicked there
   React.useEffect(() => {
@@ -94,12 +108,20 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
         setActiveSubStage(mappedSubStage);
       }
     }
+    // Mark initial sync as done after first currentSubStage update
+    if (!initialSyncDone.current && currentSubStage) {
+      initialSyncDone.current = true;
+    }
   }, [currentSubStage]);
 
-  // Notify parent of sub-stage changes (only if internal change)
+  // Notify parent of sub-stage changes (only if internal change AND initial sync is done)
   React.useEffect(() => {
     if (isExternalChange.current) {
       isExternalChange.current = false;
+      return;
+    }
+    // Don't notify on initial mount - wait for sync from parent first
+    if (!initialSyncDone.current) {
       return;
     }
     if (onSubStageChange) {

@@ -189,7 +189,16 @@ const stages = [
   },
 ];
 
-export default function ProjectWorkflowStepper({ currentStage, currentSubStage, onStageClick, onSubStageClick, project }) {
+// Valid stage IDs that exist in the workflow
+const validStageIds = stages.map(s => s.id);
+
+export default function ProjectWorkflowStepper({ currentStage: currentStageProp, currentSubStage, onStageClick, onSubStageClick, project }) {
+  // Get the raw stage value from prop or project current_stage field
+  const rawStage = currentStageProp || project?.current_stage || 'first_call';
+  
+  // Map to valid stage - if the stage is not a valid stage ID, default to 'first_call'
+  const currentStage = validStageIds.includes(rawStage) ? rawStage : 'first_call';
+  
   const [expandedStages, setExpandedStages] = useState([currentStage]);
   const [summaries, setSummaries] = useState({});
   const [loadingSummary, setLoadingSummary] = useState(null);
@@ -430,9 +439,15 @@ export default function ProjectWorkflowStepper({ currentStage, currentSubStage, 
               <div
                 className={`flex items-start gap-2 p-2 md:p-3 rounded-lg transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-slate-50 border border-slate-200 shadow-sm'
+                    ? 'bg-primary/10 border-2 border-primary shadow-lg'
                     : 'hover:bg-slate-50 border border-transparent'
                 }`}
+                style={isActive ? { 
+                  backgroundColor: 'rgba(152, 78, 57, 0.15)', 
+                  borderColor: '#984E39',
+                  borderWidth: '2px',
+                  borderStyle: 'solid'
+                } : {}}
                 onClick={() => {
                   onStageClick(stage.id);
                   if (hasSubStages) {
@@ -442,13 +457,18 @@ export default function ProjectWorkflowStepper({ currentStage, currentSubStage, 
               >
                 {/* Icon */}
                 <motion.div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 border transition-all ${
+                  className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 border-2 transition-all ${
                     isCompleted
                       ? 'bg-slate-900 border-slate-900 text-white'
                       : isActive
-                      ? 'bg-white border-slate-900 text-slate-900'
+                      ? 'bg-primary border-primary text-white shadow-md'
                       : 'bg-white border-slate-200 text-slate-400'
                   }`}
+                  style={isActive && !isCompleted ? { 
+                    backgroundColor: '#984E39', 
+                    borderColor: '#984E39',
+                    color: 'white'
+                  } : {}}
                   whileHover={{ scale: 1.1 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 >
@@ -463,9 +483,10 @@ export default function ProjectWorkflowStepper({ currentStage, currentSubStage, 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1 mb-0.5">
                     <h3
-                      className={`text-xs font-medium truncate ${
-                        isActive ? 'text-slate-900' : 'text-slate-600'
+                      className={`text-xs truncate ${
+                        isActive ? 'text-primary font-bold' : 'text-slate-600 font-medium'
                       }`}
+                      style={isActive ? { color: '#984E39', fontWeight: 'bold' } : {}}
                     >
                       {stage.label}
                     </h3>
@@ -527,7 +548,10 @@ export default function ProjectWorkflowStepper({ currentStage, currentSubStage, 
                     )}
                   </div>
                   <p
-                    className={`text-[10px] text-slate-500 truncate hidden md:block`}
+                    className={`text-[10px] truncate hidden md:block ${
+                      isActive ? 'text-primary' : 'text-slate-500'
+                    }`}
+                    style={isActive ? { color: '#984E39' } : {}}
                   >
                     {stage.description}
                   </p>

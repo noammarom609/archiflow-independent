@@ -77,6 +77,7 @@ export default function ProposalStage({ project, onUpdate, onSubStageChange, cur
   });
   const [completedSubStages, setCompletedSubStages] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [aiGenerationComplete, setAiGenerationComplete] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -576,17 +577,55 @@ ${clausesContext}
       });
 
       const totals = calculateTotals(result.items || [], 0, proposalData.vat_percent);
-      setProposalData(prev => ({
-        ...prev,
+      
+      // ✅ Create the new proposal data
+      const newProposalData = {
+        ...proposalData,
         scope_of_work: result.scope_of_work || '',
-        items: result.items || prev.items,
-        payment_terms: result.payment_terms || prev.payment_terms,
+        items: result.items || proposalData.items,
+        payment_terms: result.payment_terms || proposalData.payment_terms,
         notes: result.notes || '',
         ...totals,
-      }));
-
-      showSuccess('הצעת מחיר נוצרה בהצלחה!');
+      };
+      
+      setProposalData(newProposalData);
       setCreationMode('ai');
+      setAiGenerationComplete(true); // ✅ Mark AI generation as complete
+
+      // ✅ Auto-save the proposal to backend
+      try {
+        // ✅ All fields now exist in proposals table (migration 043-046)
+        const proposalPayload = {
+          ...newProposalData,
+          project_id: project?.id,
+          project_name: project?.name,
+          client_id: project?.client_id,
+          client_name: project?.client,
+          client_email: project?.client_email,
+          architect_email: project?.architect_email || project?.owner_email,
+          created_by: project?.owner_email || project?.architect_email,
+          status: 'draft',
+          type: 'formal',
+        };
+
+        if (existingProposals.length > 0) {
+          await updateProposalMutation.mutateAsync({ 
+            id: existingProposals[0].id, 
+            data: proposalPayload 
+          });
+        } else {
+          const savedProposal = await createProposalMutation.mutateAsync(proposalPayload);
+          // Update project with new proposal ID
+          if (project?.id && onUpdate && savedProposal?.id) {
+            await onUpdate({ proposal_id: savedProposal.id });
+          }
+        }
+        
+        showSuccess('הצעת מחיר נוצרה ונשמרה בהצלחה!');
+      } catch (saveError) {
+        console.error('Error auto-saving proposal:', saveError);
+        showSuccess('הצעת מחיר נוצרה! לחץ "שמור" לשמירה.');
+      }
 
     } catch (error) {
       console.error('Error generating proposal:', error);
@@ -599,6 +638,7 @@ ${clausesContext}
   // Save proposal
   const saveProposal = async (status = 'draft') => {
     try {
+      // ✅ All fields now exist in proposals table (migration 043-046)
       const proposalPayload = {
         ...proposalData,
         project_id: project?.id,
@@ -606,6 +646,8 @@ ${clausesContext}
         client_id: project?.client_id,
         client_name: project?.client,
         client_email: project?.client_email,
+        architect_email: project?.architect_email || project?.owner_email,
+        created_by: project?.owner_email || project?.architect_email,
         status,
         type: 'formal',
       };
@@ -940,8 +982,8 @@ ArchiFlow`
                 </Card>
               )}
 
-              {/* AI Generation Mode */}
-              {creationMode === 'ai' && !proposalData.items?.some(i => i.total > 0) && (
+              {/* AI Generation Mode - Show only before AI has generated items */}
+              {creationMode === 'ai' && !aiGenerationComplete && (
                 <Card className="border-purple-200 bg-purple-50">
                   <CardHeader>
                     <div className="flex items-center justify-between">
@@ -949,7 +991,7 @@ ArchiFlow`
                         <Sparkles className="w-5 h-5 text-purple-600" />
                         יצירת הצעה עם AI
                       </CardTitle>
-                      <Button variant="ghost" size="sm" onClick={() => setCreationMode(null)}>
+                      <Button variant="ghost" size="sm" onClick={() => { setCreationMode(null); setAiGenerationComplete(false); }}>
                         חזור לבחירה
                       </Button>
                     </div>
@@ -995,12 +1037,12 @@ ArchiFlow`
                 }}
               />
 
-              {/* Editor - Show when mode is selected and has content or manual/template mode */}
-              {(creationMode === 'manual' || creationMode === 'template' || (creationMode === 'ai' && proposalData.items?.some(i => i.total > 0))) && (
+              {/* Editor - Show when mode is selected and AI generation is complete (for AI mode) */}
+              {(creationMode === 'manual' || creationMode === 'template' || (creationMode === 'ai' && aiGenerationComplete)) && (
                 <>
               {/* Back to selection button - Top */}
               <div className="flex justify-end mb-4">
-                <Button variant="outline" onClick={() => setCreationMode(null)} className="gap-2">
+                <Button variant="outline" onClick={() => { setCreationMode(null); setAiGenerationComplete(false); }} className="gap-2">
                   חזור לבחירה
                 </Button>
               </div>
@@ -1323,7 +1365,7 @@ ArchiFlow`
               </Card>
 
               <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setCreationMode(null)} className="gap-2">
+                <Button variant="outline" onClick={() => { setCreationMode(null); setAiGenerationComplete(false); }} className="gap-2">
                   חזור לבחירה
                 </Button>
                 <Button variant="outline" onClick={() => saveProposal('draft')} className="flex-1">

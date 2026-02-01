@@ -33,6 +33,7 @@ import {
 import UnifiedTemplateEditor from '../components/proposals/UnifiedTemplateEditor';
 import TemplatePreview from '../components/proposals/TemplatePreview';
 import { showSuccess, showError } from '../components/utils/notifications';
+import { seedAllProposalTemplates } from '../utils/seedProposalTemplates';
 
 const statusLabels = {
   draft: { label: 'טיוטה', color: 'bg-slate-100 text-slate-700' },
@@ -156,6 +157,7 @@ export default function ProposalTemplates({ onBack }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
+  const [isSeeding, setIsSeeding] = useState(false);
 
   // Fetch current user (with bypass support)
   const { data: user } = useQuery({
@@ -250,6 +252,27 @@ export default function ProposalTemplates({ onBack }) {
       created_date: undefined,
       updated_date: undefined,
     });
+  };
+
+  // ✅ Seed all 13 project type templates
+  const handleSeedTemplates = async () => {
+    setIsSeeding(true);
+    try {
+      const results = await seedAllProposalTemplates();
+      queryClient.invalidateQueries({ queryKey: ['proposalTemplates'] });
+      
+      if (results.success > 0) {
+        showSuccess(`נוצרו ${results.success} תבניות בהצלחה!`);
+      }
+      if (results.failed > 0) {
+        showError(`${results.failed} תבניות נכשלו`);
+      }
+    } catch (error) {
+      console.error('Error seeding templates:', error);
+      showError('שגיאה ביצירת תבניות');
+    } finally {
+      setIsSeeding(false);
+    }
   };
 
   // Select template for editing
@@ -362,18 +385,37 @@ export default function ProposalTemplates({ onBack }) {
             <h1 className="text-3xl font-bold text-slate-900 mb-2">תבניות הצעת מחיר</h1>
             <p className="text-slate-600">צור ונהל תבניות מקצועיות להצעות מחיר</p>
           </div>
-          <Button
-            onClick={handleCreateTemplate}
-            disabled={createMutation.isPending}
-            className="bg-indigo-600 hover:bg-indigo-700"
-          >
-            {createMutation.isPending ? (
-              <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-            ) : (
-              <Plus className="w-4 h-4 ml-2" />
+          <div className="flex gap-2">
+            {/* Seed Templates Button - show if less than 13 templates */}
+            {templates?.length < 13 && (
+              <Button
+                onClick={handleSeedTemplates}
+                disabled={isSeeding}
+                variant="outline"
+                className="border-purple-300 text-purple-700 hover:bg-purple-50"
+              >
+                {isSeeding ? (
+                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                ) : (
+                  <Plus className="w-4 h-4 ml-2" />
+                )}
+                צור תבניות בסיסיות
+              </Button>
             )}
-            תבנית חדשה
-          </Button>
+            
+            <Button
+              onClick={handleCreateTemplate}
+              disabled={createMutation.isPending}
+              className="bg-indigo-600 hover:bg-indigo-700"
+            >
+              {createMutation.isPending ? (
+                <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+              ) : (
+                <Plus className="w-4 h-4 ml-2" />
+              )}
+              תבנית חדשה
+            </Button>
+          </div>
 
         </div>
 
@@ -435,10 +477,26 @@ export default function ProposalTemplates({ onBack }) {
                 : 'צור את התבנית הראשונה שלך ותתחיל לשלוח הצעות מקצועיות'}
             </p>
             {!searchQuery && statusFilter === 'all' && (
-              <Button onClick={handleCreateTemplate} className="bg-indigo-600 hover:bg-indigo-700">
-                <Plus className="w-4 h-4 ml-2" />
-                צור תבנית ראשונה
-              </Button>
+              <div className="flex flex-col items-center gap-3">
+                <Button onClick={handleCreateTemplate} className="bg-indigo-600 hover:bg-indigo-700">
+                  <Plus className="w-4 h-4 ml-2" />
+                  צור תבנית ראשונה
+                </Button>
+                <span className="text-slate-400">או</span>
+                <Button 
+                  onClick={handleSeedTemplates} 
+                  disabled={isSeeding}
+                  variant="outline"
+                  className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                >
+                  {isSeeding ? (
+                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                  ) : (
+                    <Plus className="w-4 h-4 ml-2" />
+                  )}
+                  צור 13 תבניות בסיסיות (לכל סוגי הפרויקטים)
+                </Button>
+              </div>
             )}
           </motion.div>
         ) : (

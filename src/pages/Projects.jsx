@@ -110,12 +110,10 @@ const statusConfig = {
 function CollapsibleSection({ title, children, defaultOpen = false, forceOpen = false }) {
   const [isOpen, setIsOpen] = useState(defaultOpen || forceOpen);
   
-  // ✅ Update state when forceOpen changes
+  // ✅ Update state when forceOpen changes - open when true, close when false
   React.useEffect(() => {
-    if (forceOpen) {
-      setIsOpen(true);
-    }
-  }, [forceOpen]);
+    setIsOpen(forceOpen || defaultOpen);
+  }, [forceOpen, defaultOpen]);
 
   return (
     <FadeIn delay={0.1} direction="up" distance={10}>

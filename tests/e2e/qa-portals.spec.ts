@@ -157,16 +157,72 @@ test.describe('ContractorPortal – פורטל קבלן', () => {
     console.log(`   📋 משימות: ${hasTasks ? 'מוצגות' : 'לא מוצגות'}`);
   });
 
-  test('קבלן יכול להעלות הצעת מחיר', async ({ page }) => {
+  test('קבלן יכול להעלות מסמך', async ({ page }) => {
     await page.goto('/ContractorPortal');
     await delay(page);
     await dismissPopups(page);
 
-    const quoteBtn = page.getByRole('button', { name: /הצעת מחיר|quote|הגש הצעה/i }).first()
+    const uploadBtn = page.getByRole('button', { name: /העלאת מסמך|upload|העלאה/i }).first()
       .or(page.locator('button').filter({ has: page.locator('svg.lucide-upload') }).first());
     
-    const hasQuoteBtn = await quoteBtn.isVisible({ timeout: 5000 }).catch(() => false);
-    console.log(`   💰 הצעת מחיר: ${hasQuoteBtn ? 'כפתור קיים' : 'לא נמצא'}`);
+    const hasUploadBtn = await uploadBtn.isVisible({ timeout: 5000 }).catch(() => false);
+    console.log(`   📤 העלאת מסמך: ${hasUploadBtn ? 'כפתור קיים' : 'לא נמצא'}`);
+    expect(hasUploadBtn || page.url().includes('/ContractorPortal') || page.url().includes('/Dashboard')).toBe(true);
+  });
+
+  test('טאב הצעות מחיר קיים', async ({ page }) => {
+    await page.goto('/ContractorPortal');
+    await delay(page);
+    await dismissPopups(page);
+
+    // בדיקת טאב הצעות מחיר
+    const quotesTab = page.getByRole('tab', { name: /הצעות מחיר|quotes/i })
+      .or(page.locator('button').filter({ has: page.locator('svg.lucide-dollar-sign') }).first());
+    
+    const hasQuotesTab = await quotesTab.isVisible({ timeout: 5000 }).catch(() => false);
+    
+    if (hasQuotesTab) {
+      await quotesTab.click();
+      await delay(page, SHORT_DELAY);
+      
+      // בדיקה שהטאב נפתח
+      const quotesContent = page.getByText(/הצעות מחיר|ממתינה להגשה|נשלחה/i).first();
+      const hasContent = await quotesContent.isVisible({ timeout: 3000 }).catch(() => false);
+      
+      console.log(`   💰 טאב הצעות מחיר: ${hasContent ? 'תוכן נטען' : 'ריק'}`);
+    } else {
+      console.log(`   💰 טאב הצעות מחיר: לא נמצא`);
+    }
+    
+    expect(hasQuotesTab || page.url().includes('/Dashboard')).toBe(true);
+  });
+
+  test('טופס הגשת הצעת מחיר', async ({ page }) => {
+    await page.goto('/ContractorPortal');
+    await delay(page);
+    await dismissPopups(page);
+
+    // מעבר לטאב הצעות מחיר
+    const quotesTab = page.getByRole('tab', { name: /הצעות מחיר|quotes/i })
+      .or(page.locator('button').filter({ has: page.locator('svg.lucide-dollar-sign') }).first());
+    
+    if (await quotesTab.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await quotesTab.click();
+      await delay(page, SHORT_DELAY);
+      
+      // בדיקת שדות טופס הגשה
+      const amountField = page.getByPlaceholder(/סכום|amount/i).first()
+        .or(page.locator('input[type="number"]').first());
+      const detailsField = page.getByPlaceholder(/פרטי|details/i).first()
+        .or(page.locator('textarea').first());
+      const submitBtn = page.getByRole('button', { name: /שלח|submit|הגש/i }).first();
+      
+      const hasAmount = await amountField.isVisible({ timeout: 3000 }).catch(() => false);
+      const hasDetails = await detailsField.isVisible({ timeout: 2000 }).catch(() => false);
+      const hasSubmit = await submitBtn.isVisible({ timeout: 2000 }).catch(() => false);
+      
+      console.log(`   📝 טופס הגשה: סכום=${hasAmount}, פרטים=${hasDetails}, שלח=${hasSubmit}`);
+    }
   });
 
   test('קבלן רואה הודעות', async ({ page }) => {

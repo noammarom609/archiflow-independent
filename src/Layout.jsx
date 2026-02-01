@@ -655,7 +655,7 @@ function LayoutContent({ children, currentPageName }) {
             
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-foreground truncate leading-tight">{user?.full_name?.split(' ')[0]}</p>
-              <p className="text-[10px] text-muted-foreground truncate leading-tight uppercase tracking-wide">{user?.app_role?.replace('_', ' ') || 'User'}</p>
+              <p className="text-[10px] text-muted-foreground truncate leading-tight">{user?.email || ''}</p>
             </div>
           </div>
         </div>

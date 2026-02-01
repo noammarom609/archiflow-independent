@@ -36,6 +36,59 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Home, Building, Building2, Briefcase, RefreshCw, Castle, UtensilsCrossed, Store, Sparkles as SparklesIcon } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
+/** Parse markdown "מיפוי סמנטי לצ'קליסט" / Stage 2 → checklist_analysis. Supports [ID: xxx] and ID: xxx (no brackets). */
+function parseChecklistAnalysisFromMarkdown(summaryText) {
+  if (!summaryText || typeof summaryText !== 'string') return [];
+  let text = summaryText;
+  const stage2Match = summaryText.match(/(?:מיפוי סמנטי|מיפוי לצ'קליסט|Stage 2|שלב 2|צ'קליסט)[\s\S]*?(?=###|##\s|סיכום מנהלים|$)/i);
+  if (stage2Match) text = stage2Match[0];
+  const lines = text.split(/\n/);
+  const result = [];
+  const seen = new Set();
+
+  function addIfValid(id, answer_summary) {
+    const val = (answer_summary || '').trim().replace(/^\s*[✓✔]\s*/, '');
+    if (!id || seen.has(id)) return;
+    if (!val || /answered\s*=\s*false/i.test(val)) return;
+    seen.add(id);
+    result.push({ id: id.trim(), answer_summary: val, answered: true, confidence: 80 });
+  }
+
+  for (const line of lines) {
+    // Format A (actual LLM output): "ID: project_type - ✓ שיפוץ" or "ID: intro - answered=false" (no brackets)
+    let m = line.match(/^\s*[\-\•\*\d.]*\s*ID:\s*([a-zA-Z0-9_]+)\s*[-–:]\s*(.+)$/);
+    if (m) {
+      addIfValid(m[1].trim(), m[2]);
+      continue;
+    }
+    // Format B: [ID: project_type]: ✓ שיפוץ
+    m = line.match(/\[ID:\s*([^\]\s]+)\].*?[✓✔]?\s*[:–-]?\s*(.+?)(?:\s*\.\d+)?\s*$/);
+    if (m) {
+      addIfValid(m[1], m[2]);
+      continue;
+    }
+    // Format C: ✓ שיפוץ :**[ID: project_type]**
+    m = line.match(/[✓✔]?\s*(.+?)\s*:\s*\*?\*?\[ID:\s*([^\]\s]+)\]/);
+    if (m) {
+      const id = (m[2] || '').trim();
+      if (id && !seen.has(id)) {
+        const val = (m[1] || '').trim().replace(/^\s*[✓✔]\s*/, '');
+        if (val && !/answered\s*=\s*false/i.test(val)) {
+          seen.add(id);
+          result.push({ id, answer_summary: val, answered: true, confidence: 80 });
+        }
+      }
+      continue;
+    }
+    // Format D: - [ID: project_type]: שיפוץ
+    m = line.match(/^[\s\-•*]*\[ID:\s*([^\]\s]+)\]\s*[:–-]?\s*(.+)$/);
+    if (m) {
+      addIfValid(m[1], m[2]);
+    }
+  }
+  return result;
+}
+
 // Helper function to get icon component by project type
 const getProjectTypeIcon = (projectType) => {
   const iconName = PROJECT_TYPES[projectType]?.icon;
@@ -66,8 +119,14 @@ export default function FirstMeetingSubStage({ project, onComplete, onContinue, 
   // Initialize checklist from SystemSettings or project
   const [checklist, setChecklist] = useState([]);
   const checklistLoadedRef = useRef(false); // ✅ Use ref to prevent re-initialization
+  const checklistRef = useRef([]); // ✅ Always-current list for async flow (avoids stale closure)
   const [selectedProjectType, setSelectedProjectType] = useState(project?.project_type || 'renovation_apartment');
   const [isLoadingChecklist, setIsLoadingChecklist] = useState(false);
+  
+  // ✅ Keep checklistRef in sync with checklist state
+  useEffect(() => {
+    checklistRef.current = checklist;
+  }, [checklist]);
   
   useEffect(() => {
     async function initChecklist() {
@@ -522,7 +581,7 @@ export default function FirstMeetingSubStage({ project, onComplete, onContinue, 
         question: item.item
       }));
 
-      const analysisResult = await archiflow.integrations.Core.InvokeLLM({
+      const rawLLMResult = await archiflow.integrations.Core.InvokeLLM({
         prompt: `אתה מומחה לניתוח פגישות ראשונות עם לקוחות אדריכלות ויועץ אסטרטגי למשרדי אדריכלות מובילים. 
 יש לך ניסיון עשיר בזיהוי צרכים, הבנת פסיכולוגיה של לקוחות, וחילוץ תובנות מתמלולי פגישות.
 ${learningsContext}
@@ -717,43 +776,82 @@ ${checklistItemsForAI.map(item => `${item.index + 1}. [ID: ${item.id}] ${item.qu
         }
       });
 
+      // ✅ CRITICAL FIX: Parse the LLM response properly (same as PhoneCallSubStage)
+      // Edge Function returns { response: string }; parse JSON for UI
+      let analysisResult;
+      try {
+        const content = rawLLMResult?.response ?? rawLLMResult;
+        if (typeof content === 'string') {
+          const trimmed = content.trim();
+          // If response looks like markdown (starts with #), use as summary only – no JSON parse
+          if (/^\s*#+\s/m.test(trimmed) || trimmed.startsWith('###')) {
+            analysisResult = { summary: trimmed, executive_summary: trimmed };
+          } else {
+            const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+            const toParse = (jsonMatch ? jsonMatch[1] : trimmed).trim();
+            analysisResult = toParse ? JSON.parse(toParse) : { summary: trimmed, executive_summary: trimmed };
+          }
+        } else if (content && typeof content === 'object' && (content.executive_summary != null || content.client_info != null)) {
+          analysisResult = content;
+        } else {
+          analysisResult = content && typeof content === 'object' ? content : {};
+        }
+      } catch (e) {
+        console.error('Failed to parse LLM analysis response:', e);
+        const fallbackText = typeof rawLLMResult?.response === 'string' ? rawLLMResult.response : '';
+        analysisResult = { summary: fallbackText || 'לא ניתן לפרסר את תוצאת הניתוח.', executive_summary: fallbackText };
+      }
+
+      // ✅ When response was markdown (only summary), try to extract checklist_analysis for auto-fill
+      if ((analysisResult.summary || analysisResult.executive_summary) && !analysisResult.checklist_analysis?.length) {
+        const textToparse = analysisResult.summary || analysisResult.executive_summary || '';
+        const parsed = parseChecklistAnalysisFromMarkdown(textToparse);
+        if (parsed.length > 0) {
+          analysisResult.checklist_analysis = parsed;
+          console.log('🤖 Checklist analysis parsed from markdown:', parsed.length, 'items', parsed);
+        } else {
+          console.log('🤖 No checklist items parsed from markdown (check for "[ID: xxx]" lines in summary)');
+        }
+      }
+
       setAnalysis(analysisResult);
 
       // Auto-fill checklist based on AI checklist analysis
-      // ✅ IMPORTANT: Only fill EMPTY fields, don't overwrite existing data
-      let finalChecklist = checklist;
+      // ✅ Use checklistRef for async operations to avoid stale closure
+      let listToUpdate = checklistRef.current?.length > 0
+        ? checklistRef.current
+        : (project?.client_needs_checklist && Array.isArray(project.client_needs_checklist) && project.client_needs_checklist.length > 0)
+          ? project.client_needs_checklist
+          : await loadChecklistByProjectType(selectedProjectType);
+      
+      if (!listToUpdate?.length) {
+        console.warn('🤖 Checklist empty – cannot apply AI auto-fill. Load checklist first.');
+      }
+      
+      let finalChecklist = listToUpdate;
       if (analysisResult.checklist_analysis?.length > 0) {
         console.log('🤖 Raw Information Extracted:', analysisResult.raw_information_extracted);
         console.log('🤖 Checklist Analysis:', analysisResult.checklist_analysis);
         
         let filledCount = 0;
-        let skippedCount = 0;
         
-        const updatedChecklist = checklist.map(item => {
+        // ✅ Use listToUpdate (from checklistRef) instead of stale checklist closure
+        const updatedChecklist = (listToUpdate || []).map(item => {
           if (!item?.id) return item;
-          
-          // ✅ Skip items that already have data (checked or have notes)
-          if (item.checked || (item.notes && item.notes.trim() !== '')) {
-            console.log(`⏭️ Skipping "${item.item}" - already has data`);
-            skippedCount++;
-            return item;
-          }
           
           // Find matching analysis for this checklist item
           const itemAnalysis = analysisResult.checklist_analysis.find(
-            analysis => analysis.id === item.id
+            a => a.id === item.id
           );
           
-          if (itemAnalysis && itemAnalysis.answered && itemAnalysis.confidence >= 60) {
-            console.log(`✅ Item "${item.item}" answered with confidence ${itemAnalysis.confidence}%`);
-            console.log(`   Source: "${itemAnalysis.source_text}"`);
-            console.log(`   Answer: "${itemAnalysis.answer_summary}"`);
+          // ✅ Fill if answered with confidence >= 60 (same logic as PhoneCallSubStage)
+          if (itemAnalysis && itemAnalysis.answered !== false && (itemAnalysis.confidence ?? 80) >= 60) {
+            console.log(`✅ Item "${item.item}" answered: "${itemAnalysis.answer_summary || ''}"`);
             filledCount++;
-            
             return { 
               ...item, 
               checked: true, 
-              notes: itemAnalysis.answer_summary || '' 
+              notes: itemAnalysis.answer_summary || item.notes || '' 
             };
           }
           return item;
@@ -762,10 +860,18 @@ ${checklistItemsForAI.map(item => `${item.index + 1}. [ID: ${item.id}] ${item.qu
         setChecklist(updatedChecklist);
         finalChecklist = updatedChecklist;
         
+        // ✅ Auto-save checklist after AI analysis
+        if (project?.id && onUpdate && updatedChecklist.length > 0) {
+          try {
+            await onUpdate({ client_needs_checklist: updatedChecklist });
+            console.log('✅ Checklist auto-saved after AI analysis');
+          } catch (err) {
+            console.error('Failed to save checklist:', err);
+          }
+        }
+        
         if (filledCount > 0) {
-          showSuccess(`הצ׳קליסט עודכן: ${filledCount} פריטים חדשים${skippedCount > 0 ? `, ${skippedCount} נשמרו כמו שהם` : ''}`);
-        } else if (skippedCount > 0) {
-          showSuccess(`כל הפריטים כבר מלאים - לא נדרס מידע קיים`);
+          showSuccess(`הצ׳קליסט עודכן אוטומטית: ${filledCount} פריטים מולאו`);
         }
       }
       

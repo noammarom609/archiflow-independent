@@ -20,20 +20,41 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    const { 
-      entityType, 
-      entityId, 
-      action, 
-      signature,
-      comments,
-      approverName,
-      approverEmail,
-      token 
-    } = await req.json()
+    const body = await req.json()
+    
+    // Support both old format (entityType, entityId, action) and new format (projectId, type, proposalId)
+    let entityType = body.entityType || body.type
+    let entityId = body.entityId || body.proposalId || body.projectId
+    const action = body.action || 'approve' // Default to approve for new format
+    const signature = body.signature || body.signatureData
+    const comments = body.comments
+    const approverName = body.approverName || body.clientName
+    const approverEmail = body.approverEmail
+    const token = body.token
+    const projectId = body.projectId
 
-    if (!entityType || !entityId || !action) {
+    console.log('Received approval request:', { entityType, entityId, action, projectId, hasSignature: !!signature })
+
+    // If we have projectId but no proposalId, try to find the proposal
+    if (projectId && !body.proposalId && entityType === 'proposal') {
+      console.log('Looking up proposal for project:', projectId)
+      const { data: proposal } = await supabase
+        .from('proposals')
+        .select('id')
+        .eq('project_id', projectId)
+        .order('created_date', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      
+      if (proposal) {
+        entityId = proposal.id
+        console.log('Found proposal:', entityId)
+      }
+    }
+
+    if (!entityType || !entityId) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: entityType, entityId, action' }),
+        JSON.stringify({ error: 'Missing required fields: entityType/type and entityId/proposalId' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

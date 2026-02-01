@@ -27,7 +27,11 @@ DROP POLICY IF EXISTS "time_entries_insert_all_authenticated" ON public.time_ent
 -- Step 2: Ensure RLS is enabled
 ALTER TABLE public.time_entries ENABLE ROW LEVEL SECURITY;
 
--- Step 3: Create clean policies
+-- Step 3: Create clean policies (DROP first to ensure idempotency)
+DROP POLICY IF EXISTS "time_entries_select" ON public.time_entries;
+DROP POLICY IF EXISTS "time_entries_insert" ON public.time_entries;
+DROP POLICY IF EXISTS "time_entries_update" ON public.time_entries;
+DROP POLICY IF EXISTS "time_entries_delete" ON public.time_entries;
 
 -- SELECT: Allow authenticated users to see their own entries or if they're admin/architect
 CREATE POLICY "time_entries_select"
@@ -72,6 +76,10 @@ CREATE POLICY "time_entries_delete"
 -- we need to also allow 'anon' role with proper checks.
 -- This is a TEMPORARY workaround until Clerk JWT template is fixed.
 -- =============================================================================
+
+-- Drop anon policies first for idempotency
+DROP POLICY IF EXISTS "time_entries_insert_anon_fallback" ON public.time_entries;
+DROP POLICY IF EXISTS "time_entries_select_anon_fallback" ON public.time_entries;
 
 -- Allow anon to insert if user_email is provided (temporary workaround)
 -- This checks that user_email is not empty to prevent abuse

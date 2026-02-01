@@ -20,9 +20,30 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    const url = new URL(req.url)
-    const proposalId = url.searchParams.get('id')
-    const shareToken = url.searchParams.get('token')
+    // Support both POST body and URL query params
+    let proposalId: string | null = null
+    let shareToken: string | null = null
+    let type: string = 'proposal'
+
+    // Try to get from POST body first
+    if (req.method === 'POST') {
+      try {
+        const body = await req.json()
+        proposalId = body.id
+        shareToken = body.token
+        type = body.type || 'proposal'
+      } catch {
+        // Body parsing failed, try URL params
+      }
+    }
+
+    // Fall back to URL query params
+    if (!proposalId) {
+      const url = new URL(req.url)
+      proposalId = url.searchParams.get('id')
+      shareToken = url.searchParams.get('token')
+      type = url.searchParams.get('type') || 'proposal'
+    }
 
     if (!proposalId) {
       return new Response(
@@ -31,50 +52,109 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Get proposal
-    const { data: proposal, error } = await supabase
-      .from('proposals')
-      .select(`
-        id,
-        title,
-        content,
-        status,
-        version,
-        project_id,
-        created_date,
-        updated_date,
-        share_token,
-        is_public,
-        projects (
-          id,
-          name,
-          client_id,
-          clients (
-            id,
-            name,
-            email
-          )
-        )
-      `)
-      .eq('id', proposalId)
+    // The id parameter is actually project_id for all types
+    const projectId = proposalId
+
+    console.log('Looking for project with id:', projectId, 'type:', typeof projectId)
+
+    // Get project first - try as-is first, then try as number if it fails
+    let project = null
+    let projectError = null
+
+    // Query the project - use * to get all columns since we don't know exact schema
+    const result1 = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', projectId)
       .single()
 
-    if (error) {
-      throw error
+    if (!result1.error) {
+      project = result1.data
+      console.log('Project found:', project?.name)
+    } else {
+      console.log('Query failed:', result1.error.message)
+      projectError = result1.error
     }
 
-    // Check if proposal is accessible
-    if (!proposal.is_public && proposal.share_token !== shareToken) {
+    if (!project) {
+      console.error('Project fetch error:', projectError)
       return new Response(
-        JSON.stringify({ error: 'Proposal not found or access denied' }),
+        JSON.stringify({ error: 'Project not found', details: projectError?.message, queriedId: projectId }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    let proposal = null
+    let template = null
+    let documents: any[] = []
+
+    // If type is proposal, get the proposal data
+    if (type === 'proposal') {
+      console.log('Fetching proposal for project:', projectId)
+      
+      // Use * to get all columns and maybeSingle to handle 0 results gracefully
+      const { data: proposalData, error: proposalError } = await supabase
+        .from('proposals')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_date', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      console.log('Proposal query result:', { 
+        found: !!proposalData, 
+        error: proposalError?.message,
+        proposalId: proposalData?.id 
+      })
+
+      if (proposalError) {
+        console.error('Proposal query error:', proposalError)
+      }
+
+      if (proposalData) {
+        proposal = proposalData
+
+        // Get template if exists
+        if (proposalData.template_id) {
+          const { data: templateData } = await supabase
+            .from('proposal_templates')
+            .select('*')
+            .eq('id', proposalData.template_id)
+            .maybeSingle()
+          
+          if (templateData) {
+            template = templateData
+          }
+        }
+      } else {
+        console.log('No proposal found for this project')
+      }
+    }
+
+    // Get documents for the type
+    const docType = type === 'proposal' ? 'proposal' : 
+                    type === 'technical' ? 'technical' :
+                    type === 'sketches' ? 'sketch' :
+                    type === 'renderings' ? 'rendering' : type
+
+    const { data: docsData } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('project_id', projectId)
+      .or(`file_type.eq.${docType},category.eq.${docType}`)
+      .order('created_date', { ascending: false })
+
+    if (docsData) {
+      documents = docsData
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        proposal
+        project,
+        proposal,
+        template,
+        documents
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )

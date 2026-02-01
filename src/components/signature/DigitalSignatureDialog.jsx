@@ -97,18 +97,17 @@ export default function DigitalSignatureDialog({ isOpen, onClose, document, sign
       const signatureData = canvas.toDataURL('image/png');
 
       await signatureMutation.mutateAsync({
-        document_id: document.id,
-        document_title: document.title,
-        document_type: document.file_type || 'other',
-        signer_id: signerInfo.id,
+        entity_type: 'document',
+        entity_id: document.id,
         signer_name: signerInfo.name,
-        signer_role: signerInfo.role,
+        signer_email: signerInfo.email || '',
+        signature_type: 'drawn',
         signature_data: signatureData,
-        timestamp: new Date().toISOString(),
+        signed_at: new Date().toISOString(),
         verified: true,
         project_id: document.project_id,
+        architect_email: signerInfo.architect_email || '',
         notes: notes,
-        ip_address: 'N/A',
       });
     } catch (error) {
       showError('שגיאה בחתימה');

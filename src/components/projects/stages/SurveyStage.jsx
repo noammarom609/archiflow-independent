@@ -33,22 +33,46 @@ import { showSuccess, showError } from '@/components/utils/notifications';
 
 export default function SurveyStage({ project, onUpdate, onSubStageChange, currentSubStage }) {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState(currentSubStage || 'upload_survey'); // upload_survey, as_made, site_photos
+  // Initialize from prop if available to prevent overwriting saved value
+  const [activeTab, setActiveTab] = useState(() => {
+    if (currentSubStage && ['upload_survey', 'as_made', 'site_photos'].includes(currentSubStage)) {
+      return currentSubStage;
+    }
+    return 'upload_survey';
+  });
   const [notes, setNotes] = useState(project.notes || '');
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
   const [viewMode, setViewMode] = useState('grid'); // grid, list
 
+  // Track if change came from parent to prevent loops
+  const isExternalChange = React.useRef(false);
+  // Track if initial sync is done to prevent saving on mount
+  const initialSyncDone = React.useRef(false);
+
   // Sync from parent when currentSubStage changes
   React.useEffect(() => {
     if (currentSubStage && currentSubStage !== activeTab) {
+      isExternalChange.current = true;
       setActiveTab(currentSubStage);
+    }
+    // Mark initial sync as done after first currentSubStage update
+    if (!initialSyncDone.current && currentSubStage) {
+      initialSyncDone.current = true;
     }
   }, [currentSubStage]);
 
-  // Notify parent when active tab changes
+  // Notify parent when active tab changes (only if internal change AND initial sync is done)
   React.useEffect(() => {
+    if (isExternalChange.current) {
+      isExternalChange.current = false;
+      return;
+    }
+    // Don't notify on initial mount - wait for sync from parent first
+    if (!initialSyncDone.current) {
+      return;
+    }
     if (onSubStageChange && activeTab) {
       onSubStageChange(activeTab);
     }

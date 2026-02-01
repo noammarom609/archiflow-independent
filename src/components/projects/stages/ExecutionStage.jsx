@@ -27,12 +27,21 @@ const subStages = [
 ];
 
 export default function ExecutionStage({ project, onUpdate, onSubStageChange, currentSubStage }) {
-  const [activeSubStage, setActiveSubStage] = useState('contractors');
+  // Initialize from prop if available to prevent overwriting saved value
+  const [activeSubStage, setActiveSubStage] = useState(() => {
+    const validSubStages = ['contractors', 'suppliers', 'updates'];
+    if (currentSubStage && validSubStages.includes(currentSubStage)) {
+      return currentSubStage;
+    }
+    return 'contractors';
+  });
   const [completedSubStages, setCompletedSubStages] = useState([]);
   const [showAddSupplierDialog, setShowAddSupplierDialog] = useState(false);
 
   // Track if change came from parent to prevent loops
   const isExternalChange = React.useRef(false);
+  // Track if initial sync is done to prevent saving on mount
+  const initialSyncDone = React.useRef(false);
 
   // Sync from parent Stepper
   useEffect(() => {
@@ -43,12 +52,20 @@ export default function ExecutionStage({ project, onUpdate, onSubStageChange, cu
         setActiveSubStage(currentSubStage);
       }
     }
+    // Mark initial sync as done after first currentSubStage update
+    if (!initialSyncDone.current && currentSubStage) {
+      initialSyncDone.current = true;
+    }
   }, [currentSubStage]);
 
-  // Notify parent of sub-stage changes
+  // Notify parent of sub-stage changes (only if internal change AND initial sync is done)
   useEffect(() => {
     if (isExternalChange.current) {
       isExternalChange.current = false;
+      return;
+    }
+    // Don't notify on initial mount - wait for sync from parent first
+    if (!initialSyncDone.current) {
       return;
     }
     if (onSubStageChange) {

@@ -415,16 +415,16 @@ function LayoutContent({ children, currentPageName }) {
           {/* Sidebar - Right side for RTL with Enhanced Glassmorphism */}
           <aside className={`hidden md:flex flex-col fixed right-0 top-0 h-screen z-50 bg-gradient-to-b from-white/80 to-white/60 dark:from-card/90 dark:to-card/70 backdrop-blur-xl border-l border-border/30 shadow-organic-lg transition-all duration-300 ${sidebarCollapsed ? 'w-0 overflow-hidden opacity-0' : 'w-72'}`}>
 
-          {/* Sidebar Toggle Button Inside Sidebar (Top Left) - Desktop only */}
+          {/* Sidebar Toggle Button - Circle centered on left edge of sidebar */}
           {!sidebarCollapsed && (
             <Button
               variant="ghost"
               size="icon"
-              className="absolute top-4 left-4 z-50 text-muted-foreground hover:text-primary"
+              className="absolute top-1/2 -translate-y-1/2 -left-5 z-50 w-10 h-10 rounded-full bg-white dark:bg-card backdrop-blur-sm border border-border/50 shadow-md hover:bg-accent hover:text-primary hover:shadow-lg text-muted-foreground transition-all"
               onClick={() => setSidebarCollapsed(true)}
               aria-label="סגור תפריט"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevrons-right"><path d="m9 18 6-6-6-6"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
             </Button>
           )}
 

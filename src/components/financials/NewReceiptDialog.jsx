@@ -44,21 +44,28 @@ export default function NewReceiptDialog({ isOpen, onClose }) {
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      // Create receipt
+      // Create receipt (uses anon client to avoid 401)
       const receipt = await archiflow.entities.Receipt.create(data);
-      // Update invoice status to paid
+      let invoiceUpdated = true;
       if (data.invoice_id) {
-        await archiflow.entities.Invoice.update(data.invoice_id, { 
-          status: 'paid',
-          paid_date: data.payment_date,
-        });
+        try {
+          await archiflow.entities.Invoice.update(data.invoice_id, {
+            status: 'paid',
+            paid_date: data.payment_date,
+          });
+        } catch (updateErr) {
+          console.warn('[Receipt] Invoice status update failed:', updateErr);
+          invoiceUpdated = false;
+        }
       }
-      return receipt;
+      return { receipt, invoiceUpdated };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      const receipt = result.receipt ?? result;
+      const invoiceUpdated = result.invoiceUpdated !== false;
       queryClient.invalidateQueries({ queryKey: ['receipts'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      showSuccess('קבלה נוצרה בהצלחה והחשבונית עודכנה!');
+      showSuccess(invoiceUpdated ? 'קבלה נוצרה בהצלחה והחשבונית עודכנה!' : 'קבלה נוצרה בהצלחה!');
       resetForm();
       onClose();
     },

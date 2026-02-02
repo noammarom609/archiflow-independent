@@ -2,10 +2,37 @@
 // Database entity operations using Supabase
 // Part of Archiflow - an independent architecture project management system
 
-import { supabase as defaultSupabase } from '@/lib/supabase';
+import { supabase as defaultSupabase, supabaseUrl, supabaseAnonKey } from '@/lib/supabase';
 
 // Global authenticated client - will be set by AuthContext
 let authenticatedClient = null;
+
+// Direct fetch for anon inserts - bypasses any client-side auth interceptors
+// IMPORTANT: Only use 'apikey' header, NOT 'Authorization' - the anon key is not a valid JWT
+const anonInsert = async (tableName, data) => {
+  const url = `${supabaseUrl}/rest/v1/${tableName}?select=*`;
+  console.log(`[Entities] Direct anon INSERT to ${tableName}`, data);
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': supabaseAnonKey,
+      'Prefer': 'return=representation'
+    },
+    body: JSON.stringify(data)
+  });
+  
+  const result = await response.json();
+  
+  if (!response.ok) {
+    console.error(`[Entities] Anon insert error for ${tableName}:`, result);
+    throw result;
+  }
+  
+  console.log(`[Entities] Anon insert success for ${tableName}:`, result?.[0]?.id || result?.id);
+  return Array.isArray(result) ? result[0] : result;
+};
 
 // Function to set the authenticated client (called from AuthContext)
 export const setAuthenticatedClient = (client) => {
@@ -16,6 +43,13 @@ export const setAuthenticatedClient = (client) => {
 // Get the current supabase client (authenticated if available, otherwise default)
 const getClient = () => {
   return authenticatedClient || defaultSupabase;
+};
+
+// Tables that use anon client for INSERT to avoid 401 when Supabase does not verify Clerk JWT
+const ANON_INSERT_TABLES = ['receipts', 'notifications', 'invoices'];
+const getClientForInsert = (tableName) => {
+  if (ANON_INSERT_TABLES.includes(tableName)) return defaultSupabase;
+  return getClient();
 };
 
 // Entity name to table name mapping (PascalCase -> snake_case)
@@ -154,16 +188,30 @@ const createEntityHelper = (entityName) => {
       return data;
     },
 
-    // Create new record
+    // Create new record (use direct fetch for receipts/notifications/invoices to avoid 401 with Clerk JWT)
     create: async (data) => {
+      const useAnon = ANON_INSERT_TABLES.includes(tableName);
+      
+      if (useAnon) {
+        // Use direct fetch to ensure no JWT is attached
+        return await anonInsert(tableName, data);
+      }
+      
+      // Regular authenticated insert
       const client = getClient();
+      console.log(`[Entities] Creating ${tableName} - using authenticated client`);
+      
       const { data: created, error } = await client
         .from(tableName)
         .insert(data)
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error(`[Entities] Error creating ${tableName}:`, error);
+        throw error;
+      }
+      console.log(`[Entities] Created ${tableName} successfully:`, created?.id);
       return created;
     },
 

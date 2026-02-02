@@ -57,6 +57,9 @@ const entityMap = {
   // Migration 017 - AI tracking entities
   AILearning: entities.AILearning,
   ProjectAIHistory: entities.ProjectAIHistory,
+  // Migration 052 - Lead management
+  LeadFollowup: entities.LeadFollowup,
+  Event: entities.Event,
 };
 
 // Get Supabase config from environment

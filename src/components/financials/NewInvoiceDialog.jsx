@@ -40,21 +40,30 @@ export default function NewInvoiceDialog({ isOpen, onClose }) {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       showSuccess('חשבונית נוצרה בהצלחה!');
       
-      // Send notification to client
+      // Send notification to client (fire-and-forget; must not block or break success flow)
       if (selectedProject?.client_id) {
         sendTemplate('invoiceCreated', selectedProject.client_id, {
           projectName: selectedProject.name,
           projectId: selectedProject.id,
           invoiceNumber: createdInvoice?.invoice_number || 'חדשה',
           amount: parseFloat(formData.amount).toLocaleString()
-        });
+        }).catch(() => {});
       }
       
       resetForm();
       setSelectedProject(null);
       onClose();
     },
-    onError: () => showError('שגיאה ביצירת החשבונית'),
+    onError: (err) => {
+      const msg = (err?.message || (err && err['error_description']) || '').toLowerCase();
+      const isValidation = msg && (msg.includes('violates') || msg.includes('constraint') || msg.includes('null') || msg.includes('400'));
+      showError(
+        isValidation
+          ? 'לא ניתן ליצור חשבונית: חסרים שדות חובה או ערך לא תקין. אנא מלא פרויקט, סכום ושם לקוח ולחץ שוב.'
+          : 'שגיאה ביצירת החשבונית. וודא שמילאת את כל השדות המסומנים בכוכבית (*).',
+        { duration: 5500 }
+      );
+    },
   });
 
   const resetForm = () => {
@@ -86,15 +95,36 @@ export default function NewInvoiceDialog({ isOpen, onClose }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.amount || !formData.project_name) {
-      showError('יש למלא שם פרויקט וסכום');
+
+    // Validation: required fields
+    const missing = [];
+    if (!formData.project_id || !String(formData.project_name).trim()) missing.push('פרויקט');
+    if (!formData.amount || Number(formData.amount) <= 0) missing.push('סכום (₪)');
+    if (!String(formData.client_name || '').trim()) missing.push('שם לקוח');
+
+    if (missing.length > 0) {
+      showError(
+        `חסרים שדות חובה: ${missing.join(', ')}. אנא מלא את כל השדות המסומנים בכוכבית (*) ולחץ שוב על "צור חשבונית".`,
+        { duration: 6000 }
+      );
       return;
     }
-    createMutation.mutate({
-      ...formData,
+
+    // Build payload: only send non-empty values for optional fields
+    const payload = {
+      project_id: formData.project_id || null,
+      project_name: formData.project_name?.trim() || null,
+      client_name: formData.client_name?.trim() || null,
       amount: parseFloat(formData.amount),
+      status: formData.status || 'pending',
       invoice_number: `INV-${Date.now()}`,
-    });
+    };
+    if (formData.issue_date) payload.issue_date = formData.issue_date;
+    if (formData.due_date) payload.due_date = formData.due_date;
+    if (formData.description?.trim()) payload.description = formData.description.trim();
+    if (formData.notes?.trim()) payload.notes = formData.notes.trim();
+
+    createMutation.mutate(payload);
   };
 
   return (
@@ -102,10 +132,11 @@ export default function NewInvoiceDialog({ isOpen, onClose }) {
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>חשבונית חדשה</DialogTitle>
+          <p className="text-sm text-muted-foreground mt-1">שדות המסומנים ב-* חובה למילוי</p>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label>פרויקט</Label>
+            <Label>פרויקט *</Label>
             <Select value={formData.project_id} onValueChange={handleProjectSelect}>
               <SelectTrigger className="mt-1">
                 <SelectValue placeholder="בחר פרויקט" />
@@ -120,11 +151,12 @@ export default function NewInvoiceDialog({ isOpen, onClose }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>שם לקוח</Label>
+              <Label>שם לקוח *</Label>
               <Input
                 value={formData.client_name}
                 onChange={(e) => setFormData(prev => ({ ...prev, client_name: e.target.value }))}
                 className="mt-1"
+                placeholder="שם הלקוח"
               />
             </div>
             <div>

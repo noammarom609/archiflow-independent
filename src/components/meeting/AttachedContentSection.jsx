@@ -128,25 +128,29 @@ function ContentViewerModal({ item, isOpen, onClose }) {
 }
 
 // Main Component
-export default function AttachedContentSection({ contentIds = [] }) {
+export default function AttachedContentSection({ contentIds }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerItem, setViewerItem] = useState(null);
 
+  // Ensure contentIds is always an array
+  const safeContentIds = Array.isArray(contentIds) ? contentIds : [];
+  const hasContentIds = safeContentIds.length > 0;
+
   // Fetch content items by IDs
   const { data: contentItems = [], isLoading } = useQuery({
-    queryKey: ['attachedContent', contentIds],
+    queryKey: ['attachedContent', safeContentIds],
     queryFn: async () => {
-      if (!contentIds || contentIds.length === 0) return [];
+      if (safeContentIds.length === 0) return [];
       const allItems = await archiflow.entities.ContentItem.list();
-      return allItems.filter(item => contentIds.includes(item.id));
+      return allItems.filter(item => safeContentIds.includes(item.id));
     },
-    enabled: contentIds && contentIds.length > 0,
+    enabled: hasContentIds,
     staleTime: 5 * 60 * 1000, // 5 minutes - prevent excessive refetching
     refetchOnWindowFocus: false,
   });
 
-  if (!contentIds || contentIds.length === 0) return null;
+  if (!hasContentIds) return null;
 
   if (isLoading) {
     return (
@@ -228,7 +232,7 @@ export default function AttachedContentSection({ contentIds = [] }) {
         <div className="bg-gradient-to-l from-primary/5 to-transparent px-4 py-3 border-b flex items-center gap-2">
           <Paperclip className="w-4 h-4 text-primary" />
           <span className="font-medium text-sm">חומרים מצורפים</span>
-          <Badge variant="secondary" className="text-xs">{contentItems.length}</Badge>
+          <Badge variant="secondary" className="text-xs">{contentItems?.length || 0}</Badge>
         </div>
 
         <CardContent className="p-4">

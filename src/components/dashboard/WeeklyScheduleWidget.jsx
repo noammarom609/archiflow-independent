@@ -12,8 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarDays, List, MapPin, Clock, CheckCircle2, Circle, FolderKanban, ExternalLink, Edit2, X, Save, Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { CalendarDays, List, MapPin, Clock, CheckCircle2, Circle, FolderKanban, ExternalLink, Edit2, X, Save, Loader2, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay, parseISO, isPast } from 'date-fns';
 import { he } from 'date-fns/locale';
 
@@ -50,13 +50,42 @@ export default function WeeklyScheduleWidget() {
     return acc;
   }, {});
 
-  // Update event mutation
+  // Update event mutation with optimistic updates
   const updateEventMutation = useMutation({
     mutationFn: ({ id, data }) => archiflow.entities.CalendarEvent.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['calendarEvents'] });
+    // Optimistic update for smooth UI
+    onMutate: async ({ id, data }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['calendarEvents', 'week'] });
+      
+      // Snapshot the previous value
+      const previousEvents = queryClient.getQueryData(['calendarEvents', 'week']);
+      
+      // Optimistically update to the new value
+      queryClient.setQueryData(['calendarEvents', 'week'], (old) => {
+        if (!old) return old;
+        return old.map(event => 
+          event.id === id ? { ...event, ...data } : event
+        );
+      });
+      
+      // Return a context object with the snapshotted value
+      return { previousEvents, isToggle: data.completed !== undefined && Object.keys(data).length === 1 };
+    },
+    onError: (err, variables, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousEvents) {
+        queryClient.setQueryData(['calendarEvents', 'week'], context.previousEvents);
+      }
+    },
+    onSuccess: (data, variables, context) => {
+      // For toggle operations, don't refetch - optimistic update is enough
+      // For other edits, refetch to ensure consistency
+      if (!context?.isToggle) {
+        queryClient.invalidateQueries({ queryKey: ['calendarEvents'] });
+        setSelectedEvent(null);
+      }
       setIsEditing(false);
-      setSelectedEvent(null);
     },
   });
 
@@ -133,13 +162,15 @@ export default function WeeklyScheduleWidget() {
     
     return (
       <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
+        layout="position"
+        initial={false}
+        animate={{ opacity: 1 }}
         onClick={() => handleEventClick(event)}
         className={`
-          p-2 rounded-lg border transition-all cursor-pointer
+          p-2 rounded-lg border cursor-pointer relative overflow-hidden
+          transition-colors duration-300 ease-out
           ${isCompleted 
-            ? 'bg-muted/50 border-muted text-muted-foreground' 
+            ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800 text-muted-foreground' 
             : 'bg-background border-border hover:border-primary/30 hover:shadow-sm'
           }
           ${compact ? 'text-xs' : 'text-sm'}
@@ -148,17 +179,32 @@ export default function WeeklyScheduleWidget() {
         <div className="flex items-start gap-2">
           <button
             onClick={(e) => toggleCompleted(event, e)}
-            className="mt-0.5 flex-shrink-0 hover:scale-110 transition-transform"
+            className="mt-0.5 flex-shrink-0 relative w-4 h-4 group"
             title={isCompleted ? 'סמן כלא בוצע' : 'סמן כבוצע'}
           >
-            {isCompleted ? (
-              <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-            ) : (
-              <Circle className="w-3.5 h-3.5 text-primary hover:text-green-500" />
-            )}
+            <span className={`
+              absolute inset-0 flex items-center justify-center
+              transition-all duration-200 ease-out
+              ${isCompleted ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
+            `}>
+              <span className="w-3.5 h-3.5 rounded-full bg-green-500 flex items-center justify-center shadow-sm">
+                <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+              </span>
+            </span>
+            <span className={`
+              absolute inset-0 flex items-center justify-center
+              transition-all duration-200 ease-out
+              ${isCompleted ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}
+            `}>
+              <Circle className="w-3.5 h-3.5 text-muted-foreground group-hover:text-green-500 transition-colors" />
+            </span>
           </button>
+          
           <div className="flex-1 min-w-0">
-            <p className={`font-medium truncate ${isCompleted ? 'line-through' : ''}`}>
+            <p className={`
+              font-medium truncate transition-all duration-200
+              ${isCompleted ? 'opacity-60 line-through' : 'opacity-100'}
+            `}>
               {event.title}
             </p>
             

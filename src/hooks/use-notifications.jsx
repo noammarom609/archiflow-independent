@@ -35,7 +35,7 @@ export function useNotifications() {
         is_read: false
       };
       
-      // Add the appropriate identifier
+      // Add the appropriate identifier (user_email is optional when user_id is set)
       if (isEmail) {
         notificationData.user_email = userIdOrEmail.toLowerCase();
       } else {
@@ -45,16 +45,22 @@ export function useNotifications() {
       archiflow.entities.Notification.create(notificationData)
         .catch(err => console.warn('[Notifications] Failed to create in-app notification:', err));
 
-      // Send push notification via server function
-      // Edge function expects userEmail
-      await archiflow.functions.invoke('sendPushNotification', {
-        userEmail: isEmail ? userIdOrEmail.toLowerCase() : null,
-        userId: !isEmail ? userIdOrEmail : null,
-        title: notification.title,
-        body: notification.body,
-        url: notification.url || '/',
-        tag: notification.type || 'archiflow-notification'
-      });
+      // Push notification only when we have email (edge function looks up by email/userId in auth)
+      if (isEmail) {
+        try {
+          await archiflow.functions.invoke('sendPushNotification', {
+            userEmail: userIdOrEmail.toLowerCase(),
+            userId: null,
+            title: notification.title,
+            body: notification.body,
+            url: notification.url || '/',
+            tag: notification.type || 'archiflow-notification'
+          });
+        } catch (pushErr) {
+          // Non-blocking: "User not found" is normal when recipient has no push subscription
+          console.warn('[Notifications] Push send skipped or failed:', pushErr?.data?.message || pushErr?.message);
+        }
+      }
 
       console.log('[Notifications] Sent to user:', userIdOrEmail);
       return { success: true };

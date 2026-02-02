@@ -13,16 +13,18 @@ export const showSuccess = (message) => {
   });
 };
 
-export const showError = (message) => {
+export const showError = (message, options = {}) => {
   toast.error(message, {
-    duration: 4000,
+    duration: options.duration ?? 4000,
     position: 'top-center',
     style: {
       background: '#ef4444',
       color: '#fff',
       fontFamily: 'Heebo, sans-serif',
       direction: 'rtl',
+      maxWidth: '90vw',
     },
+    ...options,
   });
 };
 

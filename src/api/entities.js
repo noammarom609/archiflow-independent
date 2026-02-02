@@ -68,6 +68,9 @@ const tableNameMap = {
   // Migration 017 - AI tracking entities
   AILearning: 'ai_learning',
   ProjectAIHistory: 'project_ai_history',
+  // Migration 052 - Lead management
+  LeadFollowup: 'lead_followups',
+  Event: 'calendar_events', // Alias for calendar events
 };
 
 // Get table name from entity name
@@ -254,6 +257,9 @@ export const ProjectSelection = createEntityHelper('ProjectSelection');
 // Migration 017 - AI tracking entities
 export const AILearning = createEntityHelper('AILearning');
 export const ProjectAIHistory = createEntityHelper('ProjectAIHistory');
+// Migration 052 - Lead management
+export const LeadFollowup = createEntityHelper('LeadFollowup');
+export const Event = createEntityHelper('Event');
 
 // Query helper for more complex queries
 export const Query = {

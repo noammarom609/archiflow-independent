@@ -15,11 +15,13 @@ import {
   Save,
   X,
   ExternalLink,
-  Building2
+  Building2,
+  Clock
 } from 'lucide-react';
 import { showSuccess, showError } from '../utils/notifications';
 import { createPageUrl } from '../../utils';
 import { Link } from 'react-router-dom';
+import LeadJourneyTimeline from '../leads/LeadJourneyTimeline';
 
 export default function ClientInfoCard({ project, onUpdate }) {
   const queryClient = useQueryClient();
@@ -36,6 +38,27 @@ export default function ClientInfoCard({ project, onUpdate }) {
     },
     enabled: !!project?.client_id
   });
+
+  // Fetch proposals to check if project has approved proposal (is active project)
+  const { data: proposals = [] } = useQuery({
+    queryKey: ['projectProposals', project?.id],
+    queryFn: async () => {
+      try {
+        const result = await archiflow.entities.Proposal.filter(
+          { project_id: project.id },
+          '-created_date'
+        );
+        return result || [];
+      } catch (error) {
+        return [];
+      }
+    },
+    enabled: !!project?.id,
+  });
+
+  // Check if this is an active project (has approved proposal or past proposal stage)
+  const hasApprovedProposal = proposals.some(p => p.status === 'approved');
+  const isActiveProject = hasApprovedProposal || !['first_call', 'proposal'].includes(project?.current_stage);
 
   // Update client mutation
   const updateClientMutation = useMutation({
@@ -272,6 +295,13 @@ export default function ClientInfoCard({ project, onUpdate }) {
                 }>
                   {client.status === 'active' ? 'פעיל' : client.status === 'inactive' ? 'לא פעיל' : 'פוטנציאלי'}
                 </Badge>
+              </div>
+            )}
+
+            {/* Lead Journey Timeline - Only show for active projects */}
+            {isActiveProject && project && (
+              <div className="mt-4 pt-4 border-t border-slate-200">
+                <LeadJourneyTimeline project={project} />
               </div>
             )}
           </div>

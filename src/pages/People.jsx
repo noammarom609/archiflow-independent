@@ -36,6 +36,7 @@ import ConsultantCard from '@/components/consultants/ConsultantCard';
 import SupplierCard from '@/components/suppliers/SupplierCard';
 import { SkeletonCard } from '@/components/ui/SkeletonCard';
 import EntityDetailModal from '@/components/people/EntityDetailModal';
+import ClientDetailView from '@/components/clients/ClientDetailView';
 import UserManagementContent from '@/components/admin/UserManagementContent';
 
 // Dialogs
@@ -103,6 +104,8 @@ export default function People() {
   // Modal state
   const [selectedEntity, setSelectedEntity] = useState(null);
   const [selectedEntityType, setSelectedEntityType] = useState(null);
+  const [showClientFullView, setShowClientFullView] = useState(false);
+  const [fullViewClientId, setFullViewClientId] = useState(null);
   
   // Dialog States
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -768,7 +771,42 @@ export default function People() {
           }}
           entity={selectedEntity}
           entityType={selectedEntityType}
+          onViewFullProfile={selectedEntityType === 'client' ? (clientId) => {
+            setFullViewClientId(clientId);
+            setShowClientFullView(true);
+            setSelectedEntity(null);
+            setSelectedEntityType(null);
+          } : undefined}
         />
+
+        {/* Client Full View */}
+        {showClientFullView && fullViewClientId && (
+          <div className={`fixed inset-0 z-50 bg-background overflow-auto transition-all duration-300 ${sidebarCollapsed ? 'mr-0' : 'mr-0 md:mr-72'}`}>
+            <div className="p-6 md:p-8 lg:p-10">
+              {/* Hamburger Button when sidebar is collapsed - RTL position */}
+              {showMenuButton && (
+                <motion.button
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="fixed top-6 right-6 w-11 h-11 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg hover:bg-primary/90 transition-all border-2 border-white/20 backdrop-blur-sm z-50"
+                  onClick={handleMenuClick}
+                  aria-label="פתח תפריט"
+                >
+                  <Menu className="w-5 h-5" strokeWidth={2.5} />
+                </motion.button>
+              )}
+              <ClientDetailView
+                client={clients.find(c => c.id === fullViewClientId)}
+                onBack={() => {
+                  setShowClientFullView(false);
+                  setFullViewClientId(null);
+                }}
+              />
+            </div>
+          </div>
+        )}
       </motion.div>
     </div>
   );

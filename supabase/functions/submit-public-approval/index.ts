@@ -151,6 +151,46 @@ Deno.serve(async (req) => {
       throw updateError
     }
 
+    // If proposal was approved, update the project to mark lead conversion
+    if (action === 'approve' && entityType === 'proposal' && projectId) {
+      const now = new Date().toISOString()
+      const { error: projectUpdateError } = await supabase
+        .from('projects')
+        .update({
+          proposal_approved_at: now,
+          lead_converted_at: now,
+          current_stage: 'gantt',
+          status: 'gantt'
+        })
+        .eq('id', projectId)
+
+      if (projectUpdateError) {
+        console.error('Error updating project for lead conversion:', projectUpdateError)
+      } else {
+        console.log('✅ Project updated: lead converted to active project')
+      }
+
+      // Also update client status to active
+      const { data: project } = await supabase
+        .from('projects')
+        .select('client_id')
+        .eq('id', projectId)
+        .single()
+
+      if (project?.client_id) {
+        const { error: clientUpdateError } = await supabase
+          .from('clients')
+          .update({ status: 'active' })
+          .eq('id', project.client_id)
+
+        if (clientUpdateError) {
+          console.error('Error updating client status:', clientUpdateError)
+        } else {
+          console.log('✅ Client status updated to active')
+        }
+      }
+    }
+
     // Send notification to the owner
     try {
       await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/create-notification`, {

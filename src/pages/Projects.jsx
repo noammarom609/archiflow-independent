@@ -57,7 +57,7 @@ import { createPageUrl } from '../utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Calendar, MapPin, Plus, Loader2, Trash2, DollarSign, ChevronDown, ChevronUp, Shield, Menu } from 'lucide-react';
+import { ArrowRight, Calendar, MapPin, Plus, Loader2, Trash2, DollarSign, ChevronDown, ChevronUp, Shield, Menu, Zap, Phone } from 'lucide-react';
 import ProjectPermissionsSettings from '../components/projects/settings/ProjectPermissionsSettings';
 import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -78,6 +78,10 @@ import SelectionsStage from '../components/projects/stages/SelectionsStage';
 import NewProjectModal from '../components/projects/NewProjectModal';
 import ProjectsListView from '../components/projects/ProjectsListView';
 import GanttView from '../components/calendar/GanttView';
+import LeadsSection from '../components/leads/LeadsSection';
+import QuickLeadModal from '../components/leads/QuickLeadModal';
+import LeadFollowUpSection from '../components/leads/LeadFollowUpSection';
+import LeadDetailView from '../components/leads/LeadDetailView';
 import ProjectTasksManager from '../components/projects/tasks/ProjectTasksManager';
 import ProjectDocumentsManager from '../components/projects/documents/ProjectDocumentsManager';
 import ClientInfoCard from '../components/projects/ClientInfoCard';
@@ -173,6 +177,7 @@ export default function Projects() {
   const [viewMode, setViewMode] = useState('grid');
   const [preselectedClientId, setPreselectedClientId] = useState(null);
   const [showReportDialog, setShowReportDialog] = useState(false);
+  const [showQuickLeadModal, setShowQuickLeadModal] = useState(false);
   const { openSearch } = useGlobalSearch();
   
   // Menu button state - Initialize from localStorage for immediate correct state
@@ -241,6 +246,25 @@ export default function Projects() {
     queryFn: () => archiflow.entities.Project.list('-created_date'),
   });
 
+  // Fetch all proposals for checking approval status
+  const { data: allProposals = [] } = useQuery({
+    queryKey: ['allProposals'],
+    queryFn: () => archiflow.entities.Proposal.list('-created_date'),
+  });
+
+  // Fetch follow-ups for leads
+  const { data: allFollowUps = [] } = useQuery({
+    queryKey: ['leadFollowups'],
+    queryFn: async () => {
+      try {
+        return await archiflow.entities.LeadFollowup.list('-scheduled_at');
+      } catch (error) {
+        console.log('LeadFollowup entity not available yet');
+        return [];
+      }
+    },
+  });
+
   // Multi-tenant filtering: Show only projects belonging to current architect (or all for super_admin)
   const allProjects = isSuperAdmin 
     ? rawProjects 
@@ -248,6 +272,23 @@ export default function Projects() {
         p.created_by === user?.email || 
         (myArchitectId && p.architect_id === myArchitectId)
       );
+
+  // Check if project has approved proposal
+  const hasApprovedProposal = (project) => {
+    const projectProposals = allProposals.filter(p => p.project_id === project.id);
+    return projectProposals.some(p => p.status === 'approved');
+  };
+
+  // Separate leads from active projects
+  const leads = allProjects.filter(p => 
+    p.current_stage === 'first_call' || 
+    (p.current_stage === 'proposal' && !hasApprovedProposal(p))
+  );
+
+  const activeProjects = allProjects.filter(p => 
+    hasApprovedProposal(p) || 
+    !['first_call', 'proposal'].includes(p.current_stage)
+  );
 
   // Create project mutation
   const createProjectMutation = useMutation({
@@ -336,6 +377,28 @@ export default function Projects() {
     createProjectMutation.mutate(newProject);
   };
 
+  // Handler for quick call - opens phone dialer
+  const handleQuickCall = (project) => {
+    const phone = project.client_phone;
+    if (phone) {
+      window.location.href = `tel:${phone}`;
+    } else {
+      showError('לא נמצא מספר טלפון');
+    }
+  };
+
+  // Handler for scheduling follow-up - opens the project detail
+  const handleScheduleFollowUp = (project) => {
+    handleProjectClick(project.id);
+  };
+
+  // Handler for quick lead creation success
+  const handleQuickLeadSuccess = (newProject) => {
+    queryClient.invalidateQueries({ queryKey: ['projects'] });
+    // Optionally open the new lead
+    // handleProjectClick(newProject.id);
+  };
+
   const handleProjectUpdate = async (data) => {
     if (selectedProjectId) {
       const previousStatus = selectedProject?.status;
@@ -391,8 +454,18 @@ export default function Projects() {
     const defaultSubStage = subStageDefaults[stageId] || null;
     setCurrentSubStage(defaultSubStage);
     
+    // Check if this is a converted project (not a lead anymore)
+    const isConvertedProject = selectedProject?.lead_converted_at || 
+      hasApprovedProposal(selectedProject) ||
+      !['first_call', 'proposal'].includes(selectedProject?.current_stage);
+    
+    // For converted projects, don't save stage changes to lead stages (first_call, proposal)
+    // This allows viewing/editing those stages without reverting the project to lead status
+    const isLeadStage = ['first_call', 'proposal'].includes(stageId);
+    const shouldSaveToDatabase = !isConvertedProject || !isLeadStage;
+    
     // Save the stage change to database (save both stage and default sub-stage)
-    if (selectedProjectId && stageId !== selectedProject?.current_stage) {
+    if (selectedProjectId && stageId !== selectedProject?.current_stage && shouldSaveToDatabase) {
       try {
         await handleProjectUpdate({ 
           current_stage: stageId,
@@ -409,8 +482,17 @@ export default function Projects() {
     setCurrentStage(stageId);
     setCurrentSubStage(subStageId);
     
+    // Check if this is a converted project (not a lead anymore)
+    const isConvertedProject = selectedProject?.lead_converted_at || 
+      hasApprovedProposal(selectedProject) ||
+      !['first_call', 'proposal'].includes(selectedProject?.current_stage);
+    
+    // For converted projects, don't save stage changes to lead stages
+    const isLeadStage = ['first_call', 'proposal'].includes(stageId);
+    const shouldSaveToDatabase = !isConvertedProject || !isLeadStage;
+    
     // Save to database
-    if (selectedProjectId) {
+    if (selectedProjectId && shouldSaveToDatabase) {
       try {
         await handleProjectUpdate({ 
           current_stage: stageId, 
@@ -486,6 +568,11 @@ export default function Projects() {
           }}
           onCreateProject={handleCreateProject}
           preselectedClientId={preselectedClientId}
+        />
+        <QuickLeadModal
+          isOpen={showQuickLeadModal}
+          onClose={() => setShowQuickLeadModal(false)}
+          onSuccess={handleQuickLeadSuccess}
         />
         <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8 relative overflow-hidden">
           {/* Background Blobs - Hidden on mobile for performance */}
@@ -604,6 +691,21 @@ export default function Projects() {
                     whileTap={{ scale: 0.95 }}
                   >
                     <Button 
+                      onClick={() => setShowQuickLeadModal(true)}
+                      variant="outline"
+                      className="border-primary/30 text-primary hover:bg-primary/10 px-4 py-2.5 sm:py-3 rounded-xl flex items-center justify-center gap-2 w-full sm:w-auto"
+                    >
+                      <Zap className="w-4 h-4" />
+                      <span className="text-sm sm:text-base">ליד מהיר</span>
+                    </Button>
+                  </motion.div>
+                </Magnet>
+                <Magnet strength={0.2}>
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button 
                       data-testid="new-project-btn"
                       onClick={() => setShowNewProjectModal(true)}
                       className="bg-primary hover:bg-primary/90 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-shadow w-full sm:w-auto"
@@ -636,7 +738,20 @@ export default function Projects() {
                 isLoading={isLoading}
               />
             ) : (
-              <>
+              <div className="space-y-8">
+                {/* Leads Section */}
+                {!isLoading && leads.length > 0 && (
+                  <LeadsSection
+                    leads={leads}
+                    followUps={allFollowUps}
+                    onSelectLead={handleProjectClick}
+                    onQuickCall={handleQuickCall}
+                    onScheduleFollowUp={handleScheduleFollowUp}
+                    isLoading={isLoading}
+                  />
+                )}
+
+                {/* Active Projects Section */}
                 {isLoading ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <SkeletonCard count={6} />
@@ -655,16 +770,39 @@ export default function Projects() {
                       </Magnet>
                     </div>
                   </FadeIn>
-                ) : (
-                  <motion.div 
-                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
-                    variants={pageVariants}
-                    initial="hidden"
-                    animate="visible"
-                    style={{ perspective: 1200 }}
-                  >
-                    {allProjects.map((project, index) => {
-                      const status = statusConfig[project.status] || statusConfig.first_call;
+                ) : activeProjects.length === 0 && leads.length > 0 ? (
+                  <FadeIn delay={0.2} direction="up">
+                    <Card className="border-dashed border-2 border-border">
+                      <CardContent className="text-center py-12">
+                        <p className="text-muted-foreground text-base">אין פרויקטים פעילים</p>
+                        <p className="text-sm text-muted-foreground/70 mt-1">
+                          מתעניינים יהפכו לפרויקטים פעילים לאחר אישור הצעת מחיר
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </FadeIn>
+                ) : activeProjects.length > 0 && (
+                  <>
+                    {leads.length > 0 && (
+                      <FadeIn delay={0.1}>
+                        <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                          <span className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                            <Plus className="w-4 h-4 text-green-600" />
+                          </span>
+                          פרויקטים פעילים
+                          <Badge variant="secondary" className="text-xs">{activeProjects.length}</Badge>
+                        </h2>
+                      </FadeIn>
+                    )}
+                    <motion.div 
+                      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
+                      variants={pageVariants}
+                      initial="hidden"
+                      animate="visible"
+                      style={{ perspective: 1200 }}
+                    >
+                      {activeProjects.map((project, index) => {
+                      const status = statusConfig[project.current_stage] || statusConfig.first_call;
                       return (
                         <ScrollReveal
                           key={project.id}
@@ -767,10 +905,13 @@ export default function Projects() {
                         </ScrollReveal>
                       );
                     })}
-                  </motion.div>
+                    </motion.div>
+                  </>
                 )}
-              </>
+              </div>
             )}
+
+            {/* Floating Action Button for Quick Lead is now global in Layout.jsx */}
           </motion.div>
         </div>
       </>
@@ -786,7 +927,26 @@ export default function Projects() {
     );
   }
 
-  const status = statusConfig[selectedProject?.status] || statusConfig.first_call;
+  // Check if this is a lead (before proposal approval) - use simplified LeadDetailView
+  const isLead = selectedProject.current_stage === 'first_call' || 
+    (selectedProject.current_stage === 'proposal' && !hasApprovedProposal(selectedProject));
+
+  if (isLead) {
+    return (
+      <LeadDetailView
+        project={selectedProject}
+        onBack={handleBackToList}
+        onUpdate={handleProjectUpdate}
+        onConvertToProject={() => {
+          // Refresh to show full project view
+          queryClient.invalidateQueries({ queryKey: ['projects'] });
+          queryClient.invalidateQueries({ queryKey: ['projectProposals', selectedProjectId] });
+        }}
+      />
+    );
+  }
+
+  const status = statusConfig[selectedProject?.current_stage] || statusConfig.first_call;
 
   return (
     <ProjectDataProvider projectId={selectedProjectId}>
@@ -897,6 +1057,15 @@ export default function Projects() {
           <ScrollReveal delay={0.3} direction="left" distance={30} className="lg:col-span-9 space-y-3">
             {/* Stage Content - Main execution area first */}
             {renderStageContent()}
+
+            {/* Lead Follow-Up Section - Only show for leads */}
+            {(selectedProject?.current_stage === 'first_call' || 
+              (selectedProject?.current_stage === 'proposal' && !hasApprovedProposal(selectedProject))) && (
+              <LeadFollowUpSection 
+                project={selectedProject} 
+                onUpdate={handleProjectUpdate} 
+              />
+            )}
 
             {/* Client Info Card - Moved to bottom */}
             {/* ✅ Force open when on client_card substage */}

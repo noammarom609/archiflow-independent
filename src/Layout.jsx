@@ -5,7 +5,7 @@ import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import { getCurrentUser } from '@/utils/authHelpers';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, ChevronDown, ChevronUp, Search, Shield, RefreshCw, Moon, Sun } from 'lucide-react';
+import { Loader2, ChevronDown, ChevronUp, Search, Shield, RefreshCw, Moon, Sun, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ThemeProvider, useTheme } from './components/providers/ThemeProvider';
@@ -36,6 +36,7 @@ import MobileNavigation from './components/layout/MobileNavigation';
 import RequireAuth from './components/auth/RequireAuth';
 import { PushNotificationPrompt } from './components/notifications/PushNotificationPrompt';
 import FloatingTimerWidget from './components/time-tracking/FloatingTimerWidget';
+import QuickLeadModal from './components/leads/QuickLeadModal';
 import { useAuth } from './lib/AuthContext';
 import { 
   isSuperAdmin, 
@@ -59,6 +60,7 @@ function LayoutContent({ children, currentPageName }) {
     const location = useLocation();
     const [showNotifications, setShowNotifications] = useState(false);
     const [expandedGroups, setExpandedGroups] = useState([]);
+    const [showQuickLeadModal, setShowQuickLeadModal] = useState(false);
     // Initialize from localStorage
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
       try {
@@ -699,6 +701,33 @@ function LayoutContent({ children, currentPageName }) {
 
       {/* Floating Timer Widget - show on all pages except TimeTracking */}
       {currentPageName !== 'TimeTracking' && <FloatingTimerWidget />}
+
+      {/* Global Quick Lead Button - show for architects and admins only */}
+      {['super_admin', 'admin', 'architect', 'project_manager'].includes(user?.app_role) && (
+        <>
+          <motion.button
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.8, type: "spring" }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowQuickLeadModal(true)}
+            className="fixed bottom-6 left-6 w-14 h-14 bg-primary text-white rounded-full shadow-xl hover:shadow-2xl flex items-center justify-center z-40 group"
+            aria-label="ליד מהיר"
+            title="ליד מהיר"
+          >
+            <Zap className="w-6 h-6 group-hover:scale-110 transition-transform" />
+          </motion.button>
+
+          <QuickLeadModal
+            isOpen={showQuickLeadModal}
+            onClose={() => setShowQuickLeadModal(false)}
+            onSuccess={() => {
+              setShowQuickLeadModal(false);
+            }}
+          />
+        </>
+      )}
       </div>
       );
 }

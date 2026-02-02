@@ -138,7 +138,7 @@ const ENTITY_CONFIG = {
   },
 };
 
-export default function EntityDetailModal({ isOpen, onClose, entity, entityType, onUpdate, onDelete }) {
+export default function EntityDetailModal({ isOpen, onClose, entity, entityType, onUpdate, onDelete, onViewFullProfile }) {
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(entity || {});
@@ -296,6 +296,12 @@ export default function EntityDetailModal({ isOpen, onClose, entity, entityType,
             <div className="flex items-center gap-2">
               {!isEditing ? (
                 <>
+                  {onViewFullProfile && entityType === 'client' && (
+                    <Button variant="outline" size="sm" onClick={() => onViewFullProfile(entity?.id)}>
+                      <FolderKanban className="w-4 h-4 ml-1" />
+                      לכרטיס מלא
+                    </Button>
+                  )}
                   <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                     <Edit className="w-4 h-4 ml-1" />
                     עריכה

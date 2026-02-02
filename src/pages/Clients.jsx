@@ -28,6 +28,7 @@ import ClientDetailView from '../components/clients/ClientDetailView';
 import UserAccessStatus from '../components/users/UserAccessStatus';
 import NewClientModal from '../components/clients/NewClientModal';
 import { SkeletonCard } from '../components/ui/SkeletonCard';
+import PageHeader from '../components/layout/PageHeader';
 
 const statusLabels = {
   lead: { label: 'ליד', color: 'bg-blue-100 text-blue-800' },
@@ -118,20 +119,19 @@ export default function Clients() {
           onClose={() => setShowNewClientModal(false)}
         />
 
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-slate-900 mb-2">כרטיסי לקוח</h1>
-            <p className="text-lg text-slate-600">ניהול לקוחות ומעקב אחר פרויקטים</p>
-          </div>
+        <PageHeader 
+          title="כרטיסי לקוח" 
+          subtitle="ניהול לקוחות ומעקב אחר פרויקטים"
+        >
           <Button 
             data-testid="add-client-btn"
-            className="bg-indigo-600 hover:bg-indigo-700"
+            className="bg-primary hover:bg-primary/90"
             onClick={() => setShowNewClientModal(true)}
           >
             <Plus className="w-5 h-5 ml-2" />
             לקוח חדש
           </Button>
-        </div>
+        </PageHeader>
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

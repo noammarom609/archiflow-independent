@@ -49,7 +49,8 @@
  */
 import Calendar from './pages/Calendar';
 import ClientPortal from './pages/ClientPortal';
-import Clients from './pages/Clients';
+// Clients page has been merged into People page
+// import Clients from './pages/Clients';
 import ConsultantPortal from './pages/ConsultantPortal';
 import Consultants from './pages/Consultants';
 import ContractorPortal from './pages/ContractorPortal';
@@ -92,7 +93,7 @@ import __Layout from './Layout.jsx';
 export const PAGES = {
     "Calendar": Calendar,
     "ClientPortal": ClientPortal,
-    "Clients": Clients,
+    // "Clients": Clients, // Merged into People page
     "ConsultantPortal": ConsultantPortal,
     "Consultants": Consultants,
     "ContractorPortal": ContractorPortal,

@@ -987,20 +987,31 @@ ArchiFlow`
       // Generate and save signed PDF
       await saveProposalPDF('approved', `הצעת מחיר חתומה - ${project?.name}.pdf`);
 
-      // Move to next stage
+      // Move to next stage and mark as converted from lead to active project
+      const now = new Date().toISOString();
       if (onUpdate) {
         await onUpdate({ 
           status: 'gantt',
-          proposal_signature_id: signatureRecord.id
+          current_stage: 'gantt',
+          proposal_signature_id: signatureRecord.id,
+          proposal_approved_at: now,
+          lead_converted_at: now
         });
       }
       
-      // Add to client history
+      // Update client status to active
       if (project?.client_id) {
+        try {
+          await archiflow.entities.Client.update(project.client_id, {
+            status: 'active'
+          });
+        } catch (err) {
+          console.log('Could not update client status:', err);
+        }
         await addStageChangeToClientHistory(project.client_id, 'gantt', project);
       }
 
-      showSuccess('מעולה! ההצעה אושרה וחתומה - ממשיכים ליצירת גנט');
+      showSuccess('מעולה! ההצעה אושרה - הליד הפך לפרויקט פעיל!');
       setCompletedSubStages(['create', 'approval']);
 
     } catch (error) {

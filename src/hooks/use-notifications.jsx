@@ -8,8 +8,23 @@ import { archiflow } from '@/api/archiflow';
 export function useNotifications() {
   
   /**
+   * Helper to resolve email from client_id
+   * @param {string} clientId - The client UUID
+   * @returns {Promise<string|null>} - The client's email or null
+   */
+  const resolveClientEmail = async (clientId) => {
+    try {
+      const client = await archiflow.entities.Client.get(clientId);
+      return client?.email || null;
+    } catch (err) {
+      console.warn('[Notifications] Could not resolve client email:', err);
+      return null;
+    }
+  };
+
+  /**
    * Send a push notification to a specific user
-   * @param {string} userIdOrEmail - The user ID or email to send notification to
+   * @param {string} userIdOrEmail - The user ID, client ID, or email to send notification to
    * @param {Object} notification - Notification content
    * @param {string} notification.title - Notification title
    * @param {string} notification.body - Notification body
@@ -22,34 +37,47 @@ export function useNotifications() {
       return { success: false, error: 'No userIdOrEmail' };
     }
 
-    // Determine if it's an email or ID
-    const isEmail = typeof userIdOrEmail === 'string' && userIdOrEmail.includes('@');
+    // Determine if it's an email or ID (UUID)
+    let isEmail = typeof userIdOrEmail === 'string' && userIdOrEmail.includes('@');
+    let targetEmail = isEmail ? userIdOrEmail.toLowerCase() : null;
+    
+    // If not an email, try to resolve from clients table (client_id -> email)
+    if (!isEmail && typeof userIdOrEmail === 'string') {
+      console.log('[Notifications] Resolving client email from ID:', userIdOrEmail);
+      targetEmail = await resolveClientEmail(userIdOrEmail);
+      if (targetEmail) {
+        console.log('[Notifications] Resolved client email:', targetEmail);
+        isEmail = true;
+      }
+    }
     
     try {
       // Create in-app notification record (non-blocking)
+      // IMPORTANT: Always use user_email, not user_id, because user_id has a foreign key
+      // constraint to the users table. Clerk user IDs may not exist in that table.
       const notificationData = {
         title: notification.title,
         message: notification.body,
         notification_type: notification.type || 'general',
         link: notification.url,
-        is_read: false
+        is_read: false,
+        // Always use email to avoid FK constraint violation on user_id
+        user_email: targetEmail
       };
       
-      // Add the appropriate identifier (user_email is optional when user_id is set)
-      if (isEmail) {
-        notificationData.user_email = userIdOrEmail.toLowerCase();
+      // Only create notification if we have an email identifier
+      if (!targetEmail) {
+        console.warn('[Notifications] Skipping in-app notification - could not resolve email');
       } else {
-        notificationData.user_id = userIdOrEmail;
+        archiflow.entities.Notification.create(notificationData)
+          .catch(err => console.warn('[Notifications] Failed to create in-app notification:', err));
       }
-      
-      archiflow.entities.Notification.create(notificationData)
-        .catch(err => console.warn('[Notifications] Failed to create in-app notification:', err));
 
       // Push notification only when we have email (edge function looks up by email/userId in auth)
-      if (isEmail) {
+      if (targetEmail) {
         try {
           await archiflow.functions.invoke('sendPushNotification', {
-            userEmail: userIdOrEmail.toLowerCase(),
+            userEmail: targetEmail,
             userId: null,
             title: notification.title,
             body: notification.body,
@@ -62,7 +90,7 @@ export function useNotifications() {
         }
       }
 
-      console.log('[Notifications] Sent to user:', userIdOrEmail);
+      console.log('[Notifications] Sent to user:', targetEmail || userIdOrEmail);
       return { success: true };
     } catch (error) {
       console.error('[Notifications] Error sending to user:', error);

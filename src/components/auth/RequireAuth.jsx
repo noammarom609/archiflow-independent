@@ -1,6 +1,5 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { SignIn, SignedIn, SignedOut } from '@clerk/clerk-react';
 import { Loader2, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
@@ -23,7 +22,7 @@ export default function RequireAuth({ children }) {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4" dir="rtl">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4" dir="rtl">
         {/* Background Pattern */}
         <div className="absolute inset-0 overflow-hidden opacity-20 pointer-events-none">
           <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary/30 rounded-full blur-3xl"></div>
@@ -32,7 +31,7 @@ export default function RequireAuth({ children }) {
 
         {/* Logo - Top Right - Clickable to go to Landing Home */}
         <Link to={createPageUrl('LandingHome')} className="absolute top-8 right-8 flex items-center gap-4 z-10 hover:opacity-80 transition-opacity">
-          <div className="w-14 h-14 rounded-xl overflow-hidden shadow-lg bg-[#F7F5F2] flex-shrink-0">
+          <div className="w-14 h-14 rounded-xl overflow-hidden shadow-organic bg-background flex-shrink-0">
             <img 
               src="/archiflow-logoV2.png" 
               alt="ArchiFlow" 
@@ -47,7 +46,7 @@ export default function RequireAuth({ children }) {
         </Link>
 
         <motion.div 
-          className="max-w-md w-full bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl p-8 text-center relative z-20 border border-white/50"
+          className="max-w-md w-full bg-card/80 backdrop-blur-xl rounded-3xl shadow-organic-xl p-8 text-center relative z-20 border border-border/50"
           initial={{ opacity: 0, y: 20, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ type: "spring", stiffness: 100 }}

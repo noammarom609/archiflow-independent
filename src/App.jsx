@@ -1,7 +1,5 @@
 import { useEffect } from 'react';
 import './App.css'
-import { Toaster } from "@/components/ui/toaster"
-import { Toaster as HotToaster } from 'react-hot-toast'
 import { Toaster as SonnerToaster } from 'sonner'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -89,39 +87,11 @@ function App() {
             <Route path="*" element={<AuthenticatedApp />} />
           </Routes>
         </Router>
-        <Toaster />
-        {/* Global toast containers - fixed at top of viewport */}
-        <HotToaster 
-          position="top-center"
-          containerStyle={{
-            top: 20,
-            zIndex: 99999,
-          }}
-          toastOptions={{
-            style: {
-              fontFamily: 'Heebo, sans-serif',
-              direction: 'rtl',
-            },
-            success: {
-              style: {
-                background: '#10b981',
-                color: '#fff',
-              },
-              duration: 3000,
-            },
-            error: {
-              style: {
-                background: '#ef4444',
-                color: '#fff',
-              },
-              duration: 4000,
-            },
-          }}
-        />
-        {/* Sonner toaster for CAD components */}
+        {/* Single unified toast system */}
         <SonnerToaster 
           position="top-center"
           dir="rtl"
+          richColors
           toastOptions={{
             style: {
               fontFamily: 'Heebo, sans-serif',

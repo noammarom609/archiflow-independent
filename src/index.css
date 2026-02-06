@@ -70,6 +70,14 @@
     --sidebar-border: 106 10% 25%;
     --sidebar-ring: 13 45% 50%;
     
+    /* Semantic Status Colors */
+    --success: 106 30% 40%;
+    --success-foreground: 36 25% 96%;
+    --warning: 36 80% 50%;
+    --warning-foreground: 23 19% 15%;
+    --info: 210 50% 50%;
+    --info-foreground: 36 25% 96%;
+    
     /* Custom ArchiFlow variables */
     --terracotta: 13 45% 41%;
     --forest-green: 106 15% 23%;
@@ -124,6 +132,14 @@
     --chart-3: 28 15% 55%;
     --chart-4: 36 35% 50%;
     --chart-5: 13 40% 65%;
+    
+    /* Semantic Status Colors - Dark */
+    --success: 106 35% 50%;
+    --success-foreground: 20 14% 10%;
+    --warning: 36 75% 55%;
+    --warning-foreground: 20 14% 10%;
+    --info: 210 55% 60%;
+    --info-foreground: 20 14% 10%;
     
     --sidebar-background: 20 12% 8%;
     --sidebar-foreground: 36 20% 90%;

@@ -57,7 +57,7 @@ import { createPageUrl } from '../utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Calendar, MapPin, Plus, Loader2, Trash2, DollarSign, ChevronDown, ChevronUp, Shield, Menu, Zap, Phone } from 'lucide-react';
+import { ArrowRight, Calendar, MapPin, Plus, Loader2, Trash2, DollarSign, ChevronDown, ChevronUp, Shield, Menu, UserPlus, Phone } from 'lucide-react';
 import ProjectPermissionsSettings from '../components/projects/settings/ProjectPermissionsSettings';
 import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -93,6 +93,7 @@ import { FileText as ReportIcon, Search as SearchIcon } from 'lucide-react';
 import PageHeader from '../components/layout/PageHeader';
 import { useNotifications } from '@/hooks/use-notifications';
 import { useGlobalSearch } from '../components/search/useGlobalSearch';
+import { useSidebarState } from '@/components/providers/SidebarContext';
 
 const statusConfig = {
   first_call: { label: 'שיחה ראשונה' },
@@ -180,40 +181,7 @@ export default function Projects() {
   const [showQuickLeadModal, setShowQuickLeadModal] = useState(false);
   const { openSearch } = useGlobalSearch();
   
-  // Menu button state - Initialize from localStorage for immediate correct state
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    try {
-      const saved = localStorage.getItem('archiflow_sidebar_collapsed');
-      return saved === 'true';
-    } catch {
-      return false;
-    }
-  });
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
-
-  // Check if mobile on mount and resize
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // Listen for sidebar state changes
-  useEffect(() => {
-    const handleSidebarState = (e) => setSidebarCollapsed(e.detail?.collapsed || false);
-    window.addEventListener('sidebarStateChange', handleSidebarState);
-    return () => window.removeEventListener('sidebarStateChange', handleSidebarState);
-  }, []);
-
-  const handleMenuClick = () => {
-    if (isMobile) {
-      window.dispatchEvent(new CustomEvent('openMobileMenu'));
-    } else {
-      window.dispatchEvent(new CustomEvent('toggleSidebar'));
-    }
-  };
-
-  const showMenuButton = isMobile || sidebarCollapsed;
+  const { showMenuButton, handleMenuClick } = useSidebarState();
 
   // Parse URL parameters
   useEffect(() => {
@@ -694,8 +662,9 @@ export default function Projects() {
                       onClick={() => setShowQuickLeadModal(true)}
                       variant="outline"
                       className="border-primary/30 text-primary hover:bg-primary/10 px-4 py-2.5 sm:py-3 rounded-xl flex items-center justify-center gap-2 w-full sm:w-auto"
+                      title="הוסף ליד חדש – ליד מהיר"
                     >
-                      <Zap className="w-4 h-4" />
+                      <UserPlus className="w-4 h-4" />
                       <span className="text-sm sm:text-base">ליד מהיר</span>
                     </Button>
                   </motion.div>

@@ -82,7 +82,7 @@ export default function NotificationsCard() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 80, damping: 20 }}
     >
-      <Card className="border-slate-200 h-full overflow-hidden">
+      <Card className="h-full overflow-hidden">
         <CardHeader className="pb-4">
           <motion.div 
             className="flex items-center gap-3"
@@ -91,25 +91,25 @@ export default function NotificationsCard() {
             transition={{ type: "spring", stiffness: 100 }}
           >
             <motion.div 
-              className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center relative"
+              className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center relative"
               whileHover={{ scale: 1.1, rotate: 10 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
-              <Bell className="w-5 h-5 text-slate-700" strokeWidth={1.5} />
+              <Bell className="w-5 h-5 text-foreground" strokeWidth={1.5} />
               {notifications.filter(n => !n.is_read).length > 0 && (
                 <motion.div
-                  className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center"
+                  className="absolute -top-1 -right-1 w-4 h-4 bg-destructive rounded-full flex items-center justify-center"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: "spring", stiffness: 500, delay: 0.3 }}
                 >
-                  <span className="text-[10px] text-white font-bold">
+                  <span className="text-[10px] text-destructive-foreground font-bold">
                     {notifications.filter(n => !n.is_read).length}
                   </span>
                 </motion.div>
               )}
             </motion.div>
-            <CardTitle className="text-xl font-bold text-slate-900">עדכונים מהשטח</CardTitle>
+            <CardTitle className="text-xl font-bold text-foreground">עדכונים מהשטח</CardTitle>
           </motion.div>
         </CardHeader>
         <CardContent>
@@ -129,10 +129,10 @@ export default function NotificationsCard() {
                   animate={{ rotate: [0, 10, -10, 0] }}
                   transition={{ duration: 0.5, repeat: 2 }}
                 >
-                  <AlertCircle className="w-12 h-12 text-red-300 mx-auto mb-3" />
+                  <AlertCircle className="w-12 h-12 text-destructive/50 mx-auto mb-3" />
                 </motion.div>
-                <p className="text-red-600 text-sm font-medium mb-1">שגיאה בטעינת עדכונים</p>
-                <p className="text-red-400 text-xs">
+                <p className="text-destructive text-sm font-medium mb-1">שגיאה בטעינת עדכונים</p>
+                <p className="text-destructive/70 text-xs">
                   {notificationsError.message?.includes('checkpoint') 
                     ? 'שגיאת טעינת סשן עדכונים' 
                     : notificationsError.message || 'שגיאה לא ידועה'}
@@ -156,17 +156,17 @@ export default function NotificationsCard() {
                   animate={{ y: [0, -5, 0] }}
                   transition={{ duration: 2, repeat: Infinity }}
                 >
-                  <Bell className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                  <Bell className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
                 </motion.div>
-                <p className="text-slate-500 text-sm">אין עדכונים חדשים</p>
+                <p className="text-muted-foreground text-sm">אין עדכונים חדשים</p>
               </motion.div>
             ) : (
               <AnimatePresence>
                 {notifications.map((notification, index) => {
                   const Icon = iconMap[notification.type] || Bell;
-                  const priorityColor = notification.priority === 'urgent' ? 'text-red-600' : 
-                                       notification.priority === 'high' ? 'text-orange-600' :
-                                       notification.priority === 'medium' ? 'text-blue-600' : 'text-slate-600';
+                  const priorityColor = notification.priority === 'urgent' ? 'text-destructive' : 
+                                       notification.priority === 'high' ? 'text-warning' :
+                                       notification.priority === 'medium' ? 'text-info' : 'text-muted-foreground';
                   const isHovered = hoveredId === notification.id;
                   
                   return (
@@ -179,11 +179,10 @@ export default function NotificationsCard() {
                       onMouseLeave={() => setHoveredId(null)}
                       whileHover={{ 
                         x: 8, 
-                        backgroundColor: "rgba(241, 245, 249, 1)",
                         transition: { type: "spring", stiffness: 300, damping: 20 }
                       }}
                       whileTap={{ scale: 0.98 }}
-                      className="p-4 rounded-xl cursor-pointer group relative overflow-hidden"
+                      className="p-4 rounded-xl cursor-pointer group relative overflow-hidden hover:bg-muted/50 transition-colors"
                     >
                       {/* Background glow effect */}
                       <motion.div
@@ -201,13 +200,13 @@ export default function NotificationsCard() {
                         </motion.div>
                         <div className="flex-1 min-w-0">
                           <motion.p 
-                            className="text-sm text-slate-900 font-medium group-hover:text-primary transition-colors"
+                            className="text-sm text-foreground font-medium group-hover:text-primary transition-colors"
                             animate={{ x: isHovered ? 3 : 0 }}
                           >
                             {notification.message}
                           </motion.p>
                           <motion.p 
-                            className="text-xs text-slate-500 mt-1"
+                            className="text-xs text-muted-foreground mt-1"
                             initial={{ opacity: 0.7 }}
                             animate={{ opacity: isHovered ? 1 : 0.7 }}
                           >

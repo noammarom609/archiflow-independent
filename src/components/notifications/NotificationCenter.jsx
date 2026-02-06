@@ -58,37 +58,37 @@ const typeIcons = {
   general: Bell,
 };
 
-// Colors by notification type
+// Semantic colors by notification type (using design tokens)
 const typeColors = {
-  project_created: 'bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
-  project_updated: 'bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
-  project_stage_changed: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400',
-  task_assigned: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
-  task_completed: 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400',
-  task_due_soon: 'bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400',
-  document_uploaded: 'bg-cyan-50 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400',
-  proposal_approved: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
-  proposal_rejected: 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400',
-  proposal_sent: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
-  meeting_scheduled: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
-  meeting_reminder: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
-  payment_received: 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400',
-  expense_added: 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400',
-  new_comment: 'bg-sky-50 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400',
-  client_added: 'bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400',
-  contractor_added: 'bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400',
-  supplier_added: 'bg-lime-50 text-lime-600 dark:bg-lime-900/30 dark:text-lime-400',
-  consultant_added: 'bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400',
-  team_member_added: 'bg-pink-50 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400',
-  recording_analyzed: 'bg-fuchsia-50 text-fuchsia-600 dark:bg-fuchsia-900/30 dark:text-fuchsia-400',
-  general: 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
+  project_created: 'bg-primary/10 text-primary',
+  project_updated: 'bg-primary/10 text-primary',
+  project_stage_changed: 'bg-primary/10 text-primary',
+  task_assigned: 'bg-info/10 text-info',
+  task_completed: 'bg-success/10 text-success',
+  task_due_soon: 'bg-warning/10 text-warning',
+  document_uploaded: 'bg-info/10 text-info',
+  proposal_approved: 'bg-success/10 text-success',
+  proposal_rejected: 'bg-destructive/10 text-destructive',
+  proposal_sent: 'bg-info/10 text-info',
+  meeting_scheduled: 'bg-warning/10 text-warning',
+  meeting_reminder: 'bg-warning/10 text-warning',
+  payment_received: 'bg-success/10 text-success',
+  expense_added: 'bg-destructive/10 text-destructive',
+  new_comment: 'bg-info/10 text-info',
+  client_added: 'bg-secondary/10 text-secondary',
+  contractor_added: 'bg-secondary/10 text-secondary',
+  supplier_added: 'bg-secondary/10 text-secondary',
+  consultant_added: 'bg-secondary/10 text-secondary',
+  team_member_added: 'bg-secondary/10 text-secondary',
+  recording_analyzed: 'bg-accent text-accent-foreground',
+  general: 'bg-muted text-muted-foreground',
 };
 
 const priorityColors = {
-  low: 'bg-slate-100 text-slate-700',
-  medium: 'bg-yellow-100 text-yellow-800',
-  high: 'bg-orange-100 text-orange-800',
-  urgent: 'bg-red-100 text-red-800',
+  low: 'bg-muted text-muted-foreground',
+  medium: 'bg-warning/10 text-warning',
+  high: 'bg-warning/20 text-warning',
+  urgent: 'bg-destructive/10 text-destructive',
 };
 
 export default function NotificationCenter({ isOpen, onClose }) {
@@ -152,19 +152,19 @@ export default function NotificationCenter({ isOpen, onClose }) {
           exit={{ x: -400 }}
           transition={{ type: 'spring', damping: 25 }}
           onClick={(e) => e.stopPropagation()}
-          className="fixed right-0 top-0 h-full w-full max-w-md bg-white dark:bg-slate-900 shadow-2xl overflow-hidden flex flex-col"
+          className="fixed right-0 top-0 h-full w-full max-w-md bg-card shadow-organic-xl overflow-hidden flex flex-col"
         >
           {/* Header */}
-          <div className="p-6 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-l from-indigo-50 to-white dark:from-indigo-900/20 dark:to-slate-900">
+          <div className="p-6 border-b border-border bg-card">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
-                  <Bell className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                  <Bell className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">התראות</h2>
+                  <h2 className="text-xl font-bold text-foreground">התראות</h2>
                   {unreadCount > 0 && (
-                    <p className="text-sm text-slate-600 dark:text-slate-400">{unreadCount} חדשות</p>
+                    <p className="text-sm text-muted-foreground">{unreadCount} חדשות</p>
                   )}
                 </div>
               </div>
@@ -179,7 +179,6 @@ export default function NotificationCenter({ isOpen, onClose }) {
                 variant={filter === 'all' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setFilter('all')}
-                className={filter === 'all' ? 'bg-indigo-600' : ''}
               >
                 הכל
               </Button>
@@ -187,7 +186,6 @@ export default function NotificationCenter({ isOpen, onClose }) {
                 variant={filter === 'unread' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setFilter('unread')}
-                className={filter === 'unread' ? 'bg-indigo-600' : ''}
               >
                 לא נקראו ({unreadCount})
               </Button>
@@ -195,7 +193,6 @@ export default function NotificationCenter({ isOpen, onClose }) {
                 variant={filter === 'document' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setFilter('document')}
-                className={filter === 'document' ? 'bg-indigo-600' : ''}
               >
                 מסמכים
               </Button>
@@ -203,7 +200,6 @@ export default function NotificationCenter({ isOpen, onClose }) {
                 variant={filter === 'task' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setFilter('task')}
-                className={filter === 'task' ? 'bg-indigo-600' : ''}
               >
                 משימות
               </Button>
@@ -212,12 +208,12 @@ export default function NotificationCenter({ isOpen, onClose }) {
 
           {/* Actions */}
           {unreadCount > 0 && (
-            <div className="p-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+            <div className="p-3 border-b border-border bg-muted/50">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => markAllAsReadMutation.mutate()}
-                className="w-full text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                className="w-full text-primary hover:text-primary hover:bg-primary/10"
               >
                 <CheckCircle2 className="w-4 h-4 ml-2" />
                 סמן הכל כנקרא
@@ -229,14 +225,14 @@ export default function NotificationCenter({ isOpen, onClose }) {
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
               <div className="p-8 text-center">
-                <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
               </div>
             ) : filteredNotifications.length > 0 ? (
-              <div className="divide-y divide-slate-100 dark:divide-slate-700">
+              <div className="divide-y divide-border">
                 {filteredNotifications.map((notification, index) => {
                   const Icon = typeIcons[notification.type] || Bell;
                   const typeColor = typeColors[notification.type] || typeColors.general;
-                  const priorityColor = priorityColors[notification.priority] || priorityColors.normal;
+                  const priorityColor = priorityColors[notification.priority] || priorityColors.low;
 
                   return (
                     <motion.div
@@ -244,8 +240,8 @@ export default function NotificationCenter({ isOpen, onClose }) {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.03 }}
-                      className={`p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer ${
-                        !notification.is_read ? 'bg-indigo-50/30 dark:bg-indigo-900/20' : ''
+                      className={`p-4 hover:bg-muted/50 transition-colors cursor-pointer ${
+                        !notification.is_read ? 'bg-primary/5' : ''
                       }`}
                       onClick={() => {
                         if (!notification.is_read) {
@@ -269,7 +265,7 @@ export default function NotificationCenter({ isOpen, onClose }) {
                               <Link 
                                 to={createPageUrl(notification.link.split('?')[0]) + (notification.link.includes('?') ? '?' + notification.link.split('?')[1] : '')}
                                 className={`font-semibold text-sm hover:text-primary transition-colors ${
-                                  !notification.is_read ? 'text-slate-900 dark:text-slate-100' : 'text-slate-700 dark:text-slate-300'
+                                  !notification.is_read ? 'text-foreground' : 'text-foreground/80'
                                 }`}
                                 onClick={(e) => e.stopPropagation()}
                               >
@@ -277,17 +273,17 @@ export default function NotificationCenter({ isOpen, onClose }) {
                               </Link>
                             ) : (
                               <h3 className={`font-semibold text-sm ${
-                                !notification.is_read ? 'text-slate-900 dark:text-slate-100' : 'text-slate-700 dark:text-slate-300'
+                                !notification.is_read ? 'text-foreground' : 'text-foreground/80'
                               }`}>
                                 {notification.title}
                               </h3>
                             )}
                             {!notification.is_read && (
-                              <div className="w-2 h-2 bg-indigo-600 rounded-full flex-shrink-0 mt-1" />
+                              <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0 mt-1" />
                             )}
                           </div>
                           
-                          <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
+                          <p className="text-sm text-muted-foreground mb-2">
                             {notification.message}
                           </p>
 
@@ -298,7 +294,7 @@ export default function NotificationCenter({ isOpen, onClose }) {
                                 {notification.priority === 'high' && 'גבוה'}
                               </Badge>
                             )}
-                            <span className="text-xs text-slate-500 dark:text-slate-500">
+                            <span className="text-xs text-muted-foreground">
                               {format(new Date(notification.created_date), 'dd/MM/yy HH:mm')}
                             </span>
                           </div>
@@ -319,7 +315,7 @@ export default function NotificationCenter({ isOpen, onClose }) {
                               variant="ghost"
                               size="sm"
                               onClick={() => deleteNotificationMutation.mutate(notification.id)}
-                              className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
                             >
                               <Trash2 className="w-3 h-3 ml-1" />
                               מחק
@@ -333,11 +329,11 @@ export default function NotificationCenter({ isOpen, onClose }) {
               </div>
             ) : (
               <div className="p-8 text-center">
-                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Bell className="w-8 h-8 text-slate-400" />
+                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Bell className="w-8 h-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">אין התראות</h3>
-                <p className="text-sm text-slate-600">
+                <h3 className="text-lg font-semibold text-foreground mb-2">אין התראות</h3>
+                <p className="text-sm text-muted-foreground">
                   {filter === 'unread' ? 'כל ההתראות נקראו' : 'אין התראות זמינות'}
                 </p>
               </div>

@@ -5,11 +5,12 @@ import { archiflow } from '@/api/archiflow';
 import { useQuery } from '@tanstack/react-query';
 import { getCurrentUser } from '@/utils/authHelpers';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, ChevronDown, ChevronUp, Search, Shield, RefreshCw, Moon, Sun, Zap } from 'lucide-react';
+import { Loader2, ChevronDown, ChevronUp, Search, Shield, RefreshCw, Moon, Sun, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ThemeProvider, useTheme } from './components/providers/ThemeProvider';
 import { LanguageProvider, useLanguage } from './components/providers/LanguageProvider';
+import { SidebarProvider, useSidebarState } from './components/providers/SidebarContext';
 import { 
         LayoutDashboard, 
         FolderKanban, 
@@ -53,59 +54,24 @@ const LANDING_PAGES = ['LandingHome', 'LandingAbout', 'LandingPricing', 'Landing
 // Public pages that don't require authentication
 const PUBLIC_PAGES = [...LANDING_PAGES, 'PublicApproval', 'PublicContractorQuote', 'PublicMeetingBooking', 'PublicContent'];
 
-// Storage key for sidebar state
-const SIDEBAR_STORAGE_KEY = 'archiflow_sidebar_collapsed';
-
 function LayoutContent({ children, currentPageName }) {
     const location = useLocation();
     const [showNotifications, setShowNotifications] = useState(false);
     const [expandedGroups, setExpandedGroups] = useState([]);
     const [showQuickLeadModal, setShowQuickLeadModal] = useState(false);
-    // Initialize from localStorage
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-      try {
-        const saved = localStorage.getItem(SIDEBAR_STORAGE_KEY);
-        return saved === 'true';
-      } catch {
-        return false;
-      }
-    });
+    const { sidebarCollapsed, setSidebarCollapsed, collapseSidebar } = useSidebarState();
     const { isOpen: searchOpen, setIsOpen: setSearchOpen, openSearch } = useGlobalSearch();
     const { isDarkMode, toggleDarkMode } = useTheme();
     const { t, isRTL } = useLanguage();
     const { logout } = useAuth();
 
-    // Save sidebar state to localStorage and notify components
-    useEffect(() => {
-      try {
-        localStorage.setItem(SIDEBAR_STORAGE_KEY, String(sidebarCollapsed));
-      } catch {
-        // Ignore storage errors
-      }
-      // Notify other components
-      window.dispatchEvent(new CustomEvent('sidebarStateChange', {
-        detail: { collapsed: sidebarCollapsed }
-      }));
-    }, [sidebarCollapsed]);
-
-    // Send initial state on mount (for components that mount after Layout)
-    useEffect(() => {
-      // Small delay to ensure components are mounted
-      const timer = setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('sidebarStateChange', {
-          detail: { collapsed: sidebarCollapsed }
-        }));
-      }, 100);
-      return () => clearTimeout(timer);
-    }, []);
-
-    // 1. Auto-collapse sidebar on project management pages
+    // Auto-collapse sidebar on project detail pages
     useEffect(() => {
       const isProjectPage = currentPageName === 'Projects' && new URLSearchParams(location.search).get('id');
       if (isProjectPage) {
-        setSidebarCollapsed(true);
+        collapseSidebar();
       }
-    }, [currentPageName, location.search]);
+    }, [currentPageName, location.search, collapseSidebar]);
 
     // Listen for proposal editor events to collapse/expand sidebar
     useEffect(() => {
@@ -114,16 +80,7 @@ function LayoutContent({ children, currentPageName }) {
       };
       window.addEventListener('proposalEditorActive', handleProposalEditor);
       return () => window.removeEventListener('proposalEditorActive', handleProposalEditor);
-    }, []);
-
-    // Listen for toggleSidebar event from page headers
-    useEffect(() => {
-      const handleToggleSidebar = () => {
-        setSidebarCollapsed(prev => !prev);
-      };
-      window.addEventListener('toggleSidebar', handleToggleSidebar);
-      return () => window.removeEventListener('toggleSidebar', handleToggleSidebar);
-    }, []);
+    }, [setSidebarCollapsed]);
 
   // Check if current page is a landing page or public page
   const isLandingPage = LANDING_PAGES.includes(currentPageName);
@@ -201,15 +158,9 @@ function LayoutContent({ children, currentPageName }) {
         const suppliers = filterByOwnership(allSuppliers);
         const clients = filterByOwnership(allClients);
         
-        console.log('[Layout] Portal counts for user:', myEmail, 'id:', myId, { 
-          consultants: consultants?.length, 
-          contractors: contractors?.length,
-          suppliers: suppliers?.length,
-          clients: clients?.length,
-          role: userRole,
-          rawClients: allClients?.length,
-          rawContractors: allContractors?.length
-        });
+        if (import.meta.env.DEV) {
+          console.log('[Layout] Portal counts:', { consultants: consultants?.length, contractors: contractors?.length, suppliers: suppliers?.length, clients: clients?.length });
+        }
         
         return { 
           consultants: consultants?.length || 0, 
@@ -359,13 +310,20 @@ function LayoutContent({ children, currentPageName }) {
   ];
 
   const menuItems = [
+                // ── Work ──
                 { name: 'Dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
                 { name: 'Projects', labelKey: 'nav.projects', icon: FolderKanban },
                 { name: 'Calendar', labelKey: 'nav.calendar', icon: CalendarDays },
                 { name: 'TimeTracking', labelKey: 'nav.timeTracking', icon: Clock },
-                { name: 'MeetingSummaries', labelKey: 'nav.meetingSummaries', icon: FileAudio },
+                
+                // ── Content ──
+                { name: '_divider_content', isDivider: true, labelKey: 'nav.content' },
                 { name: 'Recordings', labelKey: 'nav.recordingsAdmin', icon: Mic },
-                // Communication group with dynamic portal visibility
+                { name: 'DesignLibrary', labelKey: 'nav.designLibrary', icon: Palette },
+                
+                // ── Business ──
+                { name: '_divider_business', isDivider: true, labelKey: 'nav.business' },
+                { name: 'Financials', labelKey: 'nav.financials', icon: Banknote },
                 { 
                   name: 'Communication', 
                   labelKey: 'nav.communication', 
@@ -373,9 +331,6 @@ function LayoutContent({ children, currentPageName }) {
                   isGroup: true,
                   children: portalChildren
                 },
-                { name: 'DesignLibrary', labelKey: 'nav.designLibrary', icon: Palette },
-                { name: 'Financials', labelKey: 'nav.financials', icon: Banknote },
-                // Settings moved to bottom icon
               ];
 
   const isActive = (pageName) => currentPageName === pageName;
@@ -397,10 +352,10 @@ function LayoutContent({ children, currentPageName }) {
           const hasAccess = (pageName) => hasPageAccess(user, pageName);
 
           const filteredMenuItems = menuItems.map(item => {
+              if (item.isDivider) return item;
               if (item.isGroup) {
                   const visibleChildren = item.children.filter(child => hasAccess(child.name));
                   if (visibleChildren.length === 0) return null;
-                  // If only 1 child, flatten the group - show the child directly
                   if (visibleChildren.length === 1) {
                       return visibleChildren[0];
                   }
@@ -420,8 +375,8 @@ function LayoutContent({ children, currentPageName }) {
             <Button
               variant="ghost"
               size="icon"
-              className="absolute top-1/2 -translate-y-1/2 -left-5 z-50 w-10 h-10 rounded-full bg-white dark:bg-card backdrop-blur-sm border border-border/50 shadow-md hover:bg-accent hover:text-primary hover:shadow-lg text-muted-foreground transition-all"
-              onClick={() => setSidebarCollapsed(true)}
+              className="absolute top-1/2 -translate-y-1/2 -left-5 z-50 w-10 h-10 rounded-full bg-background backdrop-blur-sm border border-border/50 shadow-md hover:bg-accent hover:text-primary hover:shadow-lg text-muted-foreground transition-all"
+              onClick={collapseSidebar}
               aria-label="סגור תפריט"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
@@ -485,6 +440,17 @@ function LayoutContent({ children, currentPageName }) {
         <nav className="flex-1 p-4 overflow-y-auto">
           <ul className="space-y-1">
             {filteredMenuItems.map((item) => {
+              // Render section dividers
+              if (item.isDivider) {
+                return (
+                  <li key={item.name} className="pt-4 pb-1 px-4">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                      {t(item.labelKey) || ''}
+                    </span>
+                  </li>
+                );
+              }
+
               const Icon = item.icon;
 
               // Handle group items with children
@@ -713,10 +679,10 @@ function LayoutContent({ children, currentPageName }) {
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowQuickLeadModal(true)}
             className="fixed bottom-6 left-6 w-14 h-14 bg-primary text-white rounded-full shadow-xl hover:shadow-2xl flex items-center justify-center z-40 group"
-            aria-label="ליד מהיר"
-            title="ליד מהיר"
+            aria-label="הוסף ליד חדש (ליד מהיר)"
+            title="הוסף ליד חדש – ליד מהיר"
           >
-            <Zap className="w-6 h-6 group-hover:scale-110 transition-transform" />
+            <UserPlus className="w-6 h-6 group-hover:scale-110 transition-transform" />
           </motion.button>
 
           <QuickLeadModal
@@ -739,15 +705,17 @@ export default function Layout(props) {
   return (
     <ThemeProvider>
       <LanguageProvider>
-        {isPublicPage ? (
-          <LayoutContent {...props} />
-        ) : (
-          <RequireAuth>
+        <SidebarProvider>
+          {isPublicPage ? (
             <LayoutContent {...props} />
-          </RequireAuth>
-        )}
-        {/* Push Notification Prompt - show only for authenticated users, not on landing pages */}
-        {!isLandingPage && !isPublicPage && <PushNotificationPrompt delay={8000} />}
+          ) : (
+            <RequireAuth>
+              <LayoutContent {...props} />
+            </RequireAuth>
+          )}
+          {/* Push Notification Prompt - show only for authenticated users, not on landing pages */}
+          {!isLandingPage && !isPublicPage && <PushNotificationPrompt delay={8000} />}
+        </SidebarProvider>
       </LanguageProvider>
     </ThemeProvider>
   );

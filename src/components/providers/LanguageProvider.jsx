@@ -38,7 +38,7 @@ const translations = {
     'nav.supplierPortal': 'פורטל ספקים',
     'nav.clientPortal': 'פורטל לקוח',
     'nav.recordings': 'הקלטות וניתוח',
-    'nav.recordingsAdmin': 'בקרת הקלטות (אדמין)',
+    'nav.recordingsAdmin': 'ניהול והקלטת פגישות',
     'nav.meetingSummaries': 'סיכומי פגישות',
     'nav.journal': 'יומן',
     'nav.designLibrary': 'ספריית תוכן',
@@ -50,6 +50,8 @@ const translations = {
     'nav.people': 'אנשי קשר וצוות',
     'nav.themeSettings': 'מראה ושפה',
     'nav.timeTracking': 'ניהול שעות',
+    'nav.content': 'תוכן',
+    'nav.business': 'עסקי',
     'nav.navigateTo': 'נווט ל',
     
     // Layout - User & System
@@ -227,7 +229,7 @@ const translations = {
     'nav.supplierPortal': 'Supplier Portal',
     'nav.clientPortal': 'Client Portal',
     'nav.recordings': 'Recordings & Analysis',
-    'nav.recordingsAdmin': 'Recordings Control (Admin)',
+    'nav.recordingsAdmin': 'Meetings & Recordings',
     'nav.meetingSummaries': 'Meeting Summaries',
     'nav.journal': 'Journal',
     'nav.designLibrary': 'Content Library',
@@ -239,6 +241,8 @@ const translations = {
     'nav.people': 'Contacts & Team',
     'nav.themeSettings': 'Appearance & Language',
     'nav.timeTracking': 'Time Tracking',
+    'nav.content': 'Content',
+    'nav.business': 'Business',
     'nav.navigateTo': 'Navigate to',
     
     // Layout - User & System

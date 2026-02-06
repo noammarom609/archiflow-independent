@@ -166,8 +166,10 @@ export const ThemeProvider = ({ children }) => {
     // Always set primary-foreground based on theme
     root.style.setProperty('--primary-foreground', hslValues.primaryForeground);
     
-    // Log for debugging (remove in production)
-    console.log(`[ThemeProvider] Applied theme: ${themeName}, dark: ${dark}, custom: ${customPrimary || 'none'}`);
+    // Debug logging only in development
+    if (import.meta.env.DEV) {
+      console.log(`[ThemeProvider] Applied theme: ${themeName}, dark: ${dark}, custom: ${customPrimary || 'none'}`);
+    }
   }, []);
 
   // ═══════════════════════════════════════════════════════════════════════════

@@ -30,12 +30,12 @@ const entityIcons = {
 };
 
 const entityColors = {
-  Project: 'bg-indigo-100 text-indigo-700',
-  Client: 'bg-green-100 text-green-700',
-  Document: 'bg-blue-100 text-blue-700',
-  Task: 'bg-purple-100 text-purple-700',
-  Recording: 'bg-pink-100 text-pink-700',
-  CalendarEvent: 'bg-orange-100 text-orange-700',
+  Project: 'bg-primary/10 text-primary',
+  Client: 'bg-secondary/10 text-secondary',
+  Document: 'bg-info/10 text-info',
+  Task: 'bg-accent text-accent-foreground',
+  Recording: 'bg-warning/10 text-warning',
+  CalendarEvent: 'bg-warning/10 text-warning',
 };
 
 export default function GlobalSearch({ isOpen, onClose }) {
@@ -251,9 +251,9 @@ export default function GlobalSearch({ isOpen, onClose }) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl p-0 gap-0 !top-0 !translate-y-0" dir="rtl">
         {/* Search Input */}
-        <div className="p-4 border-b border-slate-200">
+        <div className="p-4 border-b border-border">
           <div className="relative">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
               value={query}
               onChange={(e) => {
@@ -265,7 +265,7 @@ export default function GlobalSearch({ isOpen, onClose }) {
               autoFocus
             />
             <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-              <kbd className="px-2 py-1 bg-slate-100 rounded text-xs font-mono">Esc</kbd>
+              <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono text-muted-foreground">Esc</kbd>
             </div>
           </div>
         </div>
@@ -274,53 +274,53 @@ export default function GlobalSearch({ isOpen, onClose }) {
         <div className="max-h-96 overflow-y-auto p-2">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
           ) : query.length < 2 ? (
             <div className="p-6">
-              <h3 className="text-sm font-semibold text-slate-500 mb-3">חיפושים אחרונים</h3>
+              <h3 className="text-sm font-semibold text-muted-foreground mb-3">חיפושים אחרונים</h3>
               {recentSearches.length > 0 ? (
                 <div className="space-y-1">
                   {recentSearches.map((recent, idx) => (
                     <button
                       key={idx}
                       onClick={() => setQuery(recent.query)}
-                      className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 text-right"
+                      className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 text-right"
                     >
-                      <ArrowLeft className="w-4 h-4 text-slate-400" />
-                      <span className="text-sm text-slate-700">{recent.result}</span>
+                      <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm text-foreground">{recent.result}</span>
                     </button>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-slate-500 text-center py-4">
+                <p className="text-sm text-muted-foreground text-center py-4">
                   התחל להקליד לחיפוש...
                 </p>
               )}
 
-              <div className="mt-6 pt-6 border-t border-slate-100">
-                <h3 className="text-sm font-semibold text-slate-500 mb-3">קיצורי מקלדת</h3>
-                <div className="space-y-2 text-sm text-slate-600">
+              <div className="mt-6 pt-6 border-t border-border">
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3">קיצורי מקלדת</h3>
+                <div className="space-y-2 text-sm text-muted-foreground">
                   <div className="flex items-center justify-between">
                     <span>חיפוש גלובלי</span>
-                    <kbd className="px-2 py-1 bg-slate-100 rounded text-xs font-mono">Cmd+K</kbd>
+                    <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Cmd+K</kbd>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>ניווט בתוצאות</span>
-                    <kbd className="px-2 py-1 bg-slate-100 rounded text-xs font-mono">↑ ↓</kbd>
+                    <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">↑ ↓</kbd>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>בחירה</span>
-                    <kbd className="px-2 py-1 bg-slate-100 rounded text-xs font-mono">Enter</kbd>
+                    <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Enter</kbd>
                   </div>
                 </div>
               </div>
             </div>
           ) : searchResults.length === 0 ? (
             <div className="text-center py-12">
-              <Search className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-              <p className="text-slate-500">לא נמצאו תוצאות</p>
-              <p className="text-sm text-slate-400 mt-1">נסה מילים אחרות</p>
+              <Search className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-muted-foreground">לא נמצאו תוצאות</p>
+              <p className="text-sm text-muted-foreground/70 mt-1">נסה מילים אחרות</p>
             </div>
           ) : (
             <div className="space-y-4 p-2">
@@ -329,8 +329,8 @@ export default function GlobalSearch({ isOpen, onClose }) {
                 return (
                   <div key={type}>
                     <div className="flex items-center gap-2 px-2 mb-2">
-                      <Icon className="w-4 h-4 text-slate-400" />
-                      <h3 className="text-xs font-semibold text-slate-500 uppercase">
+                      <Icon className="w-4 h-4 text-muted-foreground" />
+                      <h3 className="text-xs font-semibold text-muted-foreground uppercase">
                         {type} ({results.length})
                       </h3>
                     </div>
@@ -344,8 +344,8 @@ export default function GlobalSearch({ isOpen, onClose }) {
                             onClick={() => handleSelect(result)}
                             className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all text-right ${
                               isSelected
-                                ? 'bg-indigo-50 border-2 border-indigo-500'
-                                : 'hover:bg-slate-50 border-2 border-transparent'
+                                ? 'bg-primary/10 border-2 border-primary'
+                                : 'hover:bg-muted/50 border-2 border-transparent'
                             }`}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -355,9 +355,9 @@ export default function GlobalSearch({ isOpen, onClose }) {
                               <Icon className="w-5 h-5" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium text-slate-900 truncate">{result.title}</p>
+                              <p className="font-medium text-foreground truncate">{result.title}</p>
                               {result.subtitle && (
-                                <p className="text-sm text-slate-500 truncate">{result.subtitle}</p>
+                                <p className="text-sm text-muted-foreground truncate">{result.subtitle}</p>
                               )}
                             </div>
                             {result.meta && (
@@ -377,18 +377,18 @@ export default function GlobalSearch({ isOpen, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="p-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between text-xs text-slate-500">
+        <div className="p-3 border-t border-border bg-muted/50 flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-white rounded border border-slate-200">↑↓</kbd>
+              <kbd className="px-1.5 py-0.5 bg-card rounded border border-border">↑↓</kbd>
               לניווט
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-white rounded border border-slate-200">Enter</kbd>
+              <kbd className="px-1.5 py-0.5 bg-card rounded border border-border">Enter</kbd>
               לבחירה
             </span>
           </div>
-          <span className="text-slate-400">
+          <span className="text-muted-foreground/70">
             {searchResults.length > 0 && `${searchResults.length} תוצאות`}
           </span>
         </div>

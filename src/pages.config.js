@@ -78,12 +78,12 @@ import PublicContractorQuote from './pages/PublicContractorQuote';
 import PublicMeetingBooking from './pages/PublicMeetingBooking';
 import Recordings from './pages/Recordings';
 import Settings from './pages/Settings';
-import SiteMode from './pages/SiteMode';
+// import SiteMode from './pages/SiteMode'; // Internal tool, not user-facing
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import SupplierPortal from './pages/SupplierPortal';
 import Support from './pages/Support';
 import Team from './pages/Team';
-import TestTranscribe from './pages/TestTranscribe';
+// import TestTranscribe from './pages/TestTranscribe'; // Dev-only test page
 import ThemeSettings from './pages/ThemeSettings';
 import TimeTracking from './pages/TimeTracking';
 import UserManagement from './pages/UserManagement';
@@ -121,12 +121,12 @@ export const PAGES = {
     "PublicMeetingBooking": PublicMeetingBooking,
     "Recordings": Recordings,
     "Settings": Settings,
-    "SiteMode": SiteMode,
+    // "SiteMode": SiteMode, // Internal tool
     "SuperAdminDashboard": SuperAdminDashboard,
     "SupplierPortal": SupplierPortal,
     "Support": Support,
     "Team": Team,
-    "TestTranscribe": TestTranscribe,
+    // "TestTranscribe": TestTranscribe, // Dev-only
     "ThemeSettings": ThemeSettings,
     "TimeTracking": TimeTracking,
     "UserManagement": UserManagement,

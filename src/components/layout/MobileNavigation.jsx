@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -22,8 +22,8 @@ import {
   Home,
   HardHat
 } from 'lucide-react';
-// User data now comes from useAuth context
 import { useAuth } from '@/lib/AuthContext';
+import { useSidebarState } from '@/components/providers/SidebarContext';
 
 // Quick access items for bottom tab bar
 const quickAccessItems = [
@@ -50,7 +50,7 @@ const menuItems = [
 ];
 
 export default function MobileNavigation({ currentPageName }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const { mobileMenuOpen: isOpen, setMobileMenuOpen: setIsOpen, closeMobileMenu } = useSidebarState();
   const { logout, user } = useAuth();
 
   const isActive = (pageName) => currentPageName === pageName;
@@ -58,15 +58,6 @@ export default function MobileNavigation({ currentPageName }) {
   const handleLogout = () => {
     logout();
   };
-
-  // Listen for openMobileMenu event from hamburger button
-  useEffect(() => {
-    const handleOpenMenu = () => {
-      setIsOpen(true);
-    };
-    window.addEventListener('openMobileMenu', handleOpenMenu);
-    return () => window.removeEventListener('openMobileMenu', handleOpenMenu);
-  }, []);
 
   return (
     <>

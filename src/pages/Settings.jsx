@@ -40,6 +40,7 @@ import { THEMES, useTheme } from '@/components/providers/ThemeProvider';
 import ChecklistSettingsTab from '../components/settings/ChecklistSettingsTab';
 import { showSuccess, showError } from '../components/utils/notifications';
 import { NotificationSettings } from '../components/notifications/PushNotificationPrompt';
+import { useSidebarState } from '@/components/providers/SidebarContext';
 
 export default function Settings() {
   const queryClient = useQueryClient();
@@ -47,40 +48,7 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState('profile');
   const [uploading, setUploading] = useState(false);
   
-  // Menu button state - Initialize from localStorage for immediate correct state
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    try {
-      const saved = localStorage.getItem('archiflow_sidebar_collapsed');
-      return saved === 'true';
-    } catch {
-      return false;
-    }
-  });
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
-
-  // Check if mobile on mount and resize
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // Listen for sidebar state changes
-  useEffect(() => {
-    const handleSidebarState = (e) => setSidebarCollapsed(e.detail?.collapsed || false);
-    window.addEventListener('sidebarStateChange', handleSidebarState);
-    return () => window.removeEventListener('sidebarStateChange', handleSidebarState);
-  }, []);
-
-  const handleMenuClick = () => {
-    if (isMobile) {
-      window.dispatchEvent(new CustomEvent('openMobileMenu'));
-    } else {
-      window.dispatchEvent(new CustomEvent('toggleSidebar'));
-    }
-  };
-
-  const showMenuButton = isMobile || sidebarCollapsed;
+  const { showMenuButton, handleMenuClick } = useSidebarState();
 
   const { 
     currentTheme, 

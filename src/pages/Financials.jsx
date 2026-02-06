@@ -39,11 +39,21 @@ const categoryLabels = {
 };
 
 const statusConfig = {
-  draft: { label: 'טיוטה', color: 'bg-muted text-foreground border-border', icon: FileText },
-  paid: { label: 'שולם', color: 'bg-archiflow-forest-green/20 text-archiflow-forest-green border-archiflow-forest-green/30', icon: CheckCircle2 },
-  pending: { label: 'ממתין', color: 'bg-archiflow-terracotta/20 text-archiflow-terracotta border-archiflow-terracotta/30', icon: Clock },
-  overdue: { label: 'באיחור', color: 'bg-destructive/20 text-destructive border-destructive/30', icon: AlertCircle },
-  cancelled: { label: 'בוטל', color: 'bg-muted text-muted-foreground border-border', icon: AlertCircle },
+  paid: {
+    label: 'שולם',
+    color: 'bg-success/15 text-success border-success/30',
+    icon: CheckCircle2,
+  },
+  pending: {
+    label: 'ממתין',
+    color: 'bg-warning/15 text-warning border-warning/30',
+    icon: Clock,
+  },
+  overdue: {
+    label: 'באיחור',
+    color: 'bg-destructive/15 text-destructive border-destructive/30',
+    icon: AlertCircle,
+  },
 };
 
 export default function Financials() {
@@ -108,7 +118,7 @@ export default function Financials() {
   }, {});
 
   return (
-    <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8 lg:p-12">
+    <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

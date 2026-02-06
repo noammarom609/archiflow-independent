@@ -49,6 +49,7 @@ import AddSupplierDialog from '@/components/suppliers/AddSupplierDialog';
 // Animations
 import { FloatingOrbs, ParticleField } from '@/components/animations/AnimatedBackground';
 import { TextReveal, RevealOnScroll } from '@/components/animations/AnimatedComponents';
+import { useSidebarState } from '@/components/providers/SidebarContext';
 
 // Animation variants matching Dashboard
 const containerVariants = {
@@ -114,40 +115,7 @@ export default function People() {
   const [showConsultantModal, setShowConsultantModal] = useState(false);
   const [showSupplierModal, setShowSupplierModal] = useState(false);
   
-  // Menu button state - Initialize from localStorage for immediate correct state
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    try {
-      const saved = localStorage.getItem('archiflow_sidebar_collapsed');
-      return saved === 'true';
-    } catch {
-      return false;
-    }
-  });
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
-
-  // Check if mobile on mount and resize
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // Listen for sidebar state changes
-  useEffect(() => {
-    const handleSidebarState = (e) => setSidebarCollapsed(e.detail?.collapsed || false);
-    window.addEventListener('sidebarStateChange', handleSidebarState);
-    return () => window.removeEventListener('sidebarStateChange', handleSidebarState);
-  }, []);
-
-  const handleMenuClick = () => {
-    if (isMobile) {
-      window.dispatchEvent(new CustomEvent('openMobileMenu'));
-    } else {
-      window.dispatchEvent(new CustomEvent('toggleSidebar'));
-    }
-  };
-
-  const showMenuButton = isMobile || sidebarCollapsed;
+  const { showMenuButton, handleMenuClick } = useSidebarState();
 
   // Check URL params
   useEffect(() => {

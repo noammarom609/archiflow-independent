@@ -8,12 +8,12 @@ import { Button } from '@/components/ui/button';
 import BusinessHealthGauges from '../components/dashboard/BusinessHealthGauges';
 import ProjectStatusMatrix from '../components/dashboard/ProjectStatusMatrix';
 import NotificationsCard from '../components/dashboard/NotificationsCard';
-import WeeklyScheduleWidget from '../components/dashboard/WeeklyScheduleWidget';
+import TodayEventsCard from '../components/dashboard/TodayEventsCard';
 import { ErrorBoundary, WidgetErrorState } from '../components/ui/error-boundary';
 import { WidgetSkeleton } from '../components/ui/widget-skeleton';
 import { EmptyState } from '../components/ui/empty-state';
 import { Card, CardContent } from '../components/ui/card';
-import { Search, Plus, Clock as ClockIcon, Mic as MicIcon, Receipt, FolderKanban, CalendarDays, Bell } from 'lucide-react';
+import { Search, Plus, Clock as ClockIcon, Mic as MicIcon, Receipt, FolderKanban } from 'lucide-react';
 import { useGlobalSearch } from '../components/search/useGlobalSearch';
 import { useSidebarState } from '@/components/providers/SidebarContext';
 
@@ -213,15 +213,18 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="mb-5">
+      {/* Quick Actions — CTA ברור */}
+      <section className="mb-6" aria-labelledby="quick-actions-heading">
+        <h2 id="quick-actions-heading" className="text-base font-semibold text-foreground mb-3">
+          פעולות מהירות
+        </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Button
-            variant="outline"
-            className="h-auto py-3 px-4 flex flex-col items-center gap-2 rounded-2xl border-dashed hover:border-primary/50 hover:bg-primary/5"
+            variant="default"
+            className="h-auto py-3 px-4 flex flex-col items-center gap-2 rounded-2xl shadow-organic hover:shadow-organic-lg"
             onClick={() => navigate(createPageUrl('Projects') + '?newProject=true')}
           >
-            <Plus className="w-5 h-5 text-primary" />
+            <Plus className="w-5 h-5 text-primary-foreground" />
             <span className="text-xs font-medium">פרויקט חדש</span>
           </Button>
           <Button
@@ -249,49 +252,77 @@ export default function Dashboard() {
             <span className="text-xs font-medium">חשבונית חדשה</span>
           </Button>
         </div>
-      </div>
+      </section>
 
-      {/* Business Health Gauges — Loading / Error / Empty / Success */}
-      <ErrorBoundary fallbackTitle="שגיאה בטעינת מדדי ביצוע" onReset={() => {
-        queryClient.invalidateQueries({ queryKey: ['projects'] });
-        queryClient.invalidateQueries({ queryKey: ['invoices'] });
-        queryClient.invalidateQueries({ queryKey: ['proposals'] });
-      }}>
-        {gaugesLoading ? (
-          <div className="mb-4 sm:mb-6 md:mb-8">
-            <div className="h-6 bg-muted rounded w-28 mb-4 animate-pulse" />
-            <WidgetSkeleton variant="gauges" />
-          </div>
-        ) : gaugesError ? (
-          <Card className="mb-4 sm:mb-6 md:mb-8">
-            <CardContent className="p-0">
-              <WidgetErrorState
-                title="שגיאה בטעינת מדדי ביצוע"
-                message="לא ניתן לטעון את נתוני הפרויקטים, החשבוניות או ההצעות."
-                onRetry={() => {
-                  queryClient.invalidateQueries({ queryKey: ['projects'] });
-                  queryClient.invalidateQueries({ queryKey: ['invoices'] });
-                  queryClient.invalidateQueries({ queryKey: ['proposals'] });
-                }}
-              />
-            </CardContent>
-          </Card>
-        ) : (
-          <BusinessHealthGauges
-            onGaugeClick={handleGaugeClick}
-            projects={projects}
-            invoices={invoices}
-            proposals={proposals}
-          />
-        )}
-      </ErrorBoundary>
+      {/* 1. המוקד להיום — Today's Focus */}
+      <section className="mb-6" aria-labelledby="today-focus-heading">
+        <h2 id="today-focus-heading" className="text-base font-semibold text-foreground mb-3">
+          המוקד להיום
+        </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <ErrorBoundary
+            fallbackTitle="שגיאה בטעינת אירועי היום"
+            onReset={() => queryClient.invalidateQueries({ queryKey: ['calendarEvents', 'week'] })}
+          >
+            <TodayEventsCard />
+          </ErrorBoundary>
+          <ErrorBoundary
+            fallbackTitle="שגיאה בטעינת עדכונים"
+            onReset={() => queryClient.invalidateQueries({ queryKey: ['notifications'] })}
+          >
+            <NotificationsCard />
+          </ErrorBoundary>
+        </div>
+      </section>
 
-      {/* Projects + Notifications */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-5">
-        {/* Project Status Matrix */}
-        <ErrorBoundary fallbackTitle="שגיאה בטעינת מטריצת פרויקטים" onReset={() => {
+      {/* 2. בריאות העסק — Business Health */}
+      <section className="mb-6" aria-labelledby="business-health-heading">
+        <h2 id="business-health-heading" className="text-base font-semibold text-foreground mb-3">
+          בריאות העסק
+        </h2>
+        <ErrorBoundary fallbackTitle="שגיאה בטעינת מדדי ביצוע" onReset={() => {
           queryClient.invalidateQueries({ queryKey: ['projects'] });
+          queryClient.invalidateQueries({ queryKey: ['invoices'] });
+          queryClient.invalidateQueries({ queryKey: ['proposals'] });
         }}>
+          {gaugesLoading ? (
+            <div>
+              <WidgetSkeleton variant="gauges" />
+            </div>
+          ) : gaugesError ? (
+            <Card>
+              <CardContent className="p-0">
+                <WidgetErrorState
+                  title="שגיאה בטעינת מדדי ביצוע"
+                  message="לא ניתן לטעון את נתוני הפרויקטים, החשבוניות או ההצעות."
+                  onRetry={() => {
+                    queryClient.invalidateQueries({ queryKey: ['projects'] });
+                    queryClient.invalidateQueries({ queryKey: ['invoices'] });
+                    queryClient.invalidateQueries({ queryKey: ['proposals'] });
+                  }}
+                />
+              </CardContent>
+            </Card>
+          ) : (
+            <BusinessHealthGauges
+              onGaugeClick={handleGaugeClick}
+              projects={projects}
+              invoices={invoices}
+              proposals={proposals}
+            />
+          )}
+        </ErrorBoundary>
+      </section>
+
+      {/* 3. פרויקטים פעילים — Active Projects */}
+      <section aria-labelledby="active-projects-heading">
+        <h2 id="active-projects-heading" className="text-base font-semibold text-foreground mb-3">
+          פרויקטים פעילים
+        </h2>
+        <ErrorBoundary
+          fallbackTitle="שגיאה בטעינת מטריצת פרויקטים"
+          onReset={() => queryClient.invalidateQueries({ queryKey: ['projects'] })}
+        >
           {projectsLoading ? (
             <WidgetSkeleton variant="table" />
           ) : projectsError ? (
@@ -323,23 +354,7 @@ export default function Dashboard() {
             <ProjectStatusMatrix onProjectClick={handleProjectClick} projects={projects} />
           )}
         </ErrorBoundary>
-
-        {/* Notifications */}
-        <ErrorBoundary fallbackTitle="שגיאה בטעינת עדכונים" onReset={() => {
-          queryClient.invalidateQueries({ queryKey: ['notifications'] });
-        }}>
-          <NotificationsCard />
-        </ErrorBoundary>
-      </div>
-
-      {/* Weekly Schedule */}
-      <div className="mt-5">
-        <ErrorBoundary fallbackTitle="שגיאה בטעינת לו״ז שבועי" onReset={() => {
-          queryClient.invalidateQueries({ queryKey: ['calendarEvents'] });
-        }}>
-          <WeeklyScheduleWidget />
-        </ErrorBoundary>
-      </div>
+      </section>
     </div>
   );
 }

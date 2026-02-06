@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { WidgetErrorState } from '@/components/ui/error-boundary';
 import { Bell, Clock, CheckCircle, AlertCircle, FileText, Users, ChevronLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { archiflow } from '@/api/archiflow';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { getCurrentUser } from '@/utils/authHelpers';
@@ -38,6 +39,7 @@ const iconMap = {
 
 export default function NotificationsCard() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // Fetch current user for multi-tenant filtering (with bypass support)
   const { data: user } = useQuery({
@@ -120,32 +122,12 @@ export default function NotificationsCard() {
             animate="visible"
           >
             {notificationsError ? (
-              <motion.div 
-                className="text-center py-8"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-              >
-                <motion.div
-                  animate={{ rotate: [0, 10, -10, 0] }}
-                  transition={{ duration: 0.5, repeat: 2 }}
-                >
-                  <AlertCircle className="w-12 h-12 text-destructive/50 mx-auto mb-3" />
-                </motion.div>
-                <p className="text-destructive text-sm font-medium mb-1">שגיאה בטעינת עדכונים</p>
-                <p className="text-destructive/70 text-xs">
-                  {notificationsError.message?.includes('checkpoint') 
-                    ? 'שגיאת טעינת סשן עדכונים' 
-                    : notificationsError.message || 'שגיאה לא ידועה'}
-                </p>
-                <motion.button
-                  onClick={() => window.location.reload()}
-                  className="mt-3 text-xs text-primary hover:underline"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  רענן דף
-                </motion.button>
-              </motion.div>
+              <WidgetErrorState
+                title="שגיאה בטעינת עדכונים"
+                message="לא ניתן לטעון את ההתראות. נסה שוב."
+                compact
+                onRetry={() => queryClient.invalidateQueries({ queryKey: ['notifications'] })}
+              />
             ) : notifications.length === 0 ? (
               <motion.div 
                 className="text-center py-8"

@@ -88,6 +88,7 @@ import ClientInfoCard from '../components/projects/ClientInfoCard';
 import ProjectPortfolio from '../components/projects/portfolio/ProjectPortfolio';
 import { showSuccess, showError } from '../components/utils/notifications';
 import { SkeletonCard } from '../components/ui/SkeletonCard';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { ProjectReportDialog } from '../components/projects/ai/AIProjectAssistant';
 import { FileText as ReportIcon, Search as SearchIcon } from 'lucide-react';
 import PageHeader from '../components/layout/PageHeader';
@@ -328,7 +329,7 @@ export default function Projects() {
       const savedSubStage = selectedProject.current_sub_stage;
       setCurrentSubStage(savedSubStage || subStageDefaults[projectStage] || null);
     }
-  }, [selectedProject?.id, selectedProject?.current_stage, selectedProject?.current_sub_stage]);
+  }, [selectedProject?.id]);
 
   // Handlers
   const handleProjectClick = (projectId) => {
@@ -763,13 +764,14 @@ export default function Projects() {
                         </h2>
                       </FadeIn>
                     )}
-                    <motion.div 
-                      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
-                      variants={pageVariants}
-                      initial="hidden"
-                      animate="visible"
-                      style={{ perspective: 1200 }}
-                    >
+                    <ScrollArea className="h-[620px] w-full rounded-md border border-border/50">
+                      <motion.div 
+                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 p-1 pr-3"
+                        variants={pageVariants}
+                        initial="hidden"
+                        animate="visible"
+                        style={{ perspective: 1200 }}
+                      >
                       {activeProjects.map((project, index) => {
                       const status = statusConfig[project.current_stage] || statusConfig.first_call;
                       return (
@@ -787,94 +789,54 @@ export default function Projects() {
                             style={{ transformStyle: "preserve-3d" }}
                           >
                             <Card className="overflow-hidden cursor-pointer border border-border bg-white shadow-sm hover:shadow-xl hover:border-slate-300 transition-all duration-300 rounded-xl group">
-                            {/* Image with parallax effect */}
-                            <div className="relative h-40 sm:h-48 md:h-56 overflow-hidden bg-background">
-                              <motion.div 
-                                className="absolute inset-0 bg-gradient-to-t from-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10" 
-                              />
-                              <img
-                                src={project.image}
-                                alt={project.name}
-                                className="w-full h-full object-cover transition-all duration-300 group-hover:grayscale-0 grayscale-[20%]"
-                                onError={(e) => {
-                                  e.target.src = 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=800&q=80';
-                                }}
-                              />
-                              <motion.div 
-                                className="absolute top-4 right-4 z-20"
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.2 + index * 0.05 }}
-                              >
-                                <Badge className="bg-white/90 backdrop-blur-sm text-slate-800 border border-border/50 shadow-sm font-normal px-3 py-1 text-xs tracking-wide">
-                                  {status.label}
-                                </Badge>
-                              </motion.div>
-
-                              {/* Shine effect on hover */}
-                              <motion.div
-                                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out z-20"
-                              />
-                            </div>
-
-                            {/* Content with stagger animation */}
-                            <motion.div 
-                              className="p-4 sm:p-5 md:p-6"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ delay: 0.1 + index * 0.05 }}
-                            >
-                              <motion.h3 
-                                className="text-base sm:text-lg font-medium text-foreground mb-2 sm:mb-3 tracking-tight line-clamp-1"
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.15 + index * 0.05 }}
-                              >
-                                {project.name}
-                              </motion.h3>
-
-                              <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
-                                <motion.div 
-                                  className="flex items-center gap-2 text-muted-foreground font-light"
-                                  initial={{ opacity: 0, x: -10 }}
-                                  animate={{ opacity: 1, x: 0 }}
-                                  transition={{ delay: 0.2 + index * 0.05 }}
-                                >
-                                  <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" strokeWidth={1.5} />
-                                  <span className="truncate">{project.location || 'לא צוין'}</span>
-                                </motion.div>
-                                <motion.div 
-                                  className="flex items-center gap-2 text-muted-foreground font-light"
-                                  initial={{ opacity: 0, x: -10 }}
-                                  animate={{ opacity: 1, x: 0 }}
-                                  transition={{ delay: 0.25 + index * 0.05 }}
-                                >
-                                  <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" strokeWidth={1.5} />
-                                  <span className="truncate">{project.timeline || 'לא צוין'}</span>
-                                </motion.div>
+                            {/* Compact horizontal: image square + details */}
+                            <div className="flex flex-row-reverse items-stretch gap-3 p-3 sm:p-4">
+                              {/* Thumbnail square (right in RTL) */}
+                              <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-background flex-shrink-0">
+                                <img
+                                  src={project.image}
+                                  alt={project.name}
+                                  className="w-full h-full object-cover transition-all duration-300 group-hover:grayscale-0 grayscale-[20%]"
+                                  onError={(e) => {
+                                    e.target.src = 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=800&q=80';
+                                  }}
+                                />
+                                <div className="absolute top-1 right-1 z-10">
+                                  <Badge className="bg-white/90 backdrop-blur-sm text-slate-800 border border-border/50 shadow-sm font-normal px-2 py-0.5 text-[10px] tracking-wide">
+                                    {status.label}
+                                  </Badge>
+                                </div>
                               </div>
-
-                              <motion.div 
-                                className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-slate-100 flex items-center justify-between"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.3 + index * 0.05 }}
-                              >
-                                <span className="text-[10px] sm:text-xs text-slate-400 font-medium tracking-wider uppercase">תקציב</span>
-                                <motion.span 
-                                  className="text-sm sm:text-base font-semibold text-slate-700"
-                                  whileHover={{ scale: 1.1, color: "#984E39" }}
-                                >
-                                  {project.budget || '₪0'}
-                                </motion.span>
-                              </motion.div>
-                            </motion.div>
+                              {/* Title and details (left in RTL) */}
+                              <div className="flex-1 min-w-0 flex flex-col justify-between">
+                                <h3 className="text-sm sm:text-base font-medium text-foreground tracking-tight line-clamp-1">
+                                  {project.name}
+                                </h3>
+                                <div className="space-y-1 text-xs text-muted-foreground">
+                                  <div className="flex items-center gap-1.5 truncate">
+                                    <MapPin className="w-3 h-3 flex-shrink-0" strokeWidth={1.5} />
+                                    <span className="truncate">{project.location || 'לא צוין'}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 truncate">
+                                    <Calendar className="w-3 h-3 flex-shrink-0" strokeWidth={1.5} />
+                                    <span className="truncate">{project.timeline || 'לא צוין'}</span>
+                                  </div>
+                                </div>
+                                <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
+                                  <span className="text-[10px] text-slate-400 font-medium uppercase">תקציב</span>
+                                  <span className="text-xs font-semibold text-slate-700">
+                                    {typeof project.budget === 'number' ? `₪${project.budget.toLocaleString()}` : (project.budget || '₪0')}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
                           </Card>
                           </motion.div>
                         </ScrollReveal>
                       );
                     })}
-                    </motion.div>
+                      </motion.div>
+                    </ScrollArea>
                   </>
                 )}
               </div>

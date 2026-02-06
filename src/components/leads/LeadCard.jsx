@@ -119,14 +119,14 @@ export default function LeadCard({
         `}
         onClick={() => onSelect(project.id)}
       >
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between gap-3">
+        <CardContent className="p-3">
+          <div className="flex items-start justify-between gap-2">
             {/* Left side - Main info */}
             <div className="flex-1 min-w-0">
               {/* Header row */}
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                  <User className="w-5 h-5 text-primary" />
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                  <User className="w-4 h-4 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-foreground truncate">
@@ -161,7 +161,7 @@ export default function LeadCard({
               {/* Next follow-up indicator */}
               {nextFollowUp && (
                 <div className={`
-                  mt-3 p-2 rounded-lg text-xs flex items-center gap-2
+                  mt-2 p-1.5 rounded-lg text-xs flex items-center gap-2
                   ${isOverdue 
                     ? 'bg-red-100 text-red-700' 
                     : 'bg-blue-50 text-blue-700'
@@ -187,44 +187,44 @@ export default function LeadCard({
             </div>
             
             {/* Right side - Quick actions */}
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
                 onClick={(e) => {
                   e.stopPropagation();
                   onQuickCall?.(project);
                 }}
                 title="התקשר"
               >
-                <PhoneCall className="w-4 h-4" />
+                <PhoneCall className="w-3.5 h-3.5" />
               </Button>
               
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
                 onClick={(e) => {
                   e.stopPropagation();
                   onScheduleFollowUp?.(project);
                 }}
                 title="תזמן follow-up"
               >
-                <Calendar className="w-4 h-4" />
+                <Calendar className="w-3.5 h-3.5" />
               </Button>
               
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
                 onClick={(e) => {
                   e.stopPropagation();
                   onSelect(project.id);
                 }}
                 title="פתח"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-3.5 h-3.5" />
               </Button>
             </div>
           </div>

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { generatePhaseSummary } from './ai/AIProjectAssistant';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sparkles, Loader2, ChevronLeft, ChevronRight, Clock, Zap } from 'lucide-react';
 import { ScrollReveal, FadeIn, Magnet, SplitText } from '@/components/animations';
 import { 
@@ -354,7 +355,7 @@ export default function ProjectWorkflowStepper({ currentStage: currentStageProp,
               <Badge 
                 className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-0 px-2.5"
               >
-                {progressPercent}%
+                {currentIndex + 1}/{stages.length} • {progressPercent}%
               </Badge>
               {isMobile && (
                 <button 
@@ -375,6 +376,26 @@ export default function ProjectWorkflowStepper({ currentStage: currentStageProp,
               <span className="text-[10px] text-slate-400">סיום</span>
             </div>
           </div>
+
+          {/* CTA: השלב הבא */}
+          {currentIndex < stages.length - 1 ? (
+            <div className="mt-3 pt-3 border-t border-slate-100">
+              <p className="text-xs text-slate-600 mb-2">השלב הבא: {stages[currentIndex + 1].label}</p>
+              <Button
+                variant="default"
+                size="sm"
+                className="w-full h-8 text-xs gap-1.5"
+                onClick={goToNextStage}
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                מעבר ל{stages[currentIndex + 1].label}
+              </Button>
+            </div>
+          ) : (
+            <div className="mt-3 pt-3 border-t border-slate-100">
+              <p className="text-xs text-slate-600 font-medium">כל השלבים הושלמו</p>
+            </div>
+          )}
           
           {/* Quick Stage Navigation */}
           <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
@@ -405,9 +426,17 @@ export default function ProjectWorkflowStepper({ currentStage: currentStageProp,
           </div>
         </div>
       </FadeIn>
-      
-      <div className="space-y-0">
-        {stages.map((stage, index) => {
+
+      {/* Visible window: 3–4 stages around current + scroll */}
+      {(() => {
+        const windowSize = 4;
+        const start = Math.max(0, Math.min(currentIndex - 1, stages.length - windowSize));
+        const end = Math.min(stages.length, start + windowSize);
+        const visibleStages = stages.slice(start, end).map((stage, i) => ({ stage, originalIndex: start + i }));
+        return (
+          <ScrollArea className="h-[280px] md:h-[320px] w-full">
+            <div className="space-y-0 pr-2">
+        {visibleStages.map(({ stage, originalIndex: index }) => {
           const isCompleted = currentIndex !== -1 && index < currentIndex;
           const isActive = stage.id === currentStage;
           const isExpanded = expandedStages.includes(stage.id);
@@ -422,19 +451,6 @@ export default function ProjectWorkflowStepper({ currentStage: currentStageProp,
               distance={20}
               className="relative"
             >
-              {/* Connector Line */}
-              {index < stages.length - 1 && (
-                <div
-                  className={`absolute right-[14px] w-px ${
-                    isCompleted ? 'bg-slate-800' : 'bg-slate-200'
-                  }`}
-                  style={{
-                    top: '36px',
-                    height: isExpanded && hasSubStages ? `${40 + stage.subStages.length * 40}px` : '32px'
-                  }}
-                />
-              )}
-
               {/* Main Stage */}
               <div
                 className={`flex items-start gap-2 p-2 md:p-3 rounded-lg transition-all cursor-pointer ${
@@ -604,7 +620,10 @@ export default function ProjectWorkflowStepper({ currentStage: currentStageProp,
             </ScrollReveal>
           );
         })}
-      </div>
+            </div>
+          </ScrollArea>
+        );
+      })()}
     </Card>
   );
 }

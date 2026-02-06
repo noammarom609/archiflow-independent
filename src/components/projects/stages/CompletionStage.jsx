@@ -57,9 +57,13 @@ export default function CompletionStage({ project, onUpdate, onSubStageChange })
     select: (data) => data?.[0],
   });
 
-  // Calculate actual project data
+  // Calculate actual project data (budget may be string e.g. "₪1,000" or number from API)
   const approvedProposal = proposals.find(p => p.status === 'approved') || proposals[0];
-  const originalBudget = approvedProposal?.total_amount || parseFloat(project?.budget?.replace(/[^\d]/g, '') || 0);
+  const rawBudget = project?.budget;
+  const budgetNum = typeof rawBudget === 'number'
+    ? rawBudget
+    : parseFloat(String(rawBudget ?? '').replace(/[^\d.]/g, '') || 0) || 0;
+  const originalBudget = approvedProposal?.total_amount ?? budgetNum;
   const actualBudget = selectedQuote?.quote_amount || originalBudget;
   
   // Calculate duration

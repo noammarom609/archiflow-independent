@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import LeadCard from './LeadCard';
 import { FadeIn, ScrollReveal } from '@/components/animations';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 // Stage filter options
 const stageFilterOptions = [
@@ -250,24 +251,26 @@ export default function LeadsSection({
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredLeads.map((lead, index) => (
-                      <ScrollReveal
-                        key={lead.id}
-                        delay={index * 0.05}
-                        direction="up"
-                        distance={15}
-                      >
-                        <LeadCard
-                          project={lead}
-                          nextFollowUp={getNextFollowUp(lead.id)}
-                          onSelect={onSelectLead}
-                          onQuickCall={onQuickCall}
-                          onScheduleFollowUp={onScheduleFollowUp}
-                        />
-                      </ScrollReveal>
-                    ))}
-                  </div>
+                  <ScrollArea className="h-[360px] w-full rounded-md border border-border/50">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 p-1 pr-3">
+                      {filteredLeads.map((lead, index) => (
+                        <ScrollReveal
+                          key={lead.id}
+                          delay={index * 0.05}
+                          direction="up"
+                          distance={15}
+                        >
+                          <LeadCard
+                            project={lead}
+                            nextFollowUp={getNextFollowUp(lead.id)}
+                            onSelect={onSelectLead}
+                            onQuickCall={onQuickCall}
+                            onScheduleFollowUp={onScheduleFollowUp}
+                          />
+                        </ScrollReveal>
+                      ))}
+                    </div>
+                  </ScrollArea>
                 )}
                 
                 {/* Results count */}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { archiflow } from '@/api/archiflow';
@@ -16,6 +16,7 @@ import { Card, CardContent } from '../components/ui/card';
 import { Search, Plus, Clock as ClockIcon, Mic as MicIcon, Receipt, FolderKanban } from 'lucide-react';
 import { useGlobalSearch } from '../components/search/useGlobalSearch';
 import { useSidebarState } from '@/components/providers/SidebarContext';
+import NewInvoiceDialog from '../components/financials/NewInvoiceDialog';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ export default function Dashboard() {
   const { showMenuButton, handleMenuClick } = useSidebarState();
   const { user, isLoadingAuth: loadingUser } = useAuth();
   const { openSearch } = useGlobalSearch();
+  const [newInvoiceOpen, setNewInvoiceOpen] = useState(false);
 
   const isSuperAdmin = user?.app_role === 'super_admin';
   const myArchitectId = user?.app_role === 'architect' ? user?.id : user?.architect_id;
@@ -246,7 +248,7 @@ export default function Dashboard() {
           <Button
             variant="outline"
             className="h-auto py-3 px-4 flex flex-col items-center gap-2 rounded-2xl border-dashed hover:border-primary/50 hover:bg-primary/5"
-            onClick={() => navigate(createPageUrl('Financials'))}
+            onClick={() => setNewInvoiceOpen(true)}
           >
             <Receipt className="w-5 h-5 text-primary" />
             <span className="text-xs font-medium">חשבונית חדשה</span>
@@ -355,6 +357,8 @@ export default function Dashboard() {
           )}
         </ErrorBoundary>
       </section>
+
+      <NewInvoiceDialog isOpen={newInvoiceOpen} onClose={() => setNewInvoiceOpen(false)} />
     </div>
   );
 }

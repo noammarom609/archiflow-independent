@@ -18,6 +18,7 @@ import AISummaryCard from './AISummaryCard';
 import ProcessingTimeline from './ProcessingTimeline';
 import AdvancedInsights from './AdvancedInsights';
 import ExecutiveSummary from './ExecutiveSummary';
+import { parseDurationToSeconds, formatDurationDisplay } from '@/utils/duration';
 
 export default function RecordingsList() {
   const queryClient = useQueryClient();
@@ -125,15 +126,8 @@ export default function RecordingsList() {
     return false;
   };
 
-  // Convert duration string (MM:SS) to seconds for sorting
-  const durationToSeconds = (duration) => {
-    if (!duration || duration === '--:--') return 0;
-    const parts = duration.split(':');
-    if (parts.length === 2) {
-      return parseInt(parts[0]) * 60 + parseInt(parts[1]);
-    }
-    return 0;
-  };
+  // Duration: DB stores integer seconds; legacy rows may have "MM:SS".
+  const durationToSeconds = (duration) => parseDurationToSeconds(duration);
 
   // Filter and sort recordings
   let filteredRecordings = recordings.filter(recording => {
@@ -364,7 +358,7 @@ export default function RecordingsList() {
                         )}
                       </td>
                       <td className="py-3 px-4 text-sm text-slate-700" dir="ltr">
-                        {recording.duration || '--:--'}
+                        {formatDurationDisplay(recording.duration)}
                       </td>
                       <td className="py-3 px-4">
                         {recording.status === 'distributed' ? (
@@ -481,7 +475,7 @@ export default function RecordingsList() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4" />
-                  {selectedRecording.duration}
+                  {formatDurationDisplay(selectedRecording.duration)}
                 </div>
               </div>
 

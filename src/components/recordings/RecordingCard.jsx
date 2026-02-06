@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
+import { formatDurationDisplay } from '@/utils/duration';
 
 const statusConfig = {
   analyzed: {
@@ -160,10 +161,10 @@ export default function RecordingCard({
                       <Calendar className="w-3 h-3" />
                       {format(new Date(recording.created_date), 'dd/MM/yy HH:mm', { locale: he })}
                     </span>
-                    {recording.duration && recording.duration !== '--:--' && (
+                    {(recording.duration != null && formatDurationDisplay(recording.duration) !== '--:--') && (
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {recording.duration}
+                        {formatDurationDisplay(recording.duration)}
                       </span>
                     )}
                     {folder && (

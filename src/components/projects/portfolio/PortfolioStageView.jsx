@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
+import { formatDurationDisplay } from '@/utils/duration';
 
 export default function PortfolioStageView({ stageId, stageConfig, stageData, project, onUpdate }) {
   const [activeTab, setActiveTab] = useState('summary');
@@ -371,7 +372,7 @@ export default function PortfolioStageView({ stageId, stageConfig, stageData, pr
                     <div className="flex-1">
                       <h4 className="font-medium text-slate-900">{recording.title}</h4>
                       <p className="text-xs text-slate-500">
-                        {recording.duration || ''} • {format(new Date(recording.created_date), 'd/M/yy')}
+                        {formatDurationDisplay(recording.duration)} • {format(new Date(recording.created_date), 'd/M/yy')}
                       </p>
                     </div>
                     {recording.analysis && (

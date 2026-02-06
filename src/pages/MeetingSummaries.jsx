@@ -51,6 +51,7 @@ import {
 import RecordingControls from '@/components/recordings/RecordingControls';
 import LargeAudioProcessor from '@/components/audio/LargeAudioProcessor';
 import { showSuccess, showError } from '@/components/utils/notifications';
+import { parseDurationToSeconds, formatDurationDisplay } from '@/utils/duration';
 
 const LARGE_FILE_THRESHOLD_MB = 24;
 
@@ -175,7 +176,7 @@ export default function MeetingSummaries() {
       const recording = await createRecordingMutation.mutateAsync({
         title: `סיכום פגישה ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: he })}`,
         audio_url: file_url,
-        duration: duration,
+        duration: parseDurationToSeconds(duration ?? '0'),
         status: 'processing',
         transcription: '',
         analysis: null,
@@ -295,7 +296,7 @@ export default function MeetingSummaries() {
       const recording = await createRecordingMutation.mutateAsync({
         title: `סיכום פגישה ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: he })}`,
         audio_url: audio_url,
-        duration: duration,
+        duration: parseDurationToSeconds(duration || '0'),
         status: 'processing',
         transcription: result.transcription,
         architect_id: myArchitectId,
@@ -674,10 +675,10 @@ function RecordingRow({ recording, onView, onDistribute, onSummarize }) {
               <Calendar className="w-3 h-3" />
               {format(new Date(recording.created_date), 'dd/MM/yyyy', { locale: he })}
             </span>
-            {recording.duration && (
+            {recording.duration != null && (
               <span className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
-                {recording.duration}
+                {formatDurationDisplay(recording.duration)}
               </span>
             )}
             {recording.analysis?.tasks?.length > 0 && (

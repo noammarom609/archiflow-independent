@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -516,6 +517,7 @@ function BlockListItem({
   onUpdateTitle,
   globalStyling,
 }) {
+  const { t } = useLanguage();
   const blockConfig = blockTypes.find(b => b.type === section.type);
   const Icon = blockConfig?.icon || FileText;
 
@@ -553,15 +555,16 @@ function BlockListItem({
                 variant="ghost"
                 className="h-7 w-7"
                 onClick={onToggleFreeMode}
-                title="שחרר לגרירה חופשית"
+                title={t('a11y.freeDrag')}
+                aria-label={t('a11y.freeDrag')}
               >
-                <Unlock className="w-3.5 h-3.5 text-slate-400 hover:text-indigo-500" />
+                <Unlock className="w-3.5 h-3.5 text-slate-400 hover:text-indigo-500" aria-hidden />
               </Button>
-              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onToggleVisibility}>
-                {section.visible ? <Eye className="w-3.5 h-3.5 text-slate-500" /> : <EyeOff className="w-3.5 h-3.5 text-slate-400" />}
+              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onToggleVisibility} aria-label={t('a11y.toggleVisibility')} aria-pressed={section.visible}>
+                {section.visible ? <Eye className="w-3.5 h-3.5 text-slate-500" aria-hidden /> : <EyeOff className="w-3.5 h-3.5 text-slate-400" aria-hidden />}
               </Button>
-              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onExpand}>
-                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onExpand} aria-label={t('a11y.toggleExpand')} aria-pressed={isExpanded}>
+                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" aria-hidden /> : <ChevronDown className="w-3.5 h-3.5" aria-hidden />}
               </Button>
             </div>
           </div>
@@ -607,6 +610,7 @@ function BlockListItem({
 
 // Free Block List Item
 function FreeBlockListItem({ section, isSelected, onSelect, onToggleFreeMode, onDelete }) {
+  const { t } = useLanguage();
   const blockConfig = blockTypes.find(b => b.type === section.type);
   const Icon = blockConfig?.icon || FileText;
 
@@ -620,11 +624,11 @@ function FreeBlockListItem({ section, isSelected, onSelect, onToggleFreeMode, on
       <Move className="w-3.5 h-3.5 text-indigo-500" />
       <Icon className="w-4 h-4 text-slate-500" />
       <span className="text-xs text-slate-700 flex-1">{section.title}</span>
-      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); onToggleFreeMode(); }} title="החזר לרשימה">
-        <Lock className="w-3 h-3 text-slate-400" />
+      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); onToggleFreeMode(); }} title={t('a11y.backToList')} aria-label={t('a11y.lock')}>
+        <Lock className="w-3 h-3 text-slate-400" aria-hidden />
       </Button>
-      <Button size="icon" variant="ghost" className="h-6 w-6 text-red-500" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
-        <Trash2 className="w-3 h-3" />
+      <Button size="icon" variant="ghost" className="h-6 w-6 text-red-500" onClick={(e) => { e.stopPropagation(); onDelete(); }} aria-label={t('a11y.delete')}>
+        <Trash2 className="w-3 h-3" aria-hidden />
       </Button>
     </div>
   );

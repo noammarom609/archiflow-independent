@@ -25,6 +25,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 /**
  * PropertiesPanelNew - Advanced properties panel with effects and alignment
@@ -85,6 +86,7 @@ export default function PropertiesPanelNew({
   onAlignItems,
   onDistributeItems,
 }) {
+  const { t } = useLanguage();
   const hasSelection = selectedItems.length > 0;
   const isMultiSelect = selectedItems.length > 1;
   const singleItem = !isMultiSelect ? selectedItems[0] : null;
@@ -164,9 +166,9 @@ export default function PropertiesPanelNew({
               size="icon"
               className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
               onClick={onDelete}
-              title="מחק"
+              aria-label={t('a11y.delete')} title={t('a11y.delete')}
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-4 h-4" aria-hidden />
             </Button>
           </div>
         </div>

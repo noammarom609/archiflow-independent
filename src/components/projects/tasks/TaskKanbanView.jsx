@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { format, isPast, isToday } from 'date-fns';
 import { he } from 'date-fns/locale';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 const columns = [
   { id: 'pending', title: 'ממתין', color: 'bg-slate-100', borderColor: 'border-slate-300' },
@@ -95,8 +96,8 @@ export default function TaskKanbanView({ tasks, onStatusChange, onEditTask, onDe
                               </h4>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0">
-                                    <MoreVertical className="w-3.5 h-3.5" />
+                                  <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" aria-label={t('a11y.openMenu')} title={t('a11y.openMenu')}>
+                                    <MoreVertical className="w-3.5 h-3.5" aria-hidden />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">

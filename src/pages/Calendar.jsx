@@ -21,6 +21,7 @@ import DayView from '../components/calendar/DayView';
 import AgendaView from '../components/calendar/AgendaView';
 import GanttView from '../components/calendar/GanttView';
 import PageHeader from '../components/layout/PageHeader';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import SchedulerModeOverlay from '../components/calendar/MeetingScheduler/SchedulerModeOverlay';
 import SchedulerWeekView from '../components/calendar/MeetingScheduler/SchedulerWeekView';
 import CreateMeetingLinkDialog from '../components/calendar/MeetingScheduler/CreateMeetingLinkDialog';
@@ -73,6 +74,7 @@ function CollapsibleSection({ title, icon: Icon, children, defaultOpen = false }
 }
 
 export default function Calendar() {
+  const { t } = useLanguage();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -453,11 +455,11 @@ export default function Calendar() {
                     <Button variant="outline" size="sm" onClick={today}>
                       היום
                     </Button>
-                    <Button variant="outline" size="icon" onClick={prevMonth}>
-                      <ChevronRight className="w-4 h-4" />
+                    <Button variant="outline" size="icon" onClick={prevMonth} aria-label={t('a11y.previousMonth')} title={t('a11y.previousMonth')}>
+                      <ChevronRight className="w-4 h-4" aria-hidden />
                     </Button>
-                    <Button variant="outline" size="icon" onClick={nextMonth}>
-                      <ChevronLeft className="w-4 h-4" />
+                    <Button variant="outline" size="icon" onClick={nextMonth} aria-label={t('a11y.nextMonth')} title={t('a11y.nextMonth')}>
+                      <ChevronLeft className="w-4 h-4" aria-hidden />
                     </Button>
                   </div>
                 </div>

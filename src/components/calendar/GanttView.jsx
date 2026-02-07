@@ -10,6 +10,7 @@ import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterv
 import { he } from 'date-fns/locale';
 import { createPageUrl } from '../../utils';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 const milestoneColors = {
   planning: '#6366f1',
@@ -29,6 +30,7 @@ const taskColors = {
 };
 
 export default function GanttView({ currentDate: initialDate, onDateChange }) {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(initialDate || new Date());
   
@@ -109,14 +111,14 @@ export default function GanttView({ currentDate: initialDate, onDateChange }) {
             </div>
           </div>
           <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-lg border border-slate-200">
-            <Button variant="ghost" size="sm" onClick={prevMonth} className="hover:bg-white h-8 w-8 p-0">
-              <ChevronRight className="w-4 h-4" />
+            <Button variant="ghost" size="sm" onClick={prevMonth} className="hover:bg-white h-8 w-8 p-0" aria-label={t('a11y.previousMonth')}>
+              <ChevronRight className="w-4 h-4" aria-hidden />
             </Button>
             <span className="font-semibold min-w-[120px] text-center text-sm">
               {format(currentDate, 'MMMM yyyy', { locale: he })}
             </span>
-            <Button variant="ghost" size="sm" onClick={nextMonth} className="hover:bg-white h-8 w-8 p-0">
-              <ChevronLeft className="w-4 h-4" />
+            <Button variant="ghost" size="sm" onClick={nextMonth} className="hover:bg-white h-8 w-8 p-0" aria-label={t('a11y.nextMonth')}>
+              <ChevronLeft className="w-4 h-4" aria-hidden />
             </Button>
             <div className="w-px h-4 bg-slate-300 mx-1"></div>
             <Button variant="ghost" size="sm" onClick={today} className="text-xs h-8 px-2 hover:bg-white">

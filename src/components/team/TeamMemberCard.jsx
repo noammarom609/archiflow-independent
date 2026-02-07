@@ -15,6 +15,7 @@ import {
   Shield,
   CheckCircle2
 } from 'lucide-react';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 const roleIcons = {
   admin: Crown,
@@ -49,6 +50,7 @@ const departmentLabels = {
 };
 
 export default function TeamMemberCard({ member, index, onClick }) {
+  const { t } = useLanguage();
   // Map User entity fields to display logic
   const displayRole = member.app_role || member.role || 'client';
   const RoleIcon = roleIcons[displayRole] || Users;
@@ -87,8 +89,8 @@ export default function TeamMemberCard({ member, index, onClick }) {
               {member.status === 'active' && (
                 <div className="w-3 h-3 bg-green-500 rounded-full" />
               )}
-              <Button variant="ghost" size="icon" className="w-8 h-8">
-                <MoreVertical className="w-4 h-4" />
+              <Button variant="ghost" size="icon" className="w-8 h-8" aria-label={t('a11y.openMenu')} title={t('a11y.openMenu')}>
+                <MoreVertical className="w-4 h-4" aria-hidden />
               </Button>
             </div>
           </div>

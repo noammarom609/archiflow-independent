@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 const MAX_PAGES = 20;
 
@@ -38,6 +39,7 @@ export default function PageTabs({
   currentPageIndex,
   onPageSelect,
   onAddPage,
+  t: tFromParent,
   onDeletePage,
   onDuplicatePage,
   onRenamePage,
@@ -173,8 +175,8 @@ export default function PageTabs({
 
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghost" size="icon" className="h-5 w-5 shrink-0 opacity-0 group-hover:opacity-100 hover:opacity-100">
-                                <MoreVertical className="w-3 h-3" />
+                              <Button variant="ghost" size="icon" className="h-5 w-5 shrink-0 opacity-0 group-hover:opacity-100 hover:opacity-100" aria-label={t('a11y.openMenu')} title={t('a11y.openMenu')}>
+                                <MoreVertical className="w-3 h-3" aria-hidden />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start">

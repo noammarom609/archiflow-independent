@@ -24,6 +24,7 @@ import {
     Loader2,
     HardHat
 } from 'lucide-react';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -50,6 +51,7 @@ import { showSuccess, showError } from '@/components/utils/notifications';
 import PageHeader from '@/components/layout/PageHeader';
 
 export default function UserManagement() {
+    const { t } = useLanguage();
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState('pending');
     const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
@@ -340,8 +342,8 @@ export default function UserManagement() {
                 {showActions && record.approval_status === 'approved' && (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreVertical className="w-4 h-4" />
+                            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('a11y.openMenu')}>
+                                <MoreVertical className="w-4 h-4" aria-hidden />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

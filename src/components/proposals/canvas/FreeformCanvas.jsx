@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 /**
  * FreeformCanvas - קנבס עם גרירה חופשית כמו Canva/Figma
@@ -25,6 +26,7 @@ export default function FreeformCanvas({
   styling = {},
   onAddElement,
 }) {
+  const { t } = useLanguage();
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   
@@ -197,8 +199,8 @@ export default function FreeformCanvas({
 
         {/* Zoom Controls */}
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleZoomOut}>
-            <ZoomOut className="w-4 h-4" />
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleZoomOut} aria-label={t('a11y.zoomOut')} title={t('a11y.zoomOut')}>
+            <ZoomOut className="w-4 h-4" aria-hidden />
           </Button>
           <div className="w-32">
             <Slider
@@ -210,8 +212,8 @@ export default function FreeformCanvas({
             />
           </div>
           <span className="text-sm text-slate-600 w-12 text-center">{Math.round(scale * 100)}%</span>
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleZoomIn}>
-            <ZoomIn className="w-4 h-4" />
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleZoomIn} aria-label={t('a11y.zoomIn')} title={t('a11y.zoomIn')}>
+            <ZoomIn className="w-4 h-4" aria-hidden />
           </Button>
           <Button variant="outline" size="sm" className="h-8" onClick={handleZoomFit}>
             <Maximize className="w-4 h-4 ml-1" />

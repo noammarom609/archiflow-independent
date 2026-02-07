@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/popover';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 /**
  * FloatingToolbar - Appears above selected items
@@ -50,6 +51,7 @@ export default function FloatingToolbar({
   onDistributeItems,
   onToggleVisibility,
 }) {
+  const { t } = useLanguage();
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const toolbarRef = useRef(null);
 
@@ -131,34 +133,34 @@ export default function FloatingToolbar({
                 size="icon"
                 className="h-8 w-8"
                 onClick={() => handleTextStyleChange('fontWeight', singleItem?.style?.fontWeight === 'bold' ? 'normal' : 'bold')}
-                title="מודגש"
+                aria-label={t('a11y.bold')} title={t('a11y.bold')}
               >
-                <Bold className="w-4 h-4" />
+                <Bold className="w-4 h-4" aria-hidden />
               </Button>
               <Button
                 variant={singleItem?.style?.fontStyle === 'italic' ? 'secondary' : 'ghost'}
                 size="icon"
                 className="h-8 w-8"
                 onClick={() => handleTextStyleChange('fontStyle', singleItem?.style?.fontStyle === 'italic' ? 'normal' : 'italic')}
-                title="נטוי"
+                aria-label={t('a11y.italic')} title={t('a11y.italic')}
               >
-                <Italic className="w-4 h-4" />
+                <Italic className="w-4 h-4" aria-hidden />
               </Button>
               <Button
                 variant={singleItem?.style?.textDecoration === 'underline' ? 'secondary' : 'ghost'}
                 size="icon"
                 className="h-8 w-8"
                 onClick={() => handleTextStyleChange('textDecoration', singleItem?.style?.textDecoration === 'underline' ? 'none' : 'underline')}
-                title="קו תחתון"
+                aria-label={t('a11y.underline')} title={t('a11y.underline')}
               >
-                <Underline className="w-4 h-4" />
+                <Underline className="w-4 h-4" aria-hidden />
               </Button>
               
               {/* Text Color */}
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 relative" title="צבע טקסט">
-                    <Type className="w-4 h-4" />
+                  <Button variant="ghost" size="icon" className="h-8 w-8 relative" title={t('a11y.textColor')} aria-label={t('a11y.textColor')}>
+                    <Type className="w-4 h-4" aria-hidden />
                     <div 
                       className="absolute bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 rounded-full" 
                       style={{ backgroundColor: singleItem?.style?.color || '#000' }}
@@ -192,8 +194,8 @@ export default function FloatingToolbar({
           {/* Opacity Control */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" title="שקיפות">
-                <Eye className="w-4 h-4" />
+              <Button variant="ghost" size="icon" className="h-8 w-8" title={t('a11y.opacity')} aria-label={t('a11y.opacity')}>
+                <Eye className="w-4 h-4" aria-hidden />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-48 p-3">
@@ -223,8 +225,8 @@ export default function FloatingToolbar({
           {/* Layer Controls */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" title="סדר שכבות">
-                <Layers className="w-4 h-4" />
+              <Button variant="ghost" size="icon" className="h-8 w-8" title={t('a11y.layerOrder')} aria-label={t('a11y.layerOrder')}>
+                <Layers className="w-4 h-4" aria-hidden />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center">
@@ -247,8 +249,8 @@ export default function FloatingToolbar({
           {selectedItems.length > 1 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" title="יישור">
-                  <AlignCenter className="w-4 h-4" />
+                <Button variant="ghost" size="icon" className="h-8 w-8" title="יישור" aria-label={t('a11y.align')}>
+                  <AlignCenter className="w-4 h-4" aria-hidden />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center">
@@ -292,18 +294,18 @@ export default function FloatingToolbar({
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              onClick={hasGroup ? onUngroup : onGroup}
-              title={hasGroup ? 'פרק קבוצה' : 'קבץ'}
+onClick={hasGroup ? onUngroup : onGroup}
+                aria-label={t('a11y.group')} title={t('a11y.group')}
             >
-              {hasGroup ? <Ungroup className="w-4 h-4" /> : <Group className="w-4 h-4" />}
+              {hasGroup ? <Ungroup className="w-4 h-4" aria-hidden /> : <Group className="w-4 h-4" aria-hidden />}
             </Button>
           )}
 
           <div className="w-px h-6 bg-slate-200 mx-1" />
 
           {/* Copy */}
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onDuplicate} title="שכפל">
-            <Copy className="w-4 h-4" />
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onDuplicate} title={t('a11y.duplicate')} aria-label={t('a11y.duplicate')}>
+            <Copy className="w-4 h-4" aria-hidden />
           </Button>
 
           {/* Lock/Unlock */}
@@ -311,10 +313,10 @@ export default function FloatingToolbar({
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            onClick={onToggleLock}
-            title={isLocked ? 'בטל נעילה' : 'נעל'}
+onClick={onToggleLock}
+              aria-label={isLocked ? t('a11y.unlock') : t('a11y.lock')} title={isLocked ? t('a11y.unlock') : t('a11y.lock')}
           >
-            {isLocked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+            {isLocked ? <Unlock className="w-4 h-4" aria-hidden /> : <Lock className="w-4 h-4" aria-hidden />}
           </Button>
 
           {/* Delete */}
@@ -322,17 +324,17 @@ export default function FloatingToolbar({
             variant="ghost"
             size="icon"
             className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
-            onClick={onDelete}
-            title="מחק"
+onClick={onDelete}
+              aria-label={t('a11y.delete')} title={t('a11y.delete')}
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-4 h-4" aria-hidden />
           </Button>
 
           {/* More Options */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" title="אפשרויות נוספות">
-                <MoreHorizontal className="w-4 h-4" />
+              <Button variant="ghost" size="icon" className="h-8 w-8" title={t('a11y.moreOptions')} aria-label={t('a11y.moreOptions')}>
+                <MoreHorizontal className="w-4 h-4" aria-hidden />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

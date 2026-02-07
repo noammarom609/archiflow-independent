@@ -6,8 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Banknote, Download, FileCheck, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 export default function ClientFinancials({ projectId }) {
+  const { t } = useLanguage();
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ['clientInvoices', projectId],
     queryFn: () => archiflow.entities.Invoice.filter({ project_id: projectId }, '-issue_date'),
@@ -116,8 +118,8 @@ export default function ClientFinancials({ projectId }) {
                       <p className="text-lg font-bold text-slate-900">₪{invoice.amount?.toLocaleString()}</p>
                     </div>
 
-                    <Button variant="ghost" size="icon">
-                      <Download className="w-4 h-4 text-slate-400" />
+                    <Button variant="ghost" size="icon" aria-label={t('a11y.download')}>
+                      <Download className="w-4 h-4 text-slate-400" aria-hidden />
                     </Button>
                   </div>
                 </div>

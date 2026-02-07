@@ -29,6 +29,7 @@ import {
   Trash2,
   Copy
 } from 'lucide-react';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 /**
  * ElementPropertiesPanel - פאנל עריכת מאפייני אלמנט
@@ -40,6 +41,7 @@ export default function ElementPropertiesPanel({
   onDuplicate,
   onClose
 }) {
+  const { t } = useLanguage();
   if (!element) return null;
 
   const { type, content = {}, styling = {}, x = 0, y = 0, width = 200, height = 100, rotation = 0, locked = false, zIndex = 1 } = element;
@@ -69,8 +71,8 @@ export default function ElementPropertiesPanel({
           <h3 className="font-semibold text-slate-900">מאפייני אלמנט</h3>
           <p className="text-xs text-slate-500">{getElementTypeName(type)}</p>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="w-4 h-4" />
+        <Button variant="ghost" size="icon" onClick={onClose} aria-label={t('a11y.close')} title={t('a11y.close')}>
+          <X className="w-4 h-4" aria-hidden />
         </Button>
       </div>
 

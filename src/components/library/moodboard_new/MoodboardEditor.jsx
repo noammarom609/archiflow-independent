@@ -39,6 +39,7 @@ import SmartGuides from './SmartGuides';
 import Minimap from './Minimap';
 import TemplatesPanel from './TemplatesPanel';
 import MoodboardErrorBoundary from './MoodboardErrorBoundary';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 // Safe ID generator
 const generateId = () => Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
@@ -67,6 +68,7 @@ const ToolButton = ({ icon: Icon, label, onClick, isActive }) => (
 );
 
 function MoodboardEditorContent({ moodboardId: propMoodboardId, onClose, initialData }) {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const canvasRef = useRef(null);
   const canvasContainerRef = useRef(null);
@@ -1134,8 +1136,8 @@ function MoodboardEditorContent({ moodboardId: propMoodboardId, onClose, initial
           <div className="flex items-center gap-4">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={onClose}>
-                  <ArrowRight className="w-5 h-5 text-slate-500" />
+                <Button variant="ghost" size="icon" onClick={onClose} aria-label={t('a11y.close')} title={t('a11y.close')}>
+                  <ArrowRight className="w-5 h-5 text-slate-500" aria-hidden />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>חזור לספרייה</TooltipContent>
@@ -1203,8 +1205,8 @@ function MoodboardEditorContent({ moodboardId: propMoodboardId, onClose, initial
             {/* Undo/Redo */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={undo} disabled={!canUndo}>
-                  <Undo className="w-4 h-4" />
+                <Button variant="ghost" size="icon" onClick={undo} disabled={!canUndo} aria-label={t('a11y.undo')} title={t('a11y.undo')}>
+                  <Undo className="w-4 h-4" aria-hidden />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>בטל (Ctrl+Z)</TooltipContent>
@@ -1212,8 +1214,8 @@ function MoodboardEditorContent({ moodboardId: propMoodboardId, onClose, initial
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={redo} disabled={!canRedo}>
-                  <Redo className="w-4 h-4" />
+                <Button variant="ghost" size="icon" onClick={redo} disabled={!canRedo} aria-label={t('a11y.redo')} title={t('a11y.redo')}>
+                  <Redo className="w-4 h-4" aria-hidden />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>בצע שוב (Ctrl+Y)</TooltipContent>
@@ -1282,8 +1284,8 @@ function MoodboardEditorContent({ moodboardId: propMoodboardId, onClose, initial
             {/* Export */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={handleExportImage}>
-                  <Download className="w-4 h-4" />
+                <Button variant="ghost" size="icon" onClick={handleExportImage} aria-label={t('a11y.exportImage')} title={t('a11y.exportImage')}>
+                  <Download className="w-4 h-4" aria-hidden />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>ייצוא כתמונה</TooltipContent>
@@ -1708,14 +1710,14 @@ function MoodboardEditorContent({ moodboardId: propMoodboardId, onClose, initial
 
             {/* Zoom Controls */}
             <div className="absolute bottom-6 left-6 bg-white p-2 rounded-xl shadow-lg border border-slate-200 flex gap-1 z-30">
-              <Button size="icon" variant="ghost" onClick={() => setZoom(z => Math.max(0.1, z - 0.1))}>
-                <ZoomOut className="w-4 h-4" />
+              <Button size="icon" variant="ghost" onClick={() => setZoom(z => Math.max(0.1, z - 0.1))} aria-label={t('a11y.zoomOut')} title={t('a11y.zoomOut')}>
+                <ZoomOut className="w-4 h-4" aria-hidden />
               </Button>
               <span className="w-14 text-center text-xs self-center font-mono">
                 {Math.round(zoom * 100)}%
               </span>
-              <Button size="icon" variant="ghost" onClick={() => setZoom(z => Math.min(5, z + 0.1))}>
-                <ZoomIn className="w-4 h-4" />
+              <Button size="icon" variant="ghost" onClick={() => setZoom(z => Math.min(5, z + 0.1))} aria-label={t('a11y.zoomIn')} title={t('a11y.zoomIn')}>
+                <ZoomIn className="w-4 h-4" aria-hidden />
               </Button>
               <div className="w-px h-6 bg-slate-200 mx-1 self-center" />
               <Button size="sm" variant="ghost" onClick={handleFitToBoard} title="התאם לגודל הלוח">
@@ -1741,14 +1743,14 @@ function MoodboardEditorContent({ moodboardId: propMoodboardId, onClose, initial
               <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white px-4 py-2 rounded-full shadow-lg border border-slate-200 z-30 flex items-center gap-3">
                 <span className="text-sm font-medium">{selectedItemIds.length} פריטים נבחרו</span>
                 <div className="h-4 w-px bg-slate-200" />
-                <button onClick={handleGroup} className="text-slate-500 hover:text-primary transition-colors" title="קבץ">
-                  <Group className="w-4 h-4" />
+                <button onClick={handleGroup} className="text-slate-500 hover:text-primary transition-colors" title={t('a11y.group')} aria-label={t('a11y.group')}>
+                  <Group className="w-4 h-4" aria-hidden />
                 </button>
-                <button onClick={duplicateSelected} className="text-slate-500 hover:text-primary transition-colors" title="שכפל">
-                  <Copy className="w-4 h-4" />
+                <button onClick={duplicateSelected} className="text-slate-500 hover:text-primary transition-colors" title={t('a11y.duplicate')} aria-label={t('a11y.duplicate')}>
+                  <Copy className="w-4 h-4" aria-hidden />
                 </button>
-                <button onClick={deleteSelected} className="text-slate-500 hover:text-red-600 transition-colors" title="מחק">
-                  <Trash2 className="w-4 h-4" />
+                <button onClick={deleteSelected} className="text-slate-500 hover:text-red-600 transition-colors" title={t('a11y.delete')} aria-label={t('a11y.delete')}>
+                  <Trash2 className="w-4 h-4" aria-hidden />
                 </button>
               </div>
             )}

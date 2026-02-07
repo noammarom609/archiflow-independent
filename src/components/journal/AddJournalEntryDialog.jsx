@@ -15,10 +15,12 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { showSuccess, showError } from '../utils/notifications';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 
 export default function AddJournalEntryDialog({ isOpen, onClose }) {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     title: '',
@@ -150,8 +152,8 @@ export default function AddJournalEntryDialog({ isOpen, onClose }) {
                 <Plus className="w-5 h-5 text-indigo-600" />
                 רשומת יומן חדשה
               </CardTitle>
-              <Button variant="ghost" size="icon" onClick={onClose}>
-                <X className="w-5 h-5" />
+              <Button variant="ghost" size="icon" onClick={onClose} aria-label={t('a11y.close')}>
+                <X className="w-5 h-5" aria-hidden />
               </Button>
             </CardHeader>
             <CardContent className="p-6">

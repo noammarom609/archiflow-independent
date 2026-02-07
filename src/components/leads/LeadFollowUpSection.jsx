@@ -20,6 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import { 
   Phone, 
   Calendar, 
@@ -65,6 +66,7 @@ const outcomeConfig = {
 };
 
 export default function LeadFollowUpSection({ project, onUpdate }) {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showNewFollowUp, setShowNewFollowUp] = useState(false);
@@ -404,8 +406,8 @@ export default function LeadFollowUpSection({ project, onUpdate }) {
                           
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreVertical className="w-4 h-4" />
+                              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('a11y.openMenu')} title={t('a11y.openMenu')}>
+                                <MoreVertical className="w-4 h-4" aria-hidden />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">

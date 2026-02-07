@@ -17,6 +17,7 @@ import {
   Plus, Trash2, Send, BookOpen, Bell, ArrowRight, Info, RefreshCw
 } from 'lucide-react';
 import { showSuccess, showError } from '../utils/notifications';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 export default function DataExtractionPanel({ 
   recording, 
@@ -27,6 +28,7 @@ export default function DataExtractionPanel({
   onApprove,
   onCancel 
 }) {
+  const { t } = useLanguage();
   // Tab state
   const [activeTab, setActiveTab] = useState('client');
   
@@ -695,8 +697,9 @@ export default function DataExtractionPanel({
                       variant="ghost"
                       className="text-slate-400 hover:text-red-600"
                       onClick={() => removeTask(task.id)}
+                      aria-label={t('a11y.deleteTask')}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" aria-hidden />
                     </Button>
                   </div>
                 </motion.div>

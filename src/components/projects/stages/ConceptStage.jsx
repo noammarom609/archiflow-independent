@@ -32,6 +32,7 @@ import {
   Heart
 } from 'lucide-react';
 import { showSuccess } from '@/components/utils/notifications';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { archiflow } from '@/api/archiflow';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -52,6 +53,7 @@ const roomSuggestions = [
 ];
 
 export default function ConceptStage({ project, onUpdate }) {
+  const { t } = useLanguage();
   const [programData, setProgramData] = useState(project.program_data || {
       adults: 2,
       children: 0,
@@ -511,8 +513,8 @@ export default function ConceptStage({ project, onUpdate }) {
 
                         {/* Hover Actions */}
                         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full shadow-lg bg-white/90 hover:bg-white">
-                                <Maximize2 className="w-4 h-4" />
+                            <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full shadow-lg bg-white/90 hover:bg-white" aria-label={t('a11y.expand')}>
+                                <Maximize2 className="w-4 h-4" aria-hidden />
                             </Button>
                         </div>
                     </motion.div>

@@ -16,10 +16,12 @@ import { Card, CardContent } from '../components/ui/card';
 import { Search, Plus, Clock as ClockIcon, Mic as MicIcon, Receipt, FolderKanban } from 'lucide-react';
 import { useGlobalSearch } from '../components/search/useGlobalSearch';
 import { useSidebarState } from '@/components/providers/SidebarContext';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import NewInvoiceDialog from '../components/financials/NewInvoiceDialog';
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const { showMenuButton, handleMenuClick } = useSidebarState();
   const { user, isLoadingAuth: loadingUser } = useAuth();
@@ -225,32 +227,40 @@ export default function Dashboard() {
             variant="default"
             className="h-auto py-3 px-4 flex flex-col items-center gap-2 rounded-2xl shadow-organic hover:shadow-organic-lg"
             onClick={() => navigate(createPageUrl('Projects') + '?newProject=true')}
+            aria-label={t('a11y.newProject')}
+            title={t('a11y.newProject')}
           >
-            <Plus className="w-5 h-5 text-primary-foreground" />
+            <Plus className="w-5 h-5 text-primary-foreground" aria-hidden />
             <span className="text-xs font-medium">פרויקט חדש</span>
           </Button>
           <Button
             variant="outline"
             className="h-auto py-3 px-4 flex flex-col items-center gap-2 rounded-2xl border-dashed hover:border-primary/50 hover:bg-primary/5"
             onClick={() => navigate(createPageUrl('TimeTracking'))}
+            aria-label={t('a11y.logHours')}
+            title={t('a11y.logHours')}
           >
-            <ClockIcon className="w-5 h-5 text-primary" />
+            <ClockIcon className="w-5 h-5 text-primary" aria-hidden />
             <span className="text-xs font-medium">רישום שעות</span>
           </Button>
           <Button
             variant="outline"
             className="h-auto py-3 px-4 flex flex-col items-center gap-2 rounded-2xl border-dashed hover:border-primary/50 hover:bg-primary/5"
             onClick={() => navigate(createPageUrl('Recordings') + '?tab=record')}
+            aria-label={t('a11y.recordMeeting')}
+            title={t('a11y.recordMeeting')}
           >
-            <MicIcon className="w-5 h-5 text-primary" />
+            <MicIcon className="w-5 h-5 text-primary" aria-hidden />
             <span className="text-xs font-medium">הקלטת פגישה</span>
           </Button>
           <Button
             variant="outline"
             className="h-auto py-3 px-4 flex flex-col items-center gap-2 rounded-2xl border-dashed hover:border-primary/50 hover:bg-primary/5"
             onClick={() => setNewInvoiceOpen(true)}
+            aria-label={t('a11y.newInvoice')}
+            title={t('a11y.newInvoice')}
           >
-            <Receipt className="w-5 h-5 text-primary" />
+            <Receipt className="w-5 h-5 text-primary" aria-hidden />
             <span className="text-xs font-medium">חשבונית חדשה</span>
           </Button>
         </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import { 
   Lock, 
   Unlock, 
@@ -39,6 +40,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 
 export default function PropertiesPanel({ selectedItems, onUpdate, onUpdateBatch, onDelete, onDuplicate, onGroup, onUngroup, onBringToFront, onSendToBack }) {
+  const { t } = useLanguage();
   
   // No Selection
   if (!selectedItems || selectedItems.length === 0) {
@@ -160,11 +162,11 @@ export default function PropertiesPanel({ selectedItems, onUpdate, onUpdateBatch
           >
             {firstItem.locked ? <Lock className="w-4 h-4 text-red-500" /> : <Unlock className="w-4 h-4 text-slate-400" />}
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onDuplicate} title="שכפל">
-            <Copy className="w-4 h-4 text-slate-500" />
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onDuplicate} title={t('a11y.duplicate')} aria-label={t('a11y.duplicate')}>
+            <Copy className="w-4 h-4 text-slate-500" aria-hidden />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:bg-red-50" onClick={onDelete} title="מחק">
-            <Trash2 className="w-4 h-4" />
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:bg-red-50" onClick={onDelete} title={t('a11y.delete')} aria-label={t('a11y.delete')}>
+            <Trash2 className="w-4 h-4" aria-hidden />
           </Button>
         </div>
       </div>

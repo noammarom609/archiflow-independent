@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useSidebarState } from '@/components/providers/SidebarContext';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 // Quick access items for bottom tab bar
 const quickAccessItems = [
@@ -52,6 +53,7 @@ const menuItems = [
 export default function MobileNavigation({ currentPageName }) {
   const { mobileMenuOpen: isOpen, setMobileMenuOpen: setIsOpen, closeMobileMenu } = useSidebarState();
   const { logout, user } = useAuth();
+  const { t } = useLanguage();
 
   const isActive = (pageName) => currentPageName === pageName;
 
@@ -76,18 +78,22 @@ export default function MobileNavigation({ currentPageName }) {
                     ? 'text-primary' 
                     : 'text-muted-foreground'
                 }`}
+                aria-label={`${t('nav.navigateTo')} - ${item.label}`}
+                aria-current={active ? 'page' : undefined}
               >
-                <Icon className={`w-5 h-5 mb-1 ${active ? 'stroke-[2.5]' : ''}`} />
+                <Icon className={`w-5 h-5 mb-1 ${active ? 'stroke-[2.5]' : ''}`} aria-hidden />
                 <span className="text-[10px] font-medium">{item.label}</span>
               </Link>
             );
           })}
           {/* More menu button */}
           <button
+            type="button"
             onClick={() => setIsOpen(true)}
             className="flex flex-col items-center justify-center py-2 px-3 rounded-xl min-w-[60px] text-muted-foreground"
+            aria-label={t('a11y.moreOptions')} title={t('a11y.moreOptions')}
           >
-            <Menu className="w-5 h-5 mb-1" />
+            <Menu className="w-5 h-5 mb-1" aria-hidden />
             <span className="text-[10px] font-medium">עוד</span>
           </button>
         </div>
@@ -131,10 +137,12 @@ export default function MobileNavigation({ currentPageName }) {
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setIsOpen(false)}
                   className="w-10 h-10 rounded-full bg-muted flex items-center justify-center"
+                  aria-label={t('a11y.closeMenu')} title={t('a11y.closeMenu')}
                 >
-                  <X className="w-5 h-5 text-muted-foreground" />
+                  <X className="w-5 h-5 text-muted-foreground" aria-hidden />
                 </button>
               </div>
 

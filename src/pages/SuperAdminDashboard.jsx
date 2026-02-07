@@ -29,6 +29,7 @@ import {
     Link2,
     HardHat
 } from 'lucide-react';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -64,7 +65,8 @@ import {
 import { showSuccess, showError } from '@/components/utils/notifications';
 import PageHeader from '@/components/layout/PageHeader';
 
-export default function SuperAdminDashboard() {
+function SuperAdminDashboard() {
+    const { t } = useLanguage();
     const [searchQuery, setSearchQuery] = useState('');
     const [expandedArchitects, setExpandedArchitects] = useState([]);
     const [assignDialogOpen, setAssignDialogOpen] = useState(false);
@@ -372,8 +374,8 @@ export default function SuperAdminDashboard() {
                 {showDelete && (
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-600 hover:bg-red-50 h-8 w-8">
-                                <Trash2 className="w-4 h-4" />
+                            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-600 hover:bg-red-50 h-8 w-8" aria-label={t('a11y.delete')} title={t('a11y.delete')}>
+                                <Trash2 className="w-4 h-4" aria-hidden />
                             </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent dir="rtl">
@@ -437,8 +439,8 @@ export default function SuperAdminDashboard() {
                 
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-600 hover:bg-red-50">
-                            <Trash2 className="w-4 h-4" />
+                        <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-600 hover:bg-red-50" aria-label={t('a11y.deleteUser')} title={t('a11y.deleteUser')}>
+                            <Trash2 className="w-4 h-4" aria-hidden />
                         </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent dir="rtl">
@@ -894,3 +896,5 @@ export default function SuperAdminDashboard() {
         </div>
     );
 }
+
+export default SuperAdminDashboard;

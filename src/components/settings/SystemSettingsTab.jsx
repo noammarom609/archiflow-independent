@@ -20,6 +20,7 @@ import {
   ClipboardList
 } from 'lucide-react';
 import { showSuccess, showError } from '../utils/notifications';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 // Default checklists (fallback if not in DB)
@@ -54,6 +55,7 @@ const defaultMeetingChecklist = [
 ];
 
 function ChecklistEditor({ title, icon: Icon, settingKey, defaultItems }) {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [items, setItems] = useState([]);
   const [newItemText, setNewItemText] = useState('');
@@ -160,8 +162,8 @@ function ChecklistEditor({ title, icon: Icon, settingKey, defaultItems }) {
             onKeyDown={(e) => e.key === 'Enter' && addItem()}
             className="flex-1"
           />
-          <Button onClick={addItem} size="icon" variant="outline">
-            <Plus className="w-4 h-4" />
+          <Button onClick={addItem} size="icon" variant="outline" aria-label={t('a11y.addItem')} title={t('a11y.addItem')}>
+            <Plus className="w-4 h-4" aria-hidden />
           </Button>
         </div>
 

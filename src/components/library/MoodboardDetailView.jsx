@@ -22,8 +22,10 @@ import {
   Send,
 } from 'lucide-react';
 import { showSuccess } from '../utils/notifications';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 export default function MoodboardDetailView({ moodboard, onClose }) {
+  const { t } = useLanguage();
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedData, setEditedData] = useState(moodboard.details);
 
@@ -191,8 +193,8 @@ export default function MoodboardDetailView({ moodboard, onClose }) {
                 </div>
                 <div className="flex items-center gap-3">
                   <p className="text-lg font-bold text-indigo-700">{item.price}</p>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <LinkIcon className="w-4 h-4" />
+                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('a11y.viewLink')} title={t('a11y.viewLink')}>
+                    <LinkIcon className="w-4 h-4" aria-hidden />
                   </Button>
                 </div>
               </motion.div>

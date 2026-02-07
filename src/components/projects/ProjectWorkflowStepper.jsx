@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sparkles, Loader2, ChevronLeft, ChevronRight, Clock, Zap } from 'lucide-react';
 import { ScrollReveal, FadeIn, Magnet, SplitText } from '@/components/animations';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import { 
   Check, 
   Circle, 
@@ -194,6 +195,7 @@ const stages = [
 const validStageIds = stages.map(s => s.id);
 
 export default function ProjectWorkflowStepper({ currentStage: currentStageProp, currentSubStage, onStageClick, onSubStageClick, project }) {
+  const { t } = useLanguage();
   // Get the raw stage value from prop or project current_stage field
   const rawStage = currentStageProp || project?.current_stage || 'first_call';
   
@@ -321,8 +323,9 @@ export default function ProjectWorkflowStepper({ currentStage: currentStageProp,
               className="h-8 w-8"
               onClick={(e) => { e.stopPropagation(); goToPrevStage(); }}
               disabled={currentIndex === 0}
+              aria-label={t('a11y.previousStep')}
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4" aria-hidden />
             </Button>
             <Button 
               variant="ghost" 
@@ -330,8 +333,9 @@ export default function ProjectWorkflowStepper({ currentStage: currentStageProp,
               className="h-8 w-8"
               onClick={(e) => { e.stopPropagation(); goToNextStage(); }}
               disabled={currentIndex === stages.length - 1}
+              aria-label={t('a11y.nextStep')}
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4" aria-hidden />
             </Button>
             <div className="w-px h-6 bg-slate-200 mx-1" />
             <ChevronDown className="w-5 h-5 text-slate-400" />

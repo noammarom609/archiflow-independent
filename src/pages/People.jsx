@@ -499,9 +499,9 @@ export default function People() {
                     whileTap={{ scale: 0.95 }}
                     className="w-10 h-10 md:w-11 md:h-11 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg hover:bg-primary/90 transition-all border-2 border-white/20 backdrop-blur-sm flex-shrink-0"
                     onClick={handleMenuClick}
-                    aria-label="פתח תפריט"
+                    aria-label={t('a11y.openMenu')} title={t('a11y.openMenu')}
                   >
-                    <Menu className="w-5 h-5" strokeWidth={2.5} />
+                    <Menu className="w-5 h-5" strokeWidth={2.5} aria-hidden />
                   </motion.button>
                 )}
               </AnimatePresence>
@@ -760,9 +760,9 @@ export default function People() {
                   whileTap={{ scale: 0.95 }}
                   className="fixed top-6 right-6 w-11 h-11 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg hover:bg-primary/90 transition-all border-2 border-white/20 backdrop-blur-sm z-50"
                   onClick={handleMenuClick}
-                  aria-label="פתח תפריט"
+                  aria-label={t('a11y.openMenu')} title={t('a11y.openMenu')}
                 >
-                  <Menu className="w-5 h-5" strokeWidth={2.5} />
+                  <Menu className="w-5 h-5" strokeWidth={2.5} aria-hidden />
                 </motion.button>
               )}
               <ClientDetailView

@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 /**
  * LayersPanelNew - Advanced layers management with drag-to-reorder
@@ -68,6 +69,7 @@ function LayerItem({
   onDelete,
   onDuplicate,
 }) {
+  const { t } = useLanguage();
   const Icon = getItemIcon(item.type, item.metadata);
   const isLocked = item.locked;
   const isHidden = item.hidden;
@@ -127,9 +129,9 @@ function LayerItem({
           size="icon"
           className="h-6 w-6"
           onClick={(e) => { e.stopPropagation(); onToggleVisibility(item); }}
-          title={isHidden ? 'הצג' : 'הסתר'}
+          aria-label={isHidden ? t('a11y.show') : t('a11y.hide')} title={isHidden ? t('a11y.show') : t('a11y.hide')}
         >
-          {isHidden ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+          {isHidden ? <EyeOff className="w-3 h-3" aria-hidden /> : <Eye className="w-3 h-3" aria-hidden />}
         </Button>
         
         <Button
@@ -137,9 +139,9 @@ function LayerItem({
           size="icon"
           className="h-6 w-6"
           onClick={(e) => { e.stopPropagation(); onToggleLock(item); }}
-          title={isLocked ? 'בטל נעילה' : 'נעל'}
+          aria-label={isLocked ? t('a11y.unlock') : t('a11y.lock')} title={isLocked ? t('a11y.unlock') : t('a11y.lock')}
         >
-          {isLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+          {isLocked ? <Lock className="w-3 h-3" aria-hidden /> : <Unlock className="w-3 h-3" aria-hidden />}
         </Button>
         
         <DropdownMenu>
@@ -149,8 +151,9 @@ function LayerItem({
               size="icon"
               className="h-6 w-6"
               onClick={(e) => e.stopPropagation()}
+              aria-label={t('a11y.openMenu')} title={t('a11y.openMenu')}
             >
-              <MoreVertical className="w-3 h-3" />
+              <MoreVertical className="w-3 h-3" aria-hidden />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-[120px]">

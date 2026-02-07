@@ -24,6 +24,7 @@ import {
   RectangleHorizontal,
   RectangleVertical,
 } from 'lucide-react';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 const FILTERS = [
   { id: 'none', name: 'ללא', filter: '' },
@@ -48,6 +49,7 @@ const CROP_RATIOS = [
 ];
 
 export default function ImageEditor({ imageUrl, onSave, onCancel }) {
+  const { t } = useLanguage();
   const canvasRef = useRef(null);
   const imageRef = useRef(null);
   
@@ -135,18 +137,18 @@ export default function ImageEditor({ imageUrl, onSave, onCancel }) {
       {/* Toolbar */}
       <div className="flex items-center justify-between p-3 border-b bg-muted/30">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={handleRotateLeft} title="סובב שמאלה">
-            <RotateCcw className="w-4 h-4" />
+          <Button variant="ghost" size="icon" onClick={handleRotateLeft} title="סובב שמאלה" aria-label={t('a11y.rotateLeft')}>
+            <RotateCcw className="w-4 h-4" aria-hidden />
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleRotateRight} title="סובב ימינה">
-            <RotateCw className="w-4 h-4" />
+          <Button variant="ghost" size="icon" onClick={handleRotateRight} title={t('a11y.rotateRight')} aria-label={t('a11y.rotateRight')}>
+            <RotateCw className="w-4 h-4" aria-hidden />
           </Button>
           <div className="w-px h-6 bg-border mx-1" />
-          <Button variant="ghost" size="icon" onClick={handleFlipH} title="הפוך אופקי">
-            <FlipHorizontal className="w-4 h-4" />
+          <Button variant="ghost" size="icon" onClick={handleFlipH} title={t('a11y.flipH')} aria-label={t('a11y.flipH')}>
+            <FlipHorizontal className="w-4 h-4" aria-hidden />
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleFlipV} title="הפוך אנכי">
-            <FlipVertical className="w-4 h-4" />
+          <Button variant="ghost" size="icon" onClick={handleFlipV} title={t('a11y.flipV')} aria-label={t('a11y.flipV')}>
+            <FlipVertical className="w-4 h-4" aria-hidden />
           </Button>
           <div className="w-px h-6 bg-border mx-1" />
           <Button variant="ghost" size="sm" onClick={handleReset}>

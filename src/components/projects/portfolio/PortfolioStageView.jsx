@@ -317,8 +317,8 @@ export default function PortfolioStageView({ stageId, stageConfig, stageData, pr
                       </p>
                     </div>
                     <Button variant="ghost" size="icon" asChild>
-                      <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-                        <Eye className="w-4 h-4" />
+                      <a href={doc.file_url} target="_blank" rel="noopener noreferrer" aria-label="צפייה במסמך">
+                        <Eye className="w-4 h-4" aria-hidden />
                       </a>
                     </Button>
                   </div>

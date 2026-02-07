@@ -21,8 +21,10 @@ import {
   Share2,
   Users
 } from 'lucide-react';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 export default function ShareDocumentDialog({ document, onClose }) {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('link');
   const [shareLink, setShareLink] = useState(null);
@@ -122,8 +124,8 @@ export default function ShareDocumentDialog({ document, onClose }) {
                     <p className="text-sm text-slate-600 mt-1">{document.title}</p>
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" onClick={onClose}>
-                  <X className="w-5 h-5" />
+                <Button variant="ghost" size="icon" onClick={onClose} aria-label={t('a11y.close')} title={t('a11y.close')}>
+                  <X className="w-5 h-5" aria-hidden />
                 </Button>
               </div>
             </CardHeader>

@@ -16,10 +16,12 @@ import { CalendarDays, List, MapPin, Clock, CheckCircle2, Circle, FolderKanban, 
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay, parseISO, isPast } from 'date-fns';
 import { he } from 'date-fns/locale';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 
 export default function WeeklyScheduleWidget() {
+  const { t } = useLanguage();
   const [viewMode, setViewMode] = useState('days'); // 'days' or 'list'
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -349,8 +351,8 @@ export default function WeeklyScheduleWidget() {
               <DialogTitle className="flex items-center justify-between">
                 <span>{isEditing ? 'עריכת אירוע' : 'פרטי אירוע'}</span>
                 {!isEditing && (
-                  <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)}>
-                    <Edit2 className="w-4 h-4" />
+                  <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)} aria-label={t('a11y.edit')}>
+                    <Edit2 className="w-4 h-4" aria-hidden />
                   </Button>
                 )}
               </DialogTitle>

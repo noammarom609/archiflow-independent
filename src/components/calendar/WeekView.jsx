@@ -6,11 +6,13 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addWeeks, subWeeks, parseISO, isToday, getHours, getMinutes } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { motion } from 'framer-motion';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 // Generate hours array from 6:00 to 22:00
 const HOURS = Array.from({ length: 17 }, (_, i) => i + 6);
 
 export default function WeekView({ currentDate, onDateChange, events, onEventClick }) {
+  const { t } = useLanguage();
   const weekStart = startOfWeek(currentDate, { locale: he });
   const weekEnd = endOfWeek(currentDate, { locale: he });
   const daysInWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
@@ -74,11 +76,11 @@ export default function WeekView({ currentDate, onDateChange, events, onEventCli
             <Button variant="outline" size="sm" onClick={() => onDateChange(new Date())}>
               היום
             </Button>
-            <Button variant="outline" size="icon" onClick={prevWeek}>
-              <ChevronRight className="w-4 h-4" />
+            <Button variant="outline" size="icon" onClick={prevWeek} aria-label={t('a11y.previousWeek')} title={t('a11y.previousWeek')}>
+              <ChevronRight className="w-4 h-4" aria-hidden />
             </Button>
-            <Button variant="outline" size="icon" onClick={nextWeek}>
-              <ChevronLeft className="w-4 h-4" />
+            <Button variant="outline" size="icon" onClick={nextWeek} aria-label={t('a11y.nextWeek')} title={t('a11y.nextWeek')}>
+              <ChevronLeft className="w-4 h-4" aria-hidden />
             </Button>
           </div>
         </div>

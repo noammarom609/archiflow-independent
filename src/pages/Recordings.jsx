@@ -8,6 +8,7 @@ import { format, parseISO, isAfter, startOfToday } from 'date-fns';
 import { he } from 'date-fns/locale';
 
 import PageHeader from '@/components/layout/PageHeader';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import { ErrorBoundary, WidgetErrorState } from '@/components/ui/error-boundary';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -644,6 +645,7 @@ function MeetingRow({ meeting, isPast = false }) {
 }
 
 function RecordingRow({ recording, onView, onDistribute, onSummarize }) {
+  const { t } = useLanguage();
   const getStatusBadge = (status) => {
     const map = {
       analyzed: { label: 'נותח', className: 'bg-success/10 text-success' },
@@ -677,7 +679,7 @@ function RecordingRow({ recording, onView, onDistribute, onSummarize }) {
         </div>
       </div>
       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={onView}><Eye className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent>צפייה</TooltipContent></Tooltip></TooltipProvider>
+        <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={onView} aria-label={t('a11y.view')}><Eye className="w-4 h-4" aria-hidden /></Button></TooltipTrigger><TooltipContent>צפייה</TooltipContent></Tooltip></TooltipProvider>
         {recording.status === 'processing' && (
           <Button variant="outline" size="sm" onClick={onSummarize} className="gap-1"><Sparkles className="w-3 h-3" />סכם</Button>
         )}

@@ -18,8 +18,10 @@ import {
   Loader2,
 } from 'lucide-react';
 import { showSuccess, showError } from '../../utils/notifications';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 export default function ContentUploadDialog({ isOpen, onClose, contentType }) {
+  const { t } = useLanguage();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState([]);
@@ -193,8 +195,9 @@ export default function ContentUploadDialog({ isOpen, onClose, contentType }) {
                       size="icon"
                       className="absolute top-2 right-2"
                       onClick={() => { setFile(null); setFilePreview(null); }}
+                      aria-label={t('a11y.removeFile')}
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-4 h-4" aria-hidden />
                     </Button>
                   </div>
                 ) : (
@@ -286,8 +289,9 @@ export default function ContentUploadDialog({ isOpen, onClose, contentType }) {
                           size="icon"
                           className="absolute top-2 right-2"
                           onClick={() => { setFile(null); setFilePreview(null); }}
+                          aria-label={t('a11y.removeFile')}
                         >
-                          <X className="w-4 h-4" />
+                          <X className="w-4 h-4" aria-hidden />
                         </Button>
                       </div>
                     ) : (

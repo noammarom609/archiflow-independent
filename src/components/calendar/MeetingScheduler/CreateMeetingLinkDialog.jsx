@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { showSuccess, showError } from '../../utils/notifications';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import ContentSelectorModal from './ContentSelectorModal';
 
 /**
@@ -86,6 +87,7 @@ export default function CreateMeetingLinkDialog({
   clientPhone: initialClientPhone,
   prefilledData = {}
 }) {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   
   // Merge legacy props with new prefilledData (prefilledData takes priority)
@@ -497,8 +499,9 @@ export default function CreateMeetingLinkDialog({
                           size="icon"
                           className="h-8 w-8 text-muted-foreground hover:text-red-600"
                           onClick={() => setAttachedContentIds(prev => prev.filter(id => id !== item.id))}
+                          aria-label={t('a11y.remove')}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4" aria-hidden />
                         </Button>
                       </div>
                     );
@@ -555,8 +558,10 @@ export default function CreateMeetingLinkDialog({
                   variant="outline" 
                   size="icon"
                   onClick={handleCopyLink}
+                  aria-label={t('a11y.copyLink')}
+                  aria-pressed={copied}
                 >
-                  {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                  {copied ? <Check className="w-4 h-4 text-green-600" aria-hidden /> : <Copy className="w-4 h-4" aria-hidden />}
                 </Button>
               </div>
             </div>

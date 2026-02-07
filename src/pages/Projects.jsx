@@ -92,6 +92,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ProjectReportDialog } from '../components/projects/ai/AIProjectAssistant';
 import { FileText as ReportIcon, Search as SearchIcon } from 'lucide-react';
 import PageHeader from '../components/layout/PageHeader';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import { useNotifications } from '@/hooks/use-notifications';
 import { useGlobalSearch } from '../components/search/useGlobalSearch';
 import { useSidebarState } from '@/components/providers/SidebarContext';
@@ -169,6 +170,7 @@ export default function Projects() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const { sendTemplate } = useNotifications();
   
   // State
@@ -577,9 +579,9 @@ export default function Projects() {
                         whileTap={{ scale: 0.95 }}
                         className="w-10 h-10 md:w-11 md:h-11 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg hover:bg-primary/90 transition-all border-2 border-white/20 backdrop-blur-sm flex-shrink-0"
                         onClick={handleMenuClick}
-                        aria-label="פתח תפריט"
+                        aria-label={t('a11y.openMenu')} title={t('a11y.openMenu')}
                       >
-                        <Menu className="w-5 h-5" strokeWidth={2.5} />
+                        <Menu className="w-5 h-5" strokeWidth={2.5} aria-hidden />
                       </motion.button>
                     )}
                   </AnimatePresence>
@@ -901,9 +903,9 @@ export default function Projects() {
                       whileTap={{ scale: 0.95 }}
                       className="w-9 h-9 md:w-10 md:h-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg hover:bg-primary/90 transition-all border-2 border-white/20 backdrop-blur-sm flex-shrink-0"
                       onClick={handleMenuClick}
-                      aria-label="פתח תפריט"
+                      aria-label={t('a11y.openMenu')} title={t('a11y.openMenu')}
                     >
-                      <Menu className="w-4 h-4 md:w-5 md:h-5" strokeWidth={2.5} />
+                      <Menu className="w-4 h-4 md:w-5 md:h-5" strokeWidth={2.5} aria-hidden />
                     </motion.button>
                   )}
                 </AnimatePresence>
@@ -954,8 +956,9 @@ export default function Projects() {
                     size="icon"
                     onClick={handleDeleteProject}
                     className="text-slate-400 hover:text-red-600 hover:bg-red-50 w-8 h-8 sm:w-9 sm:h-9"
+                    aria-label={t('a11y.deleteProject')} title={t('a11y.deleteProject')}
                   >
-                    <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden />
                   </Button>
                 </div>
               </div>

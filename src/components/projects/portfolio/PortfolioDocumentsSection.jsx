@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { archiflow } from '@/api/archiflow';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import {
   Plus,
   Search,
@@ -53,6 +54,7 @@ const categoryConfig = {
 };
 
 export default function PortfolioDocumentsSection({ documents, project, isLoading }) {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -194,8 +196,8 @@ export default function PortfolioDocumentsSection({ documents, project, isLoadin
                         </div>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100">
-                              <MoreVertical className="w-4 h-4" />
+                            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100" aria-label={t('a11y.openMenu')}>
+                              <MoreVertical className="w-4 h-4" aria-hidden />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
@@ -253,19 +255,20 @@ export default function PortfolioDocumentsSection({ documents, project, isLoadin
                     {format(new Date(doc.created_date), 'd/M/yy')}
                   </span>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewDocument(doc)}>
-                      <Eye className="w-4 h-4" />
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewDocument(doc)} aria-label={t('a11y.view')}>
+                      <Eye className="w-4 h-4" aria-hidden />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownload(doc)}>
-                      <Download className="w-4 h-4" />
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownload(doc)} aria-label={t('a11y.download')}>
+                      <Download className="w-4 h-4" aria-hidden />
                     </Button>
                     <Button 
                       variant="ghost" 
                       size="icon" 
                       className="h-8 w-8 text-red-500"
                       onClick={() => deleteMutation.mutate(doc.id)}
+                      aria-label={t('a11y.deleteDocument')}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" aria-hidden />
                     </Button>
                   </div>
                 </CardContent>

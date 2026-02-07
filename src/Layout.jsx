@@ -377,9 +377,10 @@ function LayoutContent({ children, currentPageName }) {
               size="icon"
               className="absolute top-1/2 -translate-y-1/2 -left-5 z-50 w-10 h-10 rounded-full bg-background backdrop-blur-sm border border-border/50 shadow-md hover:bg-accent hover:text-primary hover:shadow-lg text-muted-foreground transition-all"
               onClick={collapseSidebar}
-              aria-label="סגור תפריט"
+              aria-label={t('a11y.closeMenu')}
+              title={t('a11y.closeMenu')}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="m9 18 6-6-6-6"/></svg>
             </Button>
           )}
 
@@ -469,9 +470,12 @@ function LayoutContent({ children, currentPageName }) {
                           : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                         }
                       `}
+                      aria-label={`${t(item.labelKey)}${isExpanded ? ', ' + t('a11y.closeMenu') : ', ' + t('a11y.openMenu')}`}
+                      aria-expanded={isExpanded}
+                      title={t(item.labelKey)}
                     >
                       <div className="flex items-center gap-3">
-                        <Icon className="w-5 h-5" strokeWidth={groupActive ? 2 : 1.5} />
+                        <Icon className="w-5 h-5" strokeWidth={groupActive ? 2 : 1.5} aria-hidden />
                         <span className="text-sm">{t(item.labelKey)}</span>
                       </div>
                       {isExpanded ? (
@@ -498,8 +502,11 @@ function LayoutContent({ children, currentPageName }) {
                                     : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                                   }
                                 `}
+                                aria-label={`${t('nav.navigateTo')} - ${t(child.labelKey)}`}
+                                aria-current={childActive ? 'page' : undefined}
+                                title={`${t('nav.navigateTo')} - ${t(child.labelKey)}`}
                               >
-                                <ChildIcon className="w-4 h-4" strokeWidth={childActive ? 2 : 1.5} />
+                                <ChildIcon className="w-4 h-4" strokeWidth={childActive ? 2 : 1.5} aria-hidden />
                                 <span className="text-sm">{t(child.labelKey)}</span>
                               </Link>
                             </li>
@@ -534,8 +541,9 @@ function LayoutContent({ children, currentPageName }) {
                         : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                       }
                     `}
-                    aria-label={`${t('nav.navigateTo')} ${t(item.labelKey)}`}
+                    aria-label={`${t('nav.navigateTo')} - ${t(item.labelKey)}`}
                     aria-current={active ? 'page' : undefined}
+                    title={`${t('nav.navigateTo')} - ${t(item.labelKey)}`}
                   >
                     {/* Animated background on hover */}
                     <motion.div
@@ -576,9 +584,9 @@ function LayoutContent({ children, currentPageName }) {
           
           {/* Action Row: Settings, Theme, Notifications */}
           <div className="flex items-center justify-between mb-4 px-1 gap-2">
-            <Link to={createPageUrl('Settings')}>
-                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg bg-background border border-border/50 hover:border-primary/50 hover:text-primary shadow-sm hover:shadow-md transition-all">
-                  <Settings className="w-4 h-4" strokeWidth={1.5} />
+            <Link to={createPageUrl('Settings')} title={t('a11y.openSettings')}>
+                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg bg-background border border-border/50 hover:border-primary/50 hover:text-primary shadow-sm hover:shadow-md transition-all" aria-label={t('a11y.openSettings')} title={t('a11y.openSettings')}>
+                  <Settings className="w-4 h-4" strokeWidth={1.5} aria-hidden />
                 </Button>
             </Link>
 
@@ -588,11 +596,13 @@ function LayoutContent({ children, currentPageName }) {
               className="h-9 w-9 rounded-lg bg-background border border-border/50 hover:border-primary/50 hover:text-primary shadow-sm hover:shadow-md transition-all"
               onClick={toggleDarkMode}
               title={isDarkMode ? t('layout.lightMode') : t('layout.darkMode')}
+              aria-label={isDarkMode ? t('layout.lightMode') : t('layout.darkMode')}
+              aria-pressed={isDarkMode}
             >
               {isDarkMode ? (
-                <Sun className="w-4 h-4 text-amber-500" strokeWidth={1.5} />
+                <Sun className="w-4 h-4 text-amber-500" strokeWidth={1.5} aria-hidden />
               ) : (
-                <Moon className="w-4 h-4" strokeWidth={1.5} />
+                <Moon className="w-4 h-4" strokeWidth={1.5} aria-hidden />
               )}
             </Button>
 
@@ -601,8 +611,10 @@ function LayoutContent({ children, currentPageName }) {
               size="icon"
               className="h-9 w-9 rounded-lg bg-background border border-border/50 hover:border-primary/50 hover:text-primary shadow-sm hover:shadow-md transition-all relative"
               onClick={() => setShowNotifications(true)}
+              aria-label={t('a11y.openNotifications')}
+              title={t('a11y.openNotifications')}
             >
-              <Bell className="w-4 h-4" strokeWidth={1.5} />
+              <Bell className="w-4 h-4" strokeWidth={1.5} aria-hidden />
               {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-slate-900" />
               )}

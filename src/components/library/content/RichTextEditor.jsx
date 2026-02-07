@@ -36,6 +36,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 const FONT_SIZES = [12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 64];
 const COLORS = [
@@ -51,6 +52,7 @@ const HIGHLIGHT_COLORS = [
 ];
 
 export default function RichTextEditor({ content, onChange, onSave, onCancel }) {
+  const { t } = useLanguage();
   const editorRef = useRef(null);
   const [fontSize, setFontSize] = useState(16);
   const [textColor, setTextColor] = useState('#000000');
@@ -146,11 +148,11 @@ export default function RichTextEditor({ content, onChange, onSave, onCancel }) 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-1 p-2 border-b bg-muted/30">
         {/* Undo/Redo */}
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('undo')}>
-          <Undo className="w-4 h-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('undo')} aria-label={t('a11y.undo')} title={t('a11y.undo')}>
+          <Undo className="w-4 h-4" aria-hidden />
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('redo')}>
-          <Redo className="w-4 h-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('redo')} aria-label={t('a11y.redo')} title={t('a11y.redo')}>
+          <Redo className="w-4 h-4" aria-hidden />
         </Button>
 
         <div className="w-px h-6 bg-border mx-1" />
@@ -183,17 +185,17 @@ export default function RichTextEditor({ content, onChange, onSave, onCancel }) 
         <div className="w-px h-6 bg-border mx-1" />
 
         {/* Text Formatting */}
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('bold')}>
-          <Bold className="w-4 h-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('bold')} aria-label={t('a11y.bold')}>
+          <Bold className="w-4 h-4" aria-hidden />
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('italic')}>
-          <Italic className="w-4 h-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('italic')} aria-label={t('a11y.italic')} title={t('a11y.italic')}>
+          <Italic className="w-4 h-4" aria-hidden />
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('underline')}>
-          <Underline className="w-4 h-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('underline')} aria-label={t('a11y.underline')} title={t('a11y.underline')}>
+          <Underline className="w-4 h-4" aria-hidden />
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('strikeThrough')}>
-          <Strikethrough className="w-4 h-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('strikeThrough')} aria-label={t('a11y.strikethrough')} title={t('a11y.strikethrough')}>
+          <Strikethrough className="w-4 h-4" aria-hidden />
         </Button>
 
         <div className="w-px h-6 bg-border mx-1" />
@@ -201,8 +203,8 @@ export default function RichTextEditor({ content, onChange, onSave, onCancel }) 
         {/* Text Color */}
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 relative">
-              <Palette className="w-4 h-4" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 relative" aria-label={t('a11y.textColor')} title={t('a11y.textColor')}>
+              <Palette className="w-4 h-4" aria-hidden />
               <div 
                 className="absolute bottom-1 left-1 right-1 h-1 rounded"
                 style={{ backgroundColor: textColor }}
@@ -226,8 +228,8 @@ export default function RichTextEditor({ content, onChange, onSave, onCancel }) 
         {/* Highlight */}
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 relative">
-              <Highlighter className="w-4 h-4" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 relative" aria-label={t('a11y.highlight')} title={t('a11y.highlight')}>
+              <Highlighter className="w-4 h-4" aria-hidden />
               <div 
                 className="absolute bottom-1 left-1 right-1 h-1 rounded border"
                 style={{ backgroundColor: highlightColor === 'transparent' ? 'white' : highlightColor }}
@@ -253,60 +255,60 @@ export default function RichTextEditor({ content, onChange, onSave, onCancel }) 
         <div className="w-px h-6 bg-border mx-1" />
 
         {/* Alignment */}
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('justifyRight')}>
-          <AlignRight className="w-4 h-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('justifyRight')} aria-label={t('a11y.align')} title={t('a11y.align')}>
+          <AlignRight className="w-4 h-4" aria-hidden />
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('justifyCenter')}>
-          <AlignCenter className="w-4 h-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('justifyCenter')} aria-label={t('a11y.align')} title={t('a11y.align')}>
+          <AlignCenter className="w-4 h-4" aria-hidden />
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('justifyLeft')}>
-          <AlignLeft className="w-4 h-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('justifyLeft')} aria-label={t('a11y.align')} title={t('a11y.align')}>
+          <AlignLeft className="w-4 h-4" aria-hidden />
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('justifyFull')}>
-          <AlignJustify className="w-4 h-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('justifyFull')} aria-label={t('a11y.align')} title={t('a11y.align')}>
+          <AlignJustify className="w-4 h-4" aria-hidden />
         </Button>
 
         <div className="w-px h-6 bg-border mx-1" />
 
         {/* Headings */}
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('formatBlock', 'h1')}>
-          <Heading1 className="w-4 h-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('formatBlock', 'h1')} aria-label={t('a11y.heading1')} title={t('a11y.heading1')}>
+          <Heading1 className="w-4 h-4" aria-hidden />
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('formatBlock', 'h2')}>
-          <Heading2 className="w-4 h-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('formatBlock', 'h2')} aria-label={t('a11y.heading2')} title={t('a11y.heading2')}>
+          <Heading2 className="w-4 h-4" aria-hidden />
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('formatBlock', 'h3')}>
-          <Heading3 className="w-4 h-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('formatBlock', 'h3')} aria-label={t('a11y.heading3')} title={t('a11y.heading3')}>
+          <Heading3 className="w-4 h-4" aria-hidden />
         </Button>
 
         <div className="w-px h-6 bg-border mx-1" />
 
         {/* Lists */}
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('insertUnorderedList')}>
-          <List className="w-4 h-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('insertUnorderedList')} aria-label={t('a11y.bulletList')}>
+          <List className="w-4 h-4" aria-hidden />
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('insertOrderedList')}>
-          <ListOrdered className="w-4 h-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('insertOrderedList')} aria-label={t('a11y.numberedList')} title={t('a11y.numberedList')}>
+          <ListOrdered className="w-4 h-4" aria-hidden />
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('formatBlock', 'blockquote')}>
-          <Quote className="w-4 h-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand('formatBlock', 'blockquote')} aria-label={t('a11y.quote')} title={t('a11y.quote')}>
+          <Quote className="w-4 h-4" aria-hidden />
         </Button>
 
         <div className="w-px h-6 bg-border mx-1" />
 
         {/* Links */}
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleInsertLink}>
-          <Link className="w-4 h-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleInsertLink} aria-label={t('a11y.insertLink')} title={t('a11y.insertLink')}>
+          <Link className="w-4 h-4" aria-hidden />
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRemoveLink}>
-          <Unlink className="w-4 h-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRemoveLink} aria-label={t('a11y.removeLink')} title={t('a11y.removeLink')}>
+          <Unlink className="w-4 h-4" aria-hidden />
         </Button>
 
         <div className="w-px h-6 bg-border mx-1" />
 
         {/* Copy */}
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={copyToClipboard}>
-          <Copy className="w-4 h-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={copyToClipboard} aria-label={t('a11y.copy')} title={t('a11y.copy')}>
+          <Copy className="w-4 h-4" aria-hidden />
         </Button>
       </div>
 

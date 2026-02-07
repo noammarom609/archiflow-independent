@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 
 import PageHeader from '@/components/layout/PageHeader';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -636,6 +637,7 @@ export default function MeetingSummaries() {
 
 // Recording Row Component
 function RecordingRow({ recording, onView, onDistribute, onSummarize }) {
+  const { t } = useLanguage();
   const getStatusBadge = (status) => {
     const statusConfig = {
       analyzed: { label: 'נותח', variant: 'default', className: 'bg-green-100 text-green-700' },
@@ -696,8 +698,8 @@ function RecordingRow({ recording, onView, onDistribute, onSummarize }) {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={onView}>
-                <Eye className="w-4 h-4" />
+              <Button variant="ghost" size="icon" onClick={onView} aria-label={t('a11y.view')}>
+                <Eye className="w-4 h-4" aria-hidden />
               </Button>
             </TooltipTrigger>
             <TooltipContent>צפייה</TooltipContent>

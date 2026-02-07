@@ -6,8 +6,10 @@ import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { format, addDays, subDays, parseISO, isSameDay } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { motion } from 'framer-motion';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 export default function DayView({ currentDate, onDateChange, events, onEventClick }) {
+  const { t } = useLanguage();
   const dayEvents = events.filter(event => {
     const eventDate = new Date(event.date);
     return isSameDay(eventDate, currentDate);
@@ -48,11 +50,11 @@ export default function DayView({ currentDate, onDateChange, events, onEventClic
             <Button variant="outline" size="sm" onClick={today}>
               היום
             </Button>
-            <Button variant="outline" size="icon" onClick={prevDay}>
-              <ChevronRight className="w-4 h-4" />
+            <Button variant="outline" size="icon" onClick={prevDay} aria-label={t('a11y.previousDay')} title={t('a11y.previousDay')}>
+              <ChevronRight className="w-4 h-4" aria-hidden />
             </Button>
-            <Button variant="outline" size="icon" onClick={nextDay}>
-              <ChevronLeft className="w-4 h-4" />
+            <Button variant="outline" size="icon" onClick={nextDay} aria-label={t('a11y.nextDay')} title={t('a11y.nextDay')}>
+              <ChevronLeft className="w-4 h-4" aria-hidden />
             </Button>
           </div>
         </div>

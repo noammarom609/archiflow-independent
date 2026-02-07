@@ -44,6 +44,7 @@ import { Label } from '@/components/ui/label';
 import DocumentUploadDialog from './DocumentUploadDialog';
 import DocumentPreviewDialog from './DocumentPreviewDialog';
 import { showSuccess, showError } from '../../utils/notifications';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 
@@ -70,6 +71,7 @@ const fileTypeConfig = {
 };
 
 export default function ProjectDocumentsManager({ project, tasks = [] }) {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -181,8 +183,8 @@ export default function ProjectDocumentsManager({ project, tasks = [] }) {
       <Card className="w-64 flex-shrink-0 border-slate-200 h-full flex flex-col">
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           <h3 className="font-semibold text-slate-900">תיקיות</h3>
-          <Button variant="ghost" size="icon" onClick={() => setShowAddFolderDialog(true)}>
-            <FolderPlus className="w-4 h-4 text-slate-500 hover:text-indigo-600" />
+          <Button variant="ghost" size="icon" onClick={() => setShowAddFolderDialog(true)} aria-label={t('a11y.addFolder')} title={t('a11y.addFolder')}>
+            <FolderPlus className="w-4 h-4 text-slate-500 hover:text-indigo-600" aria-hidden />
           </Button>
         </div>
         <div className="p-2 overflow-y-auto flex-1 space-y-1">
@@ -226,16 +228,22 @@ export default function ProjectDocumentsManager({ project, tasks = [] }) {
             <div className="flex items-center gap-2">
               <div className="bg-slate-100 rounded-lg p-1 flex">
                 <button 
+                  type="button"
                   onClick={() => setViewMode('grid')}
                   className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
+                  aria-label="תצוגת רשת"
+                  aria-pressed={viewMode === 'grid'}
                 >
-                  <Grid className="w-4 h-4" />
+                  <Grid className="w-4 h-4" aria-hidden />
                 </button>
                 <button 
+                  type="button"
                   onClick={() => setViewMode('list')}
                   className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
+                  aria-label="תצוגת רשימה"
+                  aria-pressed={viewMode === 'list'}
                 >
-                  <List className="w-4 h-4" />
+                  <List className="w-4 h-4" aria-hidden />
                 </button>
               </div>
               <Button
@@ -337,8 +345,9 @@ export default function ProjectDocumentsManager({ project, tasks = [] }) {
                             size="icon"
                             className="h-8 w-8 text-slate-400 hover:text-red-500"
                             onClick={() => deleteMutation.mutate(doc.id)}
+                            aria-label={t('a11y.deleteDocument')} title={t('a11y.deleteDocument')}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" aria-hidden />
                           </Button>
                         </div>
                       </div>
@@ -420,11 +429,11 @@ export default function ProjectDocumentsManager({ project, tasks = [] }) {
                         {format(new Date(doc.created_date), 'd MMM yyyy', { locale: he })}
                       </div>
                       <div className="col-span-1 flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownload(doc)}>
-                          <Download className="w-4 h-4" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownload(doc)} aria-label={t('a11y.download')} title={t('a11y.download')}>
+                          <Download className="w-4 h-4" aria-hidden />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => deleteMutation.mutate(doc.id)}>
-                          <Trash2 className="w-4 h-4" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => deleteMutation.mutate(doc.id)} aria-label={t('a11y.deleteDocument')} title={t('a11y.deleteDocument')}>
+                          <Trash2 className="w-4 h-4" aria-hidden />
                         </Button>
                       </div>
                     </div>

@@ -7,8 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { X, UserPlus, Users } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 export default function AssignTaskDialog({ isOpen, onClose, task }) {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [selectedMembers, setSelectedMembers] = useState([]);
 
@@ -78,8 +80,8 @@ export default function AssignTaskDialog({ isOpen, onClose, task }) {
                 <UserPlus className="w-5 h-5 text-indigo-600" />
                 הקצה משימה
               </CardTitle>
-              <Button variant="ghost" size="icon" onClick={onClose}>
-                <X className="w-5 h-5" />
+              <Button variant="ghost" size="icon" onClick={onClose} aria-label={t('a11y.close')}>
+                <X className="w-5 h-5" aria-hidden />
               </Button>
             </CardHeader>
             <CardContent className="p-6">

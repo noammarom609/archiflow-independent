@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { CalendarDays, Clock, ExternalLink } from 'lucide-react';
 import { format, parseISO, isToday, isSameDay } from 'date-fns';
 import { he } from 'date-fns/locale';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 /**
  * Compact card showing only today's calendar events for the Dashboard "Today's Focus" section.
@@ -16,6 +17,7 @@ import { he } from 'date-fns/locale';
  */
 export default function TodayEventsCard() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const { data: calendarEvents = [], isLoading } = useQuery({
     queryKey: ['calendarEvents', 'week'],
@@ -88,9 +90,11 @@ export default function TodayEventsCard() {
                 size="sm"
                 onClick={() => navigate(createPageUrl('Calendar'))}
                 className="gap-2"
+                aria-label={t('a11y.addEvent')}
+                title={t('a11y.addEvent')}
               >
                 הוסף אירוע
-                <ExternalLink className="w-3.5 h-3.5" />
+                <ExternalLink className="w-3.5 h-3.5" aria-hidden />
               </Button>
             }
           />

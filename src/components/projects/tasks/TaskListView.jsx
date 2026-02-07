@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/select';
 import { format, isPast, isToday } from 'date-fns';
 import { he } from 'date-fns/locale';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 const statusConfig = {
   pending: { label: 'ממתין', color: 'bg-slate-100 text-slate-700' },
@@ -174,8 +175,8 @@ export default function TaskListView({ tasks, onStatusChange, onEditTask, onDele
                       </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="w-4 h-4" />
+                          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('a11y.openMenu')} title={t('a11y.openMenu')}>
+                            <MoreVertical className="w-4 h-4" aria-hidden />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

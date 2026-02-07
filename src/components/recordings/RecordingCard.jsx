@@ -27,6 +27,7 @@ import {
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { formatDurationDisplay } from '@/utils/duration';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 const statusConfig = {
   analyzed: {
@@ -72,6 +73,7 @@ export default function RecordingCard({
   onPlay,
   index = 0
 }) {
+  const { t } = useLanguage();
   const [isPlaying, setIsPlaying] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [audioRef, setAudioRef] = useState(null);
@@ -324,16 +326,18 @@ export default function RecordingCard({
                   size="icon"
                   onClick={() => onEdit?.(recording)}
                   className="h-8 w-8"
+                  aria-label={t('a11y.editRecording')}
                 >
-                  <Edit2 className="w-4 h-4" />
+                  <Edit2 className="w-4 h-4" aria-hidden />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => onDelete?.(recording)}
                   className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  aria-label={t('a11y.deleteRecording')}
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-4 h-4" aria-hidden />
                 </Button>
               </div>
             </div>

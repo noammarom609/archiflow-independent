@@ -31,6 +31,7 @@ import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 // Icon mapping by notification type
 const typeIcons = {
@@ -92,6 +93,7 @@ const priorityColors = {
 };
 
 export default function NotificationCenter({ isOpen, onClose }) {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState('all');
 
@@ -168,8 +170,8 @@ export default function NotificationCenter({ isOpen, onClose }) {
                   )}
                 </div>
               </div>
-              <Button variant="ghost" size="icon" onClick={onClose}>
-                <X className="w-5 h-5" />
+              <Button variant="ghost" size="icon" onClick={onClose} aria-label={t('a11y.close')}>
+                <X className="w-5 h-5" aria-hidden />
               </Button>
             </div>
 

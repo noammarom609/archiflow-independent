@@ -28,6 +28,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Clock, MoreVertical, Pencil, Trash2, Timer, DollarSign, Lock } from 'lucide-react';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 // Number of days after which entries are locked
 const LOCK_AFTER_DAYS = 7;
@@ -47,6 +48,7 @@ const STAGE_LABELS = {
 };
 
 export default function TimeEntryRow({ entry, onEdit, onDelete, canBypassLock = false }) {
+  const { t } = useLanguage();
   const formatDuration = (minutes) => {
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
@@ -184,8 +186,8 @@ export default function TimeEntryRow({ entry, onEdit, onDelete, canBypassLock = 
         {!locked && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreVertical className="w-4 h-4" />
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('a11y.openMenu')} title={t('a11y.openMenu')}>
+                <MoreVertical className="w-4 h-4" aria-hidden />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

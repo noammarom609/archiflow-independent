@@ -23,6 +23,7 @@ import {
   Mail
 } from 'lucide-react';
 import { showSuccess, showError } from '@/components/utils/notifications';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 const PERMISSION_LABELS = {
   view_documents: 'צפייה במסמכים',
@@ -74,6 +75,7 @@ const ROLE_DEFAULTS = {
 };
 
 export default function ProjectPermissionsSettings({ project, trigger }) {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [newUserEmail, setNewUserEmail] = useState('');
@@ -365,8 +367,9 @@ export default function ProjectPermissionsSettings({ project, trigger }) {
                             deletePermissionMutation.mutate(perm.id);
                           }
                         }}
+                        aria-label={t('a11y.deleteUser')}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" aria-hidden />
                       </Button>
                     </div>
                     

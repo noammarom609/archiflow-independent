@@ -43,6 +43,7 @@ import {
   DropdownMenuSubContent
 } from '@/components/ui/dropdown-menu';
 import { showSuccess, showError } from '@/components/utils/notifications';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import MoodboardItem from './MoodboardItem';
 import PropertiesPanel from './PropertiesPanel';
 import LayersPanel from './LayersPanel';
@@ -69,6 +70,7 @@ const ToolButton = ({ icon: Icon, label, onClick, isActive }) => (
 );
 
 export default function MoodboardEditor({ moodboardId: propMoodboardId, onClose, initialData }) {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const canvasRef = useRef(null);
   
@@ -696,8 +698,8 @@ export default function MoodboardEditor({ moodboardId: propMoodboardId, onClose,
       {/* Top Header */}
       <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between shadow-sm z-30">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <ArrowRight className="w-5 h-5 text-slate-500" />
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label={t('a11y.close')} title={t('a11y.close')}>
+            <ArrowRight className="w-5 h-5 text-slate-500" aria-hidden />
           </Button>
           <div className="group relative">
             <Input 
@@ -727,28 +729,32 @@ export default function MoodboardEditor({ moodboardId: propMoodboardId, onClose,
                 size="icon" 
                 className="h-8 w-8 shadow-sm"
                 onClick={() => setInteractionMode('select')}
-                title="מצב בחירה (V)"
+                title={t('a11y.selectMode')}
+                aria-label={t('a11y.selectMode')} title={t('a11y.selectMode')}
+                aria-pressed={interactionMode === 'select'}
              >
-               <MousePointer2 className="w-4 h-4" />
+               <MousePointer2 className="w-4 h-4" aria-hidden />
              </Button>
              <Button 
                 variant={interactionMode === 'pan' ? 'white' : 'ghost'} 
                 size="icon" 
                 className="h-8 w-8 shadow-sm"
                 onClick={() => setInteractionMode('pan')}
-                title="מצב גרירה (H)"
+                title={t('a11y.panMode')}
+                aria-label={t('a11y.panMode')}
+                aria-pressed={interactionMode === 'pan'}
              >
-               <Hand className="w-4 h-4" />
+               <Hand className="w-4 h-4" aria-hidden />
              </Button>
           </div>
 
           <div className="h-6 w-px bg-slate-200 mx-2"></div>
 
-          <Button variant="ghost" size="icon" onClick={handleUndo} disabled={historyIndex <= 0} title="בטל (Ctrl+Z)">
-            <Undo className="w-4 h-4" />
+          <Button variant="ghost" size="icon" onClick={handleUndo} disabled={historyIndex <= 0} title={t('a11y.undo')} aria-label={t('a11y.undo')}>
+            <Undo className="w-4 h-4" aria-hidden />
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleRedo} disabled={historyIndex >= history.length - 1} title="בצע שוב (Ctrl+Y)">
-            <Redo className="w-4 h-4" />
+          <Button variant="ghost" size="icon" onClick={handleRedo} disabled={historyIndex >= history.length - 1} title={t('a11y.redo')} aria-label={t('a11y.redo')}>
+            <Redo className="w-4 h-4" aria-hidden />
           </Button>
           
           <div className="h-6 w-px bg-slate-200 mx-2"></div>
@@ -924,9 +930,10 @@ export default function MoodboardEditor({ moodboardId: propMoodboardId, onClose,
                                           size="icon" 
                                           className="h-9 w-9 text-red-500 hover:text-red-700"
                                           onClick={() => setSettings(prev => ({ ...prev, backgroundImage: null }))}
-                                          title="הסר תמונת רקע"
+                                          title={t('a11y.removeBackground')}
+                                          aria-label={t('a11y.removeBackground')} title={t('a11y.removeBackground')}
                                       >
-                                          <Minus className="w-4 h-4" />
+                                          <Minus className="w-4 h-4" aria-hidden />
                                       </Button>
                                   )}
                               </div>
@@ -1071,12 +1078,12 @@ export default function MoodboardEditor({ moodboardId: propMoodboardId, onClose,
         >
           {/* Zoom Indicator */}
           <div className="absolute bottom-6 left-6 flex items-center gap-2 bg-white/90 backdrop-blur p-2 rounded-lg shadow-md z-30 border border-slate-200 canvas-controls">
-            <Button variant="ghost" size="icon" onClick={() => setZoom(Math.max(0.1, zoom - 0.1))}>
-              <ZoomOut className="w-4 h-4" />
+            <Button variant="ghost" size="icon" onClick={() => setZoom(Math.max(0.1, zoom - 0.1))} aria-label={t('a11y.zoomOut')} title={t('a11y.zoomOut')}>
+              <ZoomOut className="w-4 h-4" aria-hidden />
             </Button>
             <span className="text-xs font-mono w-12 text-center">{Math.round(zoom * 100)}%</span>
-            <Button variant="ghost" size="icon" onClick={() => setZoom(Math.min(5, zoom + 0.1))}>
-              <ZoomIn className="w-4 h-4" />
+            <Button variant="ghost" size="icon" onClick={() => setZoom(Math.min(5, zoom + 0.1))} aria-label={t('a11y.zoomIn')} title={t('a11y.zoomIn')}>
+              <ZoomIn className="w-4 h-4" aria-hidden />
             </Button>
             <div className="w-px h-4 bg-slate-200 mx-1"></div>
             <Button variant="ghost" size="sm" onClick={() => { setZoom(1); setPan({x:0, y:0}); }} className="text-xs">

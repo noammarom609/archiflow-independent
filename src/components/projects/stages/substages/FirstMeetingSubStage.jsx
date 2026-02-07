@@ -35,6 +35,7 @@ import LargeAudioProcessor from '../../../audio/LargeAudioProcessor';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Home, Building, Building2, Briefcase, RefreshCw, Castle, UtensilsCrossed, Store, Sparkles as SparklesIcon } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 /** Parse markdown "מיפוי סמנטי לצ'קליסט" / Stage 2 → checklist_analysis. Supports [ID: xxx] and ID: xxx (no brackets). */
 function parseChecklistAnalysisFromMarkdown(summaryText) {
@@ -110,6 +111,7 @@ const LARGE_FILE_THRESHOLD_MB = 24; // Files above this will use LargeAudioProce
 
 export default function FirstMeetingSubStage({ project, onComplete, onContinue, onUpdate }) {
   const { user: authUser } = useAuth();
+  const { t } = useLanguage();
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
   const chunkFilesRef = useRef([]);
@@ -1491,8 +1493,10 @@ ${checklistItemsForAI.map(item => `${item.index + 1}. [ID: ${item.id}] ${item.qu
                   variant="outline"
                   onClick={togglePlayback}
                   className="flex-shrink-0"
+                  aria-label={isPlaying ? t('a11y.pause') : t('a11y.play')}
+                  aria-pressed={isPlaying}
                 >
-                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                  {isPlaying ? <Pause className="w-4 h-4" aria-hidden /> : <Play className="w-4 h-4" aria-hidden />}
                 </Button>
                 <div className="flex-1">
                   <audio

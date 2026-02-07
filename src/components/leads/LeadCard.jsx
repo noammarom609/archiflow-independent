@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import { 
   Phone, 
   Calendar, 
@@ -52,8 +53,9 @@ export default function LeadCard({
   nextFollowUp,
   onSelect, 
   onQuickCall,
-  onScheduleFollowUp 
+  onScheduleFollowUp
 }) {
+  const { t } = useLanguage();
   // Determine current stage display
   const getCurrentStage = () => {
     if (project.current_stage === 'first_call') {
@@ -196,9 +198,10 @@ export default function LeadCard({
                   e.stopPropagation();
                   onQuickCall?.(project);
                 }}
-                title="התקשר"
+                title={t('a11y.call')}
+                aria-label={t('a11y.call')}
               >
-                <PhoneCall className="w-3.5 h-3.5" />
+                <PhoneCall className="w-3.5 h-3.5" aria-hidden />
               </Button>
               
               <Button
@@ -209,9 +212,10 @@ export default function LeadCard({
                   e.stopPropagation();
                   onScheduleFollowUp?.(project);
                 }}
-                title="תזמן follow-up"
+                title={t('a11y.scheduleFollowUp')}
+                aria-label={t('a11y.addToCalendar')}
               >
-                <Calendar className="w-3.5 h-3.5" />
+                <Calendar className="w-3.5 h-3.5" aria-hidden />
               </Button>
               
               <Button
@@ -222,9 +226,10 @@ export default function LeadCard({
                   e.stopPropagation();
                   onSelect(project.id);
                 }}
-                title="פתח"
+                title={t('a11y.open')}
+                aria-label={t('a11y.open')}
               >
-                <ChevronLeft className="w-3.5 h-3.5" />
+                <ChevronLeft className="w-3.5 h-3.5" aria-hidden />
               </Button>
             </div>
           </div>

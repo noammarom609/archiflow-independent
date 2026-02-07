@@ -21,8 +21,10 @@ import {
   Film,
   Download,
 } from 'lucide-react';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 export default function VideoEditor({ videoUrl, onSave, onCancel }) {
+  const { t } = useLanguage();
   const videoRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -222,8 +224,8 @@ export default function VideoEditor({ videoUrl, onSave, onCancel }) {
 
             {/* Playback Controls */}
             <div className="flex items-center justify-center gap-2">
-              <Button variant="ghost" size="icon" onClick={skipBackward}>
-                <SkipBack className="w-5 h-5" />
+              <Button variant="ghost" size="icon" onClick={skipBackward} aria-label={t('a11y.skipBack')} title={t('a11y.skipBack')}>
+                <SkipBack className="w-5 h-5" aria-hidden />
               </Button>
               <Button 
                 size="icon" 
@@ -236,17 +238,17 @@ export default function VideoEditor({ videoUrl, onSave, onCancel }) {
                   <Play className="w-6 h-6 mr-[-2px]" />
                 )}
               </Button>
-              <Button variant="ghost" size="icon" onClick={skipForward}>
-                <SkipForward className="w-5 h-5" />
+              <Button variant="ghost" size="icon" onClick={skipForward} aria-label={t('a11y.skipForward')} title={t('a11y.skipForward')}>
+                <SkipForward className="w-5 h-5" aria-hidden />
               </Button>
               
               <div className="w-px h-8 bg-border mx-2" />
               
-              <Button variant="ghost" size="icon" onClick={toggleMute}>
+              <Button variant="ghost" size="icon" onClick={toggleMute} aria-label={t('a11y.mute')} title={t('a11y.mute')}>
                 {isMuted ? (
-                  <VolumeX className="w-5 h-5" />
+                  <VolumeX className="w-5 h-5" aria-hidden />
                 ) : (
-                  <Volume2 className="w-5 h-5" />
+                  <Volume2 className="w-5 h-5" aria-hidden />
                 )}
               </Button>
               <div className="w-24">

@@ -16,12 +16,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { showError, showSuccess } from '../utils/notifications';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 // Validation patterns
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^[\d\-+().\s]{7,20}$/;
 
 export default function AddTeamMemberDialog({ isOpen, onClose }) {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     full_name: '',
@@ -154,8 +156,8 @@ export default function AddTeamMemberDialog({ isOpen, onClose }) {
                 <Plus className="w-5 h-5 text-indigo-600" />
                 הוסף חבר צוות חדש
               </CardTitle>
-              <Button variant="ghost" size="icon" onClick={onClose}>
-                <X className="w-5 h-5" />
+              <Button variant="ghost" size="icon" onClick={onClose} aria-label={t('a11y.close')}>
+                <X className="w-5 h-5" aria-hidden />
               </Button>
             </CardHeader>
             <CardContent className="p-6">

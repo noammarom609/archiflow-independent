@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { archiflow } from '@/api/archiflow';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import { showSuccess, showError } from '../utils/notifications';
 import {
   PROJECT_TYPES,
@@ -83,6 +84,7 @@ const CHECKLIST_CONFIGS = [
 ];
 
 export default function ChecklistsSettingsTab() {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('phone_call_checklist');
   const [checklists, setChecklists] = useState({});
   const [loading, setLoading] = useState(true);
@@ -287,8 +289,9 @@ export default function ChecklistsSettingsTab() {
                                     size="icon"
                                     onClick={() => removeItem(config.key, item.id)}
                                     className="text-slate-400 hover:text-red-600 hover:bg-red-50"
+                                    aria-label={t('a11y.deleteItem')}
                                   >
-                                    <Trash2 className="w-4 h-4" />
+                                    <Trash2 className="w-4 h-4" aria-hidden />
                                   </Button>
                                 </div>
                               )}

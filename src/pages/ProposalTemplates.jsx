@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { archiflow } from '@/api/archiflow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCurrentUser } from '@/utils/authHelpers';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -150,6 +151,7 @@ const defaultVariables = [
 ];
 
 export default function ProposalTemplates({ onBack }) {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -551,8 +553,8 @@ export default function ProposalTemplates({ onBack }) {
                       </h3>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <MoreVertical className="w-4 h-4" />
+                          <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" aria-label={t('a11y.openMenu')}>
+                            <MoreVertical className="w-4 h-4" aria-hidden />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

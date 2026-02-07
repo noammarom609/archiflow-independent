@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { X, Check, Clock, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 export default function SchedulerModeOverlay({ 
   isActive, 
@@ -35,8 +36,8 @@ export default function SchedulerModeOverlay({
             </p>
           </div>
         </div>
-        <Button variant="ghost" size="icon" onClick={onCancel}>
-          <X className="w-4 h-4" />
+        <Button variant="ghost" size="icon" onClick={onCancel} aria-label={t('a11y.cancel')} title={t('a11y.cancel')}>
+          <X className="w-4 h-4" aria-hidden />
         </Button>
       </div>
 

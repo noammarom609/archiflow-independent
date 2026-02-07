@@ -43,6 +43,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { showSuccess, showError } from '../utils/notifications';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import PageHeader from '../layout/PageHeader';
 import ContentUploadDialog from './content/ContentUploadDialog';
 import ContentEditorDialog from './content/ContentEditorDialog';
@@ -57,6 +58,7 @@ const contentTypes = [
 ];
 
 export default function ContentLibrary({ onBack }) {
+  const { t } = useLanguage();
   const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
@@ -409,8 +411,8 @@ export default function ContentLibrary({ onBack }) {
                           </h3>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreVertical className="w-4 h-4" />
+                              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('a11y.openMenu')} title={t('a11y.openMenu')}>
+                                <MoreVertical className="w-4 h-4" aria-hidden />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -490,16 +492,16 @@ export default function ContentLibrary({ onBack }) {
                           <p className="text-xs text-muted-foreground">{getTypeName(item.type)}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => setEditingItem(item)}>
-                            <Edit className="w-4 h-4" />
+                          <Button variant="ghost" size="icon" onClick={() => setEditingItem(item)} aria-label={t('a11y.edit')} title={t('a11y.edit')}>
+                            <Edit className="w-4 h-4" aria-hidden />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => setSharingItem(item)}>
-                            <Send className="w-4 h-4" />
+                          <Button variant="ghost" size="icon" onClick={() => setSharingItem(item)} aria-label={t('a11y.send')} title={t('a11y.send')}>
+                            <Send className="w-4 h-4" aria-hidden />
                           </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="w-4 h-4" />
+                              <Button variant="ghost" size="icon" aria-label={t('a11y.openMenu')} title={t('a11y.openMenu')}>
+                                <MoreVertical className="w-4 h-4" aria-hidden />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">

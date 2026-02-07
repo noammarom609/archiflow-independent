@@ -18,8 +18,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MoreVertical, User, Eye, Phone, Mail } from 'lucide-react';
 import { format } from 'date-fns';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 export default function ClientTable({ clients, onClick }) {
+  const { t } = useLanguage();
   const getStatusBadge = (status) => {
     switch (status) {
       case 'active':
@@ -114,8 +116,8 @@ export default function ClientTable({ clients, onClick }) {
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="w-4 h-4 text-slate-400" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('a11y.openMenu')} title={t('a11y.openMenu')}>
+                          <MoreVertical className="w-4 h-4 text-slate-400" aria-hidden />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">

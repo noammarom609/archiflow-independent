@@ -21,8 +21,10 @@ import {
 import { Search, Filter, MoreVertical, Shield, User, Lock, Mail, RefreshCw, Pencil, Trash2, Briefcase } from 'lucide-react';
 import { format } from 'date-fns';
 import { APP_ROLES } from './constants';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 export default function UserTable({ users, onEdit, onResendInvite, currentUserEmail }) {
+  const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -187,8 +189,8 @@ export default function UserTable({ users, onEdit, onResendInvite, currentUserEm
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="w-4 h-4 text-slate-400" />
+                          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('a11y.openMenu')} title={t('a11y.openMenu')}>
+                            <MoreVertical className="w-4 h-4 text-slate-400" aria-hidden />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

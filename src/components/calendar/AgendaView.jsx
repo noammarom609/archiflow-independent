@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { format, addDays, startOfDay, isSameDay, parseISO, isToday, isTomorrow } from 'date-fns';
 import { he } from 'date-fns/locale';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 const eventTypeColors = {
   meeting: 'bg-blue-100 text-blue-800 border-blue-200',
@@ -40,6 +41,7 @@ const priorityColors = {
 };
 
 export default function AgendaView({ startDate, daysCount = 7, events, onEventClick, onDateChange }) {
+  const { t } = useLanguage();
   const days = Array.from({ length: daysCount }, (_, i) => addDays(startOfDay(startDate), i));
 
   const getEventsForDay = (day) => {
@@ -73,11 +75,11 @@ export default function AgendaView({ startDate, daysCount = 7, events, onEventCl
             תצוגת אג'נדה - {daysCount} ימים
           </h3>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={prevWeek}>
-              <ChevronRight className="w-4 h-4" />
+            <Button variant="outline" size="icon" onClick={prevWeek} aria-label={t('a11y.previousWeek')} title={t('a11y.previousWeek')}>
+              <ChevronRight className="w-4 h-4" aria-hidden />
             </Button>
-            <Button variant="outline" size="icon" onClick={nextWeek}>
-              <ChevronLeft className="w-4 h-4" />
+            <Button variant="outline" size="icon" onClick={nextWeek} aria-label={t('a11y.nextWeek')} title={t('a11y.nextWeek')}>
+              <ChevronLeft className="w-4 h-4" aria-hidden />
             </Button>
           </div>
         </div>

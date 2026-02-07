@@ -17,10 +17,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Play, Pause, Square, Clock } from 'lucide-react';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 const STORAGE_KEY = 'archiflow_time_tracker';
 
 export default function TimeTracker({ onComplete }) {
+  const { t } = useLanguage();
   const [status, setStatus] = useState('idle'); // idle | running | paused
   const [seconds, setSeconds] = useState(0);
   const [selectedProject, setSelectedProject] = useState(null);
@@ -200,11 +202,12 @@ export default function TimeTracker({ onComplete }) {
           size="icon"
           className="h-7 w-7"
           onClick={handlePauseResume}
+          aria-label={status === 'running' ? t('a11y.pause') : t('a11y.play')}
         >
           {status === 'running' ? (
-            <Pause className="w-3.5 h-3.5" />
+            <Pause className="w-3.5 h-3.5" aria-hidden />
           ) : (
-            <Play className="w-3.5 h-3.5" />
+            <Play className="w-3.5 h-3.5" aria-hidden />
           )}
         </Button>
         
@@ -213,8 +216,9 @@ export default function TimeTracker({ onComplete }) {
           size="icon"
           className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
           onClick={handleStop}
+          aria-label={t('a11y.stop')}
         >
-          <Square className="w-3.5 h-3.5" />
+          <Square className="w-3.5 h-3.5" aria-hidden />
         </Button>
       </div>
     </div>

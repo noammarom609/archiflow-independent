@@ -7,6 +7,7 @@ import { he } from 'date-fns/locale';
 import { motion } from 'framer-motion';
 
 import PageHeader from '@/components/layout/PageHeader';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -39,6 +40,7 @@ import { showSuccess, showError } from '@/components/utils/notifications';
 import { isAdmin, isArchitect } from '@/utils/roleHelpers';
 
 export default function TimeTracking() {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth(); // Get user directly from AuthContext
   const [activeTab, setActiveTab] = useState('entries');
@@ -352,12 +354,12 @@ export default function TimeTracking() {
         {/* Week Navigation */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={() => navigateWeek('prev')}>
-              <ChevronRight className="w-4 h-4" />
+            <Button variant="outline" size="icon" onClick={() => navigateWeek('prev')} aria-label={t('a11y.previousWeek')} title={t('a11y.previousWeek')}>
+              <ChevronRight className="w-4 h-4" aria-hidden />
             </Button>
             <span className="font-medium min-w-[200px] text-center">{weekLabel}</span>
-            <Button variant="outline" size="icon" onClick={() => navigateWeek('next')}>
-              <ChevronLeft className="w-4 h-4" />
+            <Button variant="outline" size="icon" onClick={() => navigateWeek('next')} aria-label={t('a11y.nextWeek')} title={t('a11y.nextWeek')}>
+              <ChevronLeft className="w-4 h-4" aria-hidden />
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 0 }))}>
               היום
